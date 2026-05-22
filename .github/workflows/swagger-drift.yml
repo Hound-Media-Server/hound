@@ -1,0 +1,45 @@
+name: Swagger drift
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/**/*.go'
+      - 'server/docs/**'
+      - '.github/workflows/swagger-drift.yml'
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Swag docs in sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Install swag CLI
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.6
+
+      - name: Regenerate swagger docs
+        run: swag init
+
+      - name: Check for drift
+        run: |
+          if ! git diff --exit-code -- docs/docs.go docs/swagger.json docs/swagger.yaml; then
+            echo "::error::server/docs is out of sync with handler annotations. Run 'cd server && swag init' locally and commit the regenerated docs/docs.go, docs/swagger.json, docs/swagger.yaml."
+            exit 1
+          fi
