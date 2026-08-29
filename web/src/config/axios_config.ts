@@ -1,8 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
 const getBaseUrl = () => {
-  if (process.env.NODE_ENV === "production") {
-    // relative url in prod
+  if (import.meta.env.PROD) {
     return "";
   }
   return "http://localhost:2323";
