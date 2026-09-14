@@ -36,9 +36,9 @@ function SelectStreamModal(props: {
   fetchParams?: FetchParams;
   setOpen: (open: boolean) => void;
   open: boolean;
-  setMainStream: (stream: any) => void;
+  setMainStream?: (stream: any) => void;
+  onStreamSelected?: (stream: any) => void;
   setProviderID?: (providerID: number) => void;
-  setIsStreamModalOpen?: (open: boolean) => void;
 }) {
   const {
     modalType,
@@ -46,8 +46,8 @@ function SelectStreamModal(props: {
     setOpen,
     open,
     setMainStream,
+    onStreamSelected,
     setProviderID: setProviderIDSeasonDownloader,
-    setIsStreamModalOpen,
   } = props;
 
   const [streamData, setStreamData] = useState<any[] | null>(null);
@@ -194,8 +194,11 @@ function SelectStreamModal(props: {
                           // for season pack downloader, sets this stream as the one
                           // to reference the infohash
                           if (modalType === "select-stream") {
-                            setMainStream(stream);
-                            setIsStreamModalOpen?.(true);
+                            if (onStreamSelected) {
+                              onStreamSelected(stream);
+                            } else {
+                              setMainStream?.(stream);
+                            }
                           } else if (modalType === "download-season") {
                             if (!stream.info_hash || stream.info_hash === "") {
                               toast.error(
@@ -203,7 +206,7 @@ function SelectStreamModal(props: {
                               );
                               return;
                             }
-                            setMainStream(stream);
+                            setMainStream?.(stream);
                             setOpen(false);
                           }
                         }

@@ -25,6 +25,7 @@ import { Spinner } from "react-bootstrap";
 import { PlayArrowRounded } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import DownloadSeasonModal from "./DownloadSeasonModal";
+import { useStreamModal } from "./StreamModalContext";
 
 const offsetFix = {
   modifiers: [
@@ -67,8 +68,8 @@ function SeasonModal(props: any) {
     mediaSource,
     sourceID,
     seasonNumber,
-    isStreamModalOpen,
   } = props;
+  const { isOpen: isStreamModalOpen } = useStreamModal();
   const handleClose = () => {
     setIsSeasonDataLoaded(false);
     onClose();
@@ -421,7 +422,6 @@ function EpisodeCard(
             episode.episode_number,
             "direct",
             episode.source_id,
-            watchProgress?.current_progress_seconds,
             watchProgress?.encoded_data,
             watchProgress,
           );
@@ -505,9 +505,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "direct",
                   episode.source_id,
-                  watchProgress?.current_progress_seconds,
                   watchProgress?.encoded_data,
-            watchProgress,
+                  watchProgress,
                 );
               }}
             >
@@ -533,9 +532,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "select",
                   episode.source_id,
-                  watchProgress?.current_progress_seconds,
                   watchProgress?.encoded_data,
-            watchProgress,
+                  watchProgress,
                 );
               }}
             >

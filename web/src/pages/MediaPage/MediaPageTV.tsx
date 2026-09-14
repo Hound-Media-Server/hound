@@ -19,7 +19,6 @@ import SeasonModal from "../Modals/SeasonModal";
 import Reviews from "../Comments/Reviews";
 import HistoryModal from "../Modals/HistoryModal";
 import ConfirmRewatchModal from "../Modals/ConfirmRewatchModal";
-import StreamModal from "../Modals/StreamModal";
 import SelectStreamModal from "../Modals/StreamSelectModal";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -31,6 +30,7 @@ import {
 } from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { CloudDoneOutlined } from "@mui/icons-material";
+import { useStreamModal } from "../Modals/StreamModalContext";
 
 const offsetFix = {
   modifiers: [
@@ -65,13 +65,11 @@ function MediaPageTV(props: any) {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
-  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
   const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [streams, setStreams] = useState<any>(null);
-  const [mainStream, setMainStream] = useState<any>(null);
   const [selectStreamFetchParams, setSelectStreamFetchParams] = useState<
     | {
         mediaType: string;
@@ -82,7 +80,6 @@ function MediaPageTV(props: any) {
       }
     | undefined
   >(undefined);
-  const [streamStartTime, setStreamStartTime] = useState(0);
   const [activeWatchProgress, setActiveWatchProgress] = useState<any>(null);
   const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
   const { data: mediaFiles, isLoading: isMediaFilesLoading } = useMediaFiles(
@@ -93,6 +90,24 @@ function MediaPageTV(props: any) {
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
   const directStreamRequestId = useRef(0);
+  const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
+
+  const openTVStream = (
+    stream: any,
+    season: number,
+    episode: number,
+    progress?: any,
+  ) =>
+    openStream({
+      mediaType: "tv",
+      mediaSource: props.data.media_source,
+      sourceId: props.data.source_id,
+      season,
+      episode,
+      stream,
+      watchProgress: progress,
+      originalAudioLang: props.data?.original_language,
+    });
 
   const mediaFileStreams = useMemo(() => {
     return [...(mediaFiles?.providers?.[0]?.streams ?? [])].sort(
@@ -193,7 +208,6 @@ function MediaPageTV(props: any) {
     episode: number,
     mode: string,
     episodeID: number,
-    overrideStartTime?: number,
     overrideEncodedData?: string,
     overrideWatchProgress?: any,
   ) => {
@@ -220,8 +234,7 @@ function MediaPageTV(props: any) {
       season,
       episode,
     };
-    const requestProviderStream = (startTime: number, encodedData: string) => {
-      setStreamStartTime(startTime);
+    const requestProviderStream = (encodedData: string, progress?: any) => {
       if (mode === "direct") {
         const requestId = directStreamRequestId.current + 1;
         directStreamRequestId.current = requestId;
@@ -232,8 +245,7 @@ function MediaPageTV(props: any) {
           onImmediateStream: (stream: any) => {
             if (directStreamRequestId.current !== requestId) return;
             toast.dismiss(searchProvidersToast);
-            setMainStream(stream);
-            setIsStreamModalOpen(true);
+            void openTVStream(stream, season, episode, progress);
             setIsStreamButtonLoading(false);
           },
         })
@@ -243,8 +255,12 @@ function MediaPageTV(props: any) {
             setStreams(data);
             if (data?.streams?.length > 0) {
               if (!data.startedImmediately) {
-                setMainStream(data.selectedStream);
-                setIsStreamModalOpen(true);
+                void openTVStream(
+                  data.selectedStream,
+                  season,
+                  episode,
+                  progress,
+                );
               }
             } else {
               toast.error("No streams found");
@@ -275,9 +291,13 @@ function MediaPageTV(props: any) {
                 selectedStream = matchingStream;
               }
             }
-            setMainStream(selectedStream);
             if (mode === "direct") {
-              setIsStreamModalOpen(true);
+              void openTVStream(
+                selectedStream,
+                season,
+                episode,
+                progress,
+              );
             } else {
               setSelectStreamFetchParams(fetchParams);
               setIsSelectStreamModalOpen(true);
@@ -292,10 +312,10 @@ function MediaPageTV(props: any) {
           toast.error("Failed to fetch providers");
         });
     };
-    if (overrideStartTime !== undefined) {
+    if (overrideWatchProgress !== undefined) {
       requestProviderStream(
-        overrideStartTime,
         overrideEncodedData || "",
+        overrideWatchProgress,
       ).finally(() => {
         if (mode === "direct") {
           setIsStreamButtonLoading(false);
@@ -309,19 +329,18 @@ function MediaPageTV(props: any) {
     axios
       .get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`)
       .then((progressRes) => {
-        let startTime = 0;
         let encodedData = "";
+        let episodeProgress;
         if (progressRes.data && episodeID !== -1) {
-          const episodeProgress = progressRes.data.find(
+          episodeProgress = progressRes.data.find(
             (item: any) => parseInt(item.episode_source_id, 10) === episodeID,
           );
           if (episodeProgress) {
-            startTime = episodeProgress.current_progress_seconds || 0;
             encodedData = episodeProgress.encoded_data;
             setActiveWatchProgress(episodeProgress);
           }
         }
-        return requestProviderStream(startTime, encodedData);
+        return requestProviderStream(encodedData, episodeProgress);
       })
       .catch((err) => {
         toast.error("Failed to get playback progress " + err, {
@@ -352,7 +371,6 @@ function MediaPageTV(props: any) {
         watch_progress.episode_number,
         mode,
         parseInt(watch_progress.episode_source_id, 10),
-        watch_progress.current_progress_seconds,
         watch_progress.encoded_data,
         watch_progress,
       );
@@ -622,7 +640,6 @@ function MediaPageTV(props: any) {
         handleStreamButtonClick={handleStreamButtonClick}
         isStreamButtonLoading={isStreamButtonLoading}
         isStreamSelectButtonLoading={isStreamSelectButtonLoading}
-        isStreamModalOpen={isStreamModalOpen}
       />
       <HistoryModal
         onClose={() => {
@@ -648,22 +665,25 @@ function MediaPageTV(props: any) {
         mediaSource={props.data ? props.data.media_source : undefined}
         sourceID={props.data ? props.data.source_id : undefined}
       />
-      <StreamModal
-        setOpen={setIsStreamModalOpen}
-        open={isStreamModalOpen}
-        streamDetails={mainStream}
-        startTime={streamStartTime}
-        streams={streams}
-        watchProgress={activeWatchProgress}
-        originalAudioLang={props.data?.original_language}
-      />
       <SelectStreamModal
         modalType="select-stream"
         setOpen={setIsSelectStreamModalOpen}
         open={isSelectStreamModalOpen}
         fetchParams={selectStreamFetchParams}
-        setMainStream={setMainStream}
-        setIsStreamModalOpen={setIsStreamModalOpen}
+        onStreamSelected={(stream) => {
+          if (
+            selectStreamFetchParams?.season === undefined ||
+            selectStreamFetchParams?.episode === undefined
+          ) {
+            return;
+          }
+          void openTVStream(
+            stream,
+            selectStreamFetchParams.season,
+            selectStreamFetchParams.episode,
+            activeWatchProgress,
+          );
+        }}
       />
     </>
   );

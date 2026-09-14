@@ -19,7 +19,6 @@ import convertDateToReadable from "../../helpers/helpers";
 import Reviews from "../Comments/Reviews";
 import CreateHistoryModal from "../Modals/CreateHistoryModal";
 import HistoryModal from "../Modals/HistoryModal";
-import StreamModal from "../Modals/StreamModal";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
@@ -31,6 +30,7 @@ import {
 } from "../../api/hooks/providers";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
+import { useStreamModal } from "../Modals/StreamModalContext";
 
 const offsetFix = {
   modifiers: [
@@ -62,7 +62,6 @@ type WatchProgressItem = {
 
 function MediaPageMovie(props: any) {
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
-  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -71,7 +70,6 @@ function MediaPageMovie(props: any) {
   const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
-  const [mainStream, setMainStream] = useState<any>(null);
   const [watchProgress, setWatchProgress] = useState<
     WatchProgressItem | undefined
   >(undefined);
@@ -87,6 +85,16 @@ function MediaPageMovie(props: any) {
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
   const directStreamRequestId = useRef(0);
+  const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
+  const openMovieStream = (stream: any) =>
+    openStream({
+      mediaType: "movie",
+      mediaSource: props.data.media_source,
+      sourceId: props.data.source_id,
+      stream,
+      watchProgress,
+      originalAudioLang: props.data?.original_language,
+    });
   useEffect(() => {
     axios
       .get(
@@ -181,8 +189,7 @@ function MediaPageMovie(props: any) {
         onImmediateStream: (stream: any) => {
           if (directStreamRequestId.current !== requestId) return;
           toast.dismiss(searchProvidersToast);
-          setMainStream(stream);
-          setIsStreamModalOpen(true);
+          void openMovieStream(stream);
           setIsStreamButtonLoading(false);
         },
       })
@@ -192,8 +199,7 @@ function MediaPageMovie(props: any) {
           setStreams(data);
           if (data?.streams?.length > 0) {
             if (!data.startedImmediately) {
-              setMainStream(data.selectedStream);
-              setIsStreamModalOpen(true);
+              void openMovieStream(data.selectedStream);
             }
           } else {
             toast.error("No streams found");
@@ -233,9 +239,8 @@ function MediaPageMovie(props: any) {
                 selectedStream = matchingStream;
               }
             }
-            setMainStream(selectedStream);
             if (mode === "direct") {
-              setIsStreamModalOpen(true);
+              void openMovieStream(selectedStream);
             } else {
               setIsSelectStreamModalOpen(true);
             }
@@ -261,8 +266,7 @@ function MediaPageMovie(props: any) {
           streams.streams.find(
             (stream: any) => stream.encoded_data === watchProgress?.encoded_data,
           ) ?? streams.streams[0];
-        setMainStream(selectedStream);
-        setIsStreamModalOpen(true);
+        void openMovieStream(selectedStream);
         setIsStreamButtonLoading(false);
       } else if (mode === "select") {
         setIsSelectStreamModalOpen(true);
@@ -505,15 +509,6 @@ function MediaPageMovie(props: any) {
         open={isCollectionModalOpen}
         item={props.data}
       />
-      <StreamModal
-        setOpen={setIsStreamModalOpen}
-        open={isStreamModalOpen}
-        streamDetails={mainStream}
-        streams={streams}
-        startTime={watchProgress?.current_progress_seconds || 0}
-        watchProgress={watchProgress}
-        originalAudioLang={props.data?.original_language}
-      />
       <SelectStreamModal
         modalType="select-stream"
         setOpen={setIsSelectStreamModalOpen}
@@ -523,8 +518,7 @@ function MediaPageMovie(props: any) {
           mediaSource: props.data.media_source,
           sourceId: props.data.source_id,
         }}
-        setMainStream={setMainStream}
-        setIsStreamModalOpen={setIsStreamModalOpen}
+        onStreamSelected={(stream) => void openMovieStream(stream)}
       />
       <VideoModal
         onClose={() => {

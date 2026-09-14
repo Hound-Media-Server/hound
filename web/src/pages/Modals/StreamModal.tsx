@@ -26,10 +26,10 @@ function StreamModal(props: any) {
     streams,
     setOpen,
     open,
-    startTime,
     watchProgress,
     originalAudioLang,
   } = props;
+  const startTime = watchProgress?.current_progress_seconds ?? 0;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
