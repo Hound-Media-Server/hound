@@ -28,6 +28,8 @@ function StreamModal(props: any) {
     open,
     watchProgress,
     originalAudioLang,
+    onChangeSource,
+    onViewEpisodes,
   } = props;
   const startTime = watchProgress?.current_progress_seconds ?? 0;
   const [videoURL, setVideoURL] = useState("");
@@ -167,6 +169,7 @@ function StreamModal(props: any) {
     >
       {isPlatformElectron ? (
         <MPVElectronPlayer
+          key={streamDetails?.encoded_data}
           options={videoJsOptions}
           onVideoProgress={handleVideoProgress}
           setLoading={setLoading}
@@ -176,13 +179,17 @@ function StreamModal(props: any) {
           playerSettings={watchProgress?.player_settings}
           isStreamsMatch={isStreamsMatch}
           originalAudioLang={originalAudioLang}
+          onChangeSource={onChangeSource}
+          onViewEpisodes={onViewEpisodes}
         />
       ) : (
         <VideoPlayer
+          key={streamDetails?.encoded_data}
           options={videoJsOptions}
           onVideoProgress={handleVideoProgress}
           setLoading={setLoading}
           subtitles={subtitles}
+          onChangeSource={onChangeSource}
         />
       )}
       <InfoModal

@@ -38,6 +38,7 @@ function SelectStreamModal(props: {
   open: boolean;
   setMainStream?: (stream: any) => void;
   onStreamSelected?: (stream: any) => void;
+  currentStreamEncodedData?: string;
   setProviderID?: (providerID: number) => void;
 }) {
   const {
@@ -47,6 +48,7 @@ function SelectStreamModal(props: {
     open,
     setMainStream,
     onStreamSelected,
+    currentStreamEncodedData,
     setProviderID: setProviderIDSeasonDownloader,
   } = props;
 
@@ -185,11 +187,21 @@ function SelectStreamModal(props: {
               </div>
             ) : (
               streamData.map((stream: any) => {
+                const isCurrentStream =
+                  modalType === "select-stream" &&
+                  !!currentStreamEncodedData &&
+                  stream.encoded_data === currentStreamEncodedData;
                 return (
                   <div className="stream-info-card" key={stream.infohash}>
                     <div
                       className="stream-info-card-title"
+                      aria-disabled={isCurrentStream}
+                      style={{
+                        cursor: isCurrentStream ? "not-allowed" : "pointer",
+                        opacity: isCurrentStream ? 0.6 : 1,
+                      }}
                       onClick={() => {
+                        if (isCurrentStream) return;
                         if (stream) {
                           // for season pack downloader, sets this stream as the one
                           // to reference the infohash
@@ -223,6 +235,14 @@ function SelectStreamModal(props: {
                       </div>
                     )}
                     <Chip label={stream.provider_profile_name} size="small" />
+                    {isCurrentStream && (
+                      <Chip
+                        label="Current source"
+                        size="small"
+                        color="primary"
+                        className="ms-2"
+                      />
+                    )}
                     {modalType === "select-stream" ? (
                       <div className="stream-info-card-footer mt-2">
                         {localStorage.getItem("role") === "admin" &&

@@ -21,6 +21,8 @@ import {
   ArrowBack,
   InfoOutlined,
   Fullscreen,
+  VideoLibraryOutlined,
+  PlaylistPlay,
 } from "@mui/icons-material";
 
 function formatTime(seconds: number): string {
@@ -48,6 +50,8 @@ interface IVideoControlsProps {
   handleFullscreen?: () => void;
   handleClose?: () => void;
   setInfoModalOpen?: (open: boolean) => void;
+  handleChangeSource?: () => void;
+  handleViewEpisodes?: () => void;
   paused: boolean;
   currentTime?: number;
   duration?: number;
@@ -70,6 +74,8 @@ export default function ElectronVideoControls({
   handleFullscreen,
   handleClose,
   setInfoModalOpen,
+  handleChangeSource,
+  handleViewEpisodes,
   paused,
   currentTime = 0,
   duration = 0,
@@ -184,6 +190,33 @@ export default function ElectronVideoControls({
                 }}
               >
                 <ArrowBack />
+              </IconButton>
+              <IconButton
+                onClick={handleViewEpisodes}
+                title="View episodes"
+                sx={{
+                  display: handleViewEpisodes ? "inline-flex" : "none",
+                  position: "absolute",
+                  top: 16,
+                  right: 96,
+                  color: "white",
+                  zIndex: 10,
+                }}
+              >
+                <PlaylistPlay />
+              </IconButton>
+              <IconButton
+                onClick={handleChangeSource}
+                title="Change source"
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  right: 56,
+                  color: "white",
+                  zIndex: 10,
+                }}
+              >
+                <VideoLibraryOutlined />
               </IconButton>
               <IconButton
                 onClick={() => setInfoModalOpen?.(true)}

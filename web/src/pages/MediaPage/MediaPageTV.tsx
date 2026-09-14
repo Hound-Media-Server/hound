@@ -640,6 +640,7 @@ function MediaPageTV(props: any) {
         handleStreamButtonClick={handleStreamButtonClick}
         isStreamButtonLoading={isStreamButtonLoading}
         isStreamSelectButtonLoading={isStreamSelectButtonLoading}
+        isStreamModalOpen={isStreamModalOpen}
       />
       <HistoryModal
         onClose={() => {

@@ -11,6 +11,8 @@ import toast from "react-hot-toast";
 import { fetchMediaFiles } from "../../api/services/media";
 import { fetchProviders } from "../../api/services/providers";
 import StreamModal from "./StreamModal";
+import SelectStreamModal from "./StreamSelectModal";
+import SeasonModal from "./SeasonModal";
 
 export type StreamPlaybackRequest = {
   mediaType: "movie" | "tv";
@@ -36,8 +38,19 @@ const flattenStreams = (data: any) =>
 
 export function StreamModalProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<StreamPlaybackRequest | null>(null);
+  const [isSourceSelectOpen, setIsSourceSelectOpen] = useState(false);
+  const [isEpisodeSelectOpen, setIsEpisodeSelectOpen] = useState(false);
+  const [switchProgress, setSwitchProgress] = useState<any>(null);
+  const [sourceSelectTarget, setSourceSelectTarget] =
+    useState<StreamPlaybackRequest | null>(null);
   const requestId = useRef(0);
-  const closeStream = useCallback(() => setRequest(null), []);
+  const closeStream = useCallback(() => {
+    setIsSourceSelectOpen(false);
+    setIsEpisodeSelectOpen(false);
+    setSwitchProgress(null);
+    setSourceSelectTarget(null);
+    setRequest(null);
+  }, []);
 
   const openStream = useCallback(async (next: StreamPlaybackRequest) => {
     const currentRequestId = ++requestId.current;
@@ -109,6 +122,96 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
         streams={streamContext}
         watchProgress={request?.watchProgress}
         originalAudioLang={request?.originalAudioLang}
+        onChangeSource={(currentTime: number) => {
+          setSwitchProgress({
+            ...request?.watchProgress,
+            current_progress_seconds: Math.floor(currentTime),
+          });
+          setSourceSelectTarget(request);
+          setIsSourceSelectOpen(true);
+        }}
+        onViewEpisodes={
+          request?.mediaType === "tv"
+            ? () => setIsEpisodeSelectOpen(true)
+            : undefined
+        }
+      />
+      {request?.mediaType === "tv" && request.season !== undefined && (
+        <SeasonModal
+          open={isEpisodeSelectOpen}
+          onClose={() => setIsEpisodeSelectOpen(false)}
+          mediaSource={request.mediaSource}
+          sourceID={request.sourceId}
+          seasonNumber={request.season}
+          mediaTitle={request.watchProgress?.media_title || ""}
+          isStreamButtonLoading={false}
+          isStreamSelectButtonLoading={false}
+          isStreamModalOpen={request !== null}
+          handleStreamButtonClick={(
+            season: number,
+            episode: number,
+            mode: string,
+            _episodeID: number,
+            encodedData?: string,
+            progress?: any,
+          ) => {
+            setIsEpisodeSelectOpen(false);
+            const target: StreamPlaybackRequest = {
+              ...request,
+              season,
+              episode,
+              stream: undefined,
+              encodedData,
+              watchProgress: progress,
+            };
+            if (mode === "select") {
+              setSwitchProgress(progress);
+              setSourceSelectTarget({ ...target, encodedData: undefined });
+              setIsSourceSelectOpen(true);
+              return;
+            }
+            void openStream(target);
+          }}
+        />
+      )}
+      <SelectStreamModal
+        modalType="select-stream"
+        open={isSourceSelectOpen && request !== null}
+        setOpen={(open) => {
+          setIsSourceSelectOpen(open);
+          if (!open) setSourceSelectTarget(null);
+        }}
+        currentStreamEncodedData={
+          sourceSelectTarget?.season === request?.season &&
+          sourceSelectTarget?.episode === request?.episode
+            ? stream?.encoded_data
+            : undefined
+        }
+        fetchParams={
+          sourceSelectTarget
+            ? {
+                mediaType: sourceSelectTarget.mediaType,
+                mediaSource: sourceSelectTarget.mediaSource,
+                sourceId: sourceSelectTarget.sourceId,
+                season: sourceSelectTarget.season,
+                episode: sourceSelectTarget.episode,
+              }
+            : undefined
+        }
+        onStreamSelected={(stream) => {
+          setIsSourceSelectOpen(false);
+          setRequest(
+            sourceSelectTarget
+              ? {
+                  ...sourceSelectTarget,
+                  stream,
+                  encodedData: undefined,
+                  watchProgress: switchProgress,
+                }
+              : request,
+          );
+          setSourceSelectTarget(null);
+        }}
       />
     </StreamModalContext.Provider>
   );
