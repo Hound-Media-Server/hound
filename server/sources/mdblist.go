@@ -12,7 +12,11 @@ import (
 	"github.com/mcay23/hound/internal"
 )
 
-const MDBListListURL = `https://api.mdblist.com/lists/%s/%s/items?append_to_response=poster,description&unified=true&apikey=%s`
+const (
+	MDBListListSort  = "added"
+	MDBListListOrder = "desc"
+	MDBListListURL   = `https://api.mdblist.com/lists/%s/%s/items?append_to_response=poster,description&unified=true&sort=%s&order=%s&apikey=%s`
+)
 
 type MDBListItem struct {
 	ID             int        `json:"id"`
@@ -50,6 +54,8 @@ func GetMDBList(listAuthor string, listName string) ([]MDBListItem, error) {
 		MDBListListURL,
 		url.PathEscape(listAuthor),
 		url.PathEscape(listName),
+		MDBListListSort,
+		MDBListListOrder,
 		config.MDBListAPIKey,
 	)
 	resp, err := http.Get(url)
