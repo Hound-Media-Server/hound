@@ -63,7 +63,6 @@ const MPVElectronPlayer = React.memo(
     const [prevVolume, setPrevVolume] = useState(100);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
-    const divRef = useRef<HTMLDivElement>(null);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -412,21 +411,19 @@ const MPVElectronPlayer = React.memo(
     }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
 
     const handleFullscreen = () => {
-      if (divRef.current) {
-        if (!document.fullscreenElement) {
-          divRef.current.requestFullscreen().catch((err) => {
-            console.error(
-              `Error attempting to enable fullscreen: ${err.message}`,
-            );
-          });
-        } else {
-          document.exitFullscreen();
-        }
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.error(
+            `Error attempting to enable fullscreen: ${err.message}`,
+          );
+        });
+      } else {
+        document.exitFullscreen();
       }
     };
 
     return (
-      <div className="video-container" ref={divRef}>
+      <div className="video-container">
         <mpv-video
           ref={videoRef}
           render-mode="shared-texture"

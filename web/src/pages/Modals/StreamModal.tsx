@@ -72,6 +72,18 @@ function StreamModal(props: any) {
   };
 
   useEffect(() => {
+    if (
+      !open &&
+      isPlatformElectron &&
+      document.fullscreenElement === document.documentElement
+    ) {
+      document.exitFullscreen().catch((err) => {
+        console.error(`Error attempting to exit fullscreen: ${err.message}`);
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (!open) {
       setVideoURL("");
       return;
