@@ -1,30 +1,31 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import "./SearchBar.css";
 
-function SearchBar(props: any) {
-  const navigate = useNavigate();
-  const submitHandler = (event: any) => {
-    event.preventDefault();
-    if (searchQuery !== "") {
-      navigate("/search?q=" + searchQuery);
-      window.location.reload();
-    }
-  };
-  const [searchQuery, setSearchQuery] = useState("");
-  const onKeyChange = (event: any) => {
-    setSearchQuery(event.target.value);
-  };
+function SearchBar({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
-    <form className="search-bar-container" onSubmit={submitHandler}>
+    <div className="search-bar-container">
       <input
         type="text"
-        value={searchQuery}
-        onChange={onKeyChange}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         placeholder="Search Anything..."
+        aria-label="Search"
       />
-      {props.type === "nav" ? "" : <button type="submit">GO</button>}
-    </form>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+        >
+          ×
+        </button>
+      )}
+    </div>
   );
 }
 
