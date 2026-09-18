@@ -1,7 +1,10 @@
 import { Skeleton } from "@mui/material";
 import "./WatchTile.css";
+import { MouseEvent } from "react";
+import { useStreamModal } from "../Modals/StreamModalContext";
 
 export default function WatchTile(props: any) {
+  const { openStream } = useStreamModal();
   // check if it's a resume or next_episode object
   let thumbnailURI = "";
   let primaryCaption = "";
@@ -25,9 +28,27 @@ export default function WatchTile(props: any) {
       secondaryCaption = next_episode.episode_title;
     }
   }
+  const handlePlay = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const progress = props.item?.watch_progress;
+    const episode = progress || props.item?.next_episode;
+    void openStream({
+      mediaType: props.item?.media_type === "movie" ? "movie" : "tv",
+      mediaSource: props.item?.media_source,
+      sourceId: props.item?.source_id,
+      season: episode?.season_number,
+      episode: episode?.episode_number,
+      encodedData: progress?.encoded_data,
+      watchProgress: progress,
+    });
+  };
   return (
     <figure>
-      <a className="itemcard-watch-tile-container" href={href}>
+      <a
+        className="itemcard-watch-tile-container"
+        href={href}
+        onClick={handlePlay}
+      >
         {!props.loaded && thumbnailURI && (
           <Skeleton
             variant="rounded"

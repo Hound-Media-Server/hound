@@ -260,7 +260,7 @@ func getHoundLibraryRecords(limit int, offset int, mediaType string, genreIDs []
 }
 
 var (
-	mdbListCacheKey       = "mdb_list|%s|%d"
+	mdbListCacheKey       = "mdb_list|items|%s|%d"
 	mdbListLock           catalogLock
 	mdbListRefreshingLock catalogLock
 	mdbListStaleExpiry    = 14 * 24 * time.Hour

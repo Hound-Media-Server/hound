@@ -5,6 +5,7 @@ import {
   downloadSeason,
   fetchDownloads,
   fetchMediaFiles,
+  fetchSeasonDetails,
 } from "../services/media";
 
 export const useDownloads = (
@@ -31,7 +32,7 @@ export const useMediaFiles = (
   sourceID: string,
   season?: number | null,
   episode?: number | null,
-  checkFile = false
+  checkFile = false,
 ) => {
   return useQuery({
     queryKey: [
@@ -41,10 +42,33 @@ export const useMediaFiles = (
       sourceID,
       season,
       episode,
-      checkFile
+      checkFile,
     ],
     queryFn: () =>
-      fetchMediaFiles(mediaType, mediaSource, sourceID, season, episode, checkFile),
+      fetchMediaFiles(
+        mediaType,
+        mediaSource,
+        sourceID,
+        season,
+        episode,
+        checkFile,
+      ),
+  });
+};
+
+export const useSeasonDetails = (
+  mediaSource: string,
+  sourceID: string,
+  seasonNumber: number,
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: ["season-details", mediaSource, sourceID, seasonNumber],
+    queryFn: () => fetchSeasonDetails(mediaSource, sourceID, seasonNumber),
+    enabled:
+      enabled && !!mediaSource && !!sourceID && seasonNumber !== undefined,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 };
 
@@ -65,4 +89,3 @@ export const useDeleteMediaFileMutation = () => {
 };
 
 export const useDeleteMediaFile = useDeleteMediaFileMutation;
-

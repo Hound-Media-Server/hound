@@ -26,10 +26,12 @@ function StreamModal(props: any) {
     streams,
     setOpen,
     open,
-    startTime,
     watchProgress,
     originalAudioLang,
+    onChangeSource,
+    onViewEpisodes,
   } = props;
+  const startTime = watchProgress?.current_progress_seconds ?? 0;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
@@ -68,6 +70,18 @@ function StreamModal(props: any) {
     setLoading(false);
     setOpen(false);
   };
+
+  useEffect(() => {
+    if (
+      !open &&
+      isPlatformElectron &&
+      document.fullscreenElement === document.documentElement
+    ) {
+      document.exitFullscreen().catch((err) => {
+        console.error(`Error attempting to exit fullscreen: ${err.message}`);
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -167,6 +181,7 @@ function StreamModal(props: any) {
     >
       {isPlatformElectron ? (
         <MPVElectronPlayer
+          key={streamDetails?.encoded_data}
           options={videoJsOptions}
           onVideoProgress={handleVideoProgress}
           setLoading={setLoading}
@@ -176,13 +191,17 @@ function StreamModal(props: any) {
           playerSettings={watchProgress?.player_settings}
           isStreamsMatch={isStreamsMatch}
           originalAudioLang={originalAudioLang}
+          onChangeSource={onChangeSource}
+          onViewEpisodes={onViewEpisodes}
         />
       ) : (
         <VideoPlayer
+          key={streamDetails?.encoded_data}
           options={videoJsOptions}
           onVideoProgress={handleVideoProgress}
           setLoading={setLoading}
           subtitles={subtitles}
+          onChangeSource={onChangeSource}
         />
       )}
       <InfoModal

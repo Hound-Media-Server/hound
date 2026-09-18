@@ -59,6 +59,7 @@ import {
   useAddTVWatchHistoryMutation,
   useTVSeasonHistory,
 } from "../../api/hooks/watchHistory";
+import { useSeasonDetails } from "../../api/hooks/media";
 
 function SeasonModal(props: any) {
   const {
@@ -70,21 +71,14 @@ function SeasonModal(props: any) {
     isStreamModalOpen,
   } = props;
   const handleClose = () => {
-    setIsSeasonDataLoaded(false);
     onClose();
   };
-  const [seasonData, setSeasonData] = useState({
-    media_source: "",
-    source_id: -1,
-    release_date: "",
-    episodes: [],
-    id: -1,
-    media_title: "",
-    thumbnail_uri: "",
-    season_number: -1,
-    overview: "",
-    watch_info: [],
-  });
+  const { data: seasonData } = useSeasonDetails(
+    mediaSource,
+    sourceID,
+    seasonNumber,
+    open,
+  );
 
   const { data: historyData } = useTVSeasonHistory(
     mediaSource,
@@ -97,7 +91,6 @@ function SeasonModal(props: any) {
   const [watchProgress, setWatchProgress] = useState<
     Map<string, WatchProgressItem>
   >(() => new Map());
-  const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
   const [isCreateHistoryModalOpen, setIsCreateHistoryModalOpen] =
     useState(false);
   const [isDownloadSeasonModalOpen, setIsDownloadSeasonModalOpen] =
@@ -174,7 +167,7 @@ function SeasonModal(props: any) {
   };
 
   var seasonOverviewPlaceholder = "No description available.";
-  if (isSeasonDataLoaded) {
+  if (seasonData) {
     seasonOverviewPlaceholder = `Season ${seasonData.season_number} of ${props.mediaTitle}`;
     if (seasonData.season_number === 0) {
       seasonOverviewPlaceholder = "Special Episodes";
@@ -189,17 +182,7 @@ function SeasonModal(props: any) {
     if (seasonNumber < 0) return;
 
     // season 0 is used for extras, specials sometimes
-    const loadData = async () => {
-      const seasonRes = await axios
-        .get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}`)
-        .catch((err) => {
-          console.log(err);
-        });
-      if (!seasonRes) return;
-      setSeasonData(seasonRes.data);
-      setIsSeasonDataLoaded(true);
-
-      // get watch progress
+    const loadPlaybackProgress = () => {
       axios
         .get(
           `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/playback`,
@@ -226,12 +209,12 @@ function SeasonModal(props: any) {
           console.log(err);
         });
     };
-    loadData();
+    loadPlaybackProgress();
   }, [seasonNumber, mediaSource, sourceID, open, isStreamModalOpen]);
 
   return (
     <>
-      {isSeasonDataLoaded ? (
+      {seasonData ? (
         <Dialog
           onClose={handleClose}
           open={open}
@@ -316,7 +299,7 @@ function SeasonModal(props: any) {
                       >
                         <IconButton
                           onClick={() => {
-                            if (isSeasonDataLoaded) {
+                            if (seasonData) {
                               setIsDownloadSeasonModalOpen(true);
                             }
                           }}
@@ -421,7 +404,6 @@ function EpisodeCard(
             episode.episode_number,
             "direct",
             episode.source_id,
-            watchProgress?.current_progress_seconds,
             watchProgress?.encoded_data,
             watchProgress,
           );
@@ -505,9 +487,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "direct",
                   episode.source_id,
-                  watchProgress?.current_progress_seconds,
                   watchProgress?.encoded_data,
-            watchProgress,
+                  watchProgress,
                 );
               }}
             >
@@ -533,9 +514,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "select",
                   episode.source_id,
-                  watchProgress?.current_progress_seconds,
                   watchProgress?.encoded_data,
-            watchProgress,
+                  watchProgress,
                 );
               }}
             >

@@ -16,6 +16,8 @@ interface IVideoPlayerProps {
   playerSettings?: any;
   isStreamsMatch?: boolean;
   originalAudioLang?: string;
+  onChangeSource?: (currentTime: number) => void;
+  onViewEpisodes?: () => void;
 }
 
 const MPVElectronPlayer = React.memo(
@@ -28,6 +30,8 @@ const MPVElectronPlayer = React.memo(
     playerSettings,
     isStreamsMatch,
     originalAudioLang,
+    onChangeSource,
+    onViewEpisodes,
   }: IVideoPlayerProps) => {
     const videoRef = useRef<any>(null);
     const lastReportTimeRef = useRef(0);
@@ -57,10 +61,8 @@ const MPVElectronPlayer = React.memo(
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
-    const playingCountRef = useRef(0);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
-    const divRef = useRef<HTMLDivElement>(null);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -267,12 +269,35 @@ const MPVElectronPlayer = React.memo(
         return;
       }
       let destroyed = false;
+      let seekAttempts = 0;
+      let seekTimer: ReturnType<typeof setTimeout> | undefined;
       const source = options?.sources?.[0]?.src;
       if (!source) {
         console.warn("MPV: no source specified");
         return;
       }
       const startTime = options?.startTime;
+      seekDoneRef.current = !startTime || startTime <= 0;
+
+      const scheduleInitialSeek = () => {
+        if (destroyed || seekDoneRef.current || seekTimer || seekAttempts >= 12) {
+          return;
+        }
+        seekTimer = setTimeout(async () => {
+          seekTimer = undefined;
+          if (destroyed || seekDoneRef.current) return;
+          seekAttempts++;
+          try {
+            await video.seek(startTime);
+          } catch (error) {
+            console.warn("MPV resume seek not ready; retrying", error);
+          }
+          if (!destroyed && !seekDoneRef.current && seekAttempts >= 12) {
+            console.warn("MPV could not confirm the restored playback position");
+            seekDoneRef.current = true;
+          }
+        }, seekAttempts === 0 ? 150 : 750);
+      };
       const load = async () => {
         try {
           await video.open(source);
@@ -299,29 +324,21 @@ const MPVElectronPlayer = React.memo(
           setPaused(false);
         }
 
-        // second Playing event seems more safe for initial seek
-        if (detail.status === "Playing") {
-          playingCountRef.current++;
-          if (playingCountRef.current >= 2 && !seekDoneRef.current) {
-            seekDoneRef.current = true;
-            if (startTime && startTime > 0) {
-              setTimeout(async () => {
-                if (destroyed) return;
-                try {
-                  await video.seek(startTime);
-                } catch (err) {
-                  console.warn("MPV initial seek notice (retrying):", err);
-                  setTimeout(async () => {
-                    if (!destroyed) {
-                      try {
-                        await video.seek(startTime);
-                      } catch (e) {}
-                    }
-                  }, 1000);
-                }
-              }, 100);
-            }
-          }
+        if (
+          !seekDoneRef.current &&
+          typeof current === "number" &&
+          Math.abs(current - startTime) <= 2
+        ) {
+          seekDoneRef.current = true;
+          if (seekTimer) clearTimeout(seekTimer);
+          seekTimer = undefined;
+        } else if (
+          !seekDoneRef.current &&
+          detail.status === "Playing" &&
+          typeof dur === "number" &&
+          dur > 0
+        ) {
+          scheduleInitialSeek();
         }
         if (typeof current === "number") {
           setCurrentTime(current);
@@ -354,6 +371,7 @@ const MPVElectronPlayer = React.memo(
         if (
           typeof current === "number" &&
           typeof dur === "number" &&
+          seekDoneRef.current &&
           Math.abs(current - lastReportTimeRef.current) >= 5
         ) {
           lastReportTimeRef.current = current;
@@ -385,24 +403,27 @@ const MPVElectronPlayer = React.memo(
       };
 
       video.addEventListener("mpv-state", handleState);
+      return () => {
+        destroyed = true;
+        if (seekTimer) clearTimeout(seekTimer);
+        video.removeEventListener("mpv-state", handleState);
+      };
     }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
 
     const handleFullscreen = () => {
-      if (divRef.current) {
-        if (!document.fullscreenElement) {
-          divRef.current.requestFullscreen().catch((err) => {
-            console.error(
-              `Error attempting to enable fullscreen: ${err.message}`,
-            );
-          });
-        } else {
-          document.exitFullscreen();
-        }
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.error(
+            `Error attempting to enable fullscreen: ${err.message}`,
+          );
+        });
+      } else {
+        document.exitFullscreen();
       }
     };
 
     return (
-      <div className="video-container" ref={divRef}>
+      <div className="video-container">
         <mpv-video
           ref={videoRef}
           render-mode="shared-texture"
@@ -425,6 +446,18 @@ const MPVElectronPlayer = React.memo(
           handleFullscreen={handleFullscreen}
           handleClose={handleClose}
           setInfoModalOpen={setInfoModalOpen}
+          handleChangeSource={() => {
+            void handlePause();
+            onChangeSource?.(currentTime);
+          }}
+          handleViewEpisodes={
+            onViewEpisodes
+              ? () => {
+                  void handlePause();
+                  onViewEpisodes();
+                }
+              : undefined
+          }
           paused={paused}
           currentTime={currentTime}
           duration={duration}
