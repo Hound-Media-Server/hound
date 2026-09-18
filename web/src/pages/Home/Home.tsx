@@ -112,7 +112,7 @@ function Home() {
       ) : (
         <div className="home-page-main-section">
           {!isContinueWatchingLoading && continueWatchingData?.length > 0 ? (
-            <div className="mt-3">
+            <div className="pt-5">
               <HorizontalSection
                 items={continueWatchingData}
                 header="Continue Watching"
@@ -128,10 +128,7 @@ function Home() {
               return <></>;
             }
             return (
-              <div
-                key={`home-row-${index}`}
-                className={index === 0 ? "home-page-primary-section" : "mt-3"}
-              >
+              <div key={`home-row-${index}`} className="pt-3">
                 <HorizontalSection
                   items={homeRow?.data?.items}
                   header={homeRow?.data?.title}

@@ -8,10 +8,26 @@
   padding-top: 30px;
   padding-left: 90px;
   padding-right: 90px;
+  background-color: rgba(var(--hound-dark), 1);
+  color: white;
 }
 
 .collection-top-section-actions {
   margin-top: 10px;
+}
+
+.collection-cover-main .MuiChip-root {
+  background-color: rgb(120, 120, 120);
+  color: black;
+}
+
+.collection-cover-main .MuiChip-root .MuiChip-icon {
+  color: black;
+  margin-left: 8px;
+}
+
+.collection-top-section-actions .MuiIconButton-root {
+  color: gray;
 }
 
 /* .collection-top-section-actions .MuiSvgIcon-root {
@@ -24,6 +40,7 @@
 } */
 
 .collection-items-list-container {
+  display: flow-root;
   padding-top: 20px;
   width: fit-content;
   margin-left: auto;
@@ -67,6 +84,10 @@
 .collection-cover-container .collection-card-cover {
   background-color: rgba(var(--hound-primary), 1);
   color: rgba(var(--hound-secondary), 1);
+}
+
+.paginator-section {
+  background-color: rgba(var(--hound-dark), 1);
 }
 
 .paginator-container {

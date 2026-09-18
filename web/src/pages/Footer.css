@@ -1,18 +1,18 @@
 .footer-main-section {
     display: flex;
     flex-direction: column;
-    height: 400px;
-    background-color: rgba(var(--hound-primary), 1);
-    padding-top: 100px;
+    height: 250px;
+    background-color: rgba(var(--hound-dark), 1);
+    padding-top: 50px;
 }
 
-.footer-logo-header {
-    color: white;
-    font-size: 42px;
-  font-family: "Cabin", sans-serif;
+.footer-subtitle {
+    margin-top: 20px;
+    color: rgb(159, 159, 159);
+    font-size: 18px;
+    font-family: "Cabin", sans-serif;
     display: flex;
     justify-content: center;
-    margin-bottom: 40px;
 }
 
 .footer-logo-container {
@@ -21,18 +21,12 @@
 }
 
 #tmdb-logo {
-    width: 180px;
+    width: 120px;
     margin-right: 50px;
 }
 
 #reddit-logo {
-    width: 100px;
-    margin-top: 3px;
+    width: 75px;
+    margin-top: 5px;
     margin-left: 50px;
-}
-
-#igdb-logo {
-    width: 180px;
-    margin-left: 30px;
-    filter: invert(96%) sepia(0%) saturate(150%) hue-rotate(311deg) brightness(119%) contrast(100%);
 }

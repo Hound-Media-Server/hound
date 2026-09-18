@@ -9,24 +9,17 @@
   justify-content: center;
 }
 
-.home-page-primary-section {
-  color: white;
-  background-color: rgba(var(--hound-primary), 1);
-  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-  padding-top: 30px;
-  padding-bottom: 30px;
-  margin-bottom: 20px;
-}
-
 .home-page-main-section {
   padding-bottom: 30px;
-  /* background-color: rgba(var(--hound-primary), 1);
-  color: white; */
+  background-color: rgba(var(--hound-dark), 1);
+  color: white;
 }
 
 .home-page-search-results {
-  margin-top: 30px;
-  margin-bottom: 70px;
+  color: white;
+  background-color: rgba(var(--hound-dark), 1);
+  padding-top: 30px;
+  padding-bottom: 70px;
 }
 
 .home-page-search-message {

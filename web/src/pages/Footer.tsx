@@ -1,10 +1,11 @@
 import { GitHub } from "@mui/icons-material";
 import "./Footer.css";
+import { useServerInfo } from "../api/hooks/general";
 
 function Footer(props: any) {
+  const { data: serverInfo } = useServerInfo();
   return (
     <div className="footer-main-section">
-      <div className="footer-logo-header">Powered By</div>
       <div className="footer-logo-container">
         <img
           src="https://www.themoviedb.org/assets/v4/logos/v2/blue_square_1-5bdc75aaebeb75dc7ae79426ddd9be3b2be1e342510f8202baf6bffa71d7f5c4.svg"
@@ -16,7 +17,7 @@ function Footer(props: any) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          <GitHub sx={{ color: "#FFFFFF", fontSize: "100px" }} />
+          <GitHub sx={{ color: "#FFFFFF", fontSize: "80px" }} />
         </a>
         <a
           href="https://reddit.com/r/HoundMediaServer"
@@ -29,6 +30,9 @@ function Footer(props: any) {
             id="reddit-logo"
           />
         </a>
+      </div>
+      <div className="footer-subtitle">
+        Hound Media Server v{serverInfo?.version}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 .search-bar-container {
     position: relative;
-    font-size: 20px;
+    font-size: 19px;
     width: 450px;
     opacity: 85%;
 }
@@ -13,6 +13,7 @@
     border: none;
     width: 100%;
     background: rgb(236, 236, 241);
+    border-radius: 20px;
 }
 
 ::selection {
@@ -35,7 +36,7 @@
     height: 28px;
     padding: 0;
     background: transparent;
-    color: rgb(38, 32, 69);
+    color: rgba(var(--hound-primary), 0.6);
     border: none;
     cursor: pointer;
 }

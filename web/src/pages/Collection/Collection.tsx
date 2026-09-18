@@ -228,7 +228,7 @@ function Collection(props: any) {
             </div>
           </div>
           {collectionData.records ? (
-            <div className="d-flex justify-content-center mb-4 mt-2">
+            <div className="d-flex justify-content-center pb-4 pt-2 paginator-section">
               <div className="paginator-container shadow-lg">
                 <Pagination
                   id="paginator-component"

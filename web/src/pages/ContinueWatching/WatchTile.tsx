@@ -28,6 +28,12 @@ export default function WatchTile(props: any) {
       secondaryCaption = next_episode.episode_title;
     }
   }
+  if (props.item?.media_type === "movie") {
+    let temp = props.item?.watch_progress?.release_date;
+    if (temp.length > 4) {
+      secondaryCaption = temp.substring(0, 4);
+    }
+  }
   const handlePlay = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const progress = props.item?.watch_progress;

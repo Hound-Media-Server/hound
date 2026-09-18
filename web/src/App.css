@@ -1,6 +1,7 @@
 :root {
   --hound-primary: 24, 11, 111;
   --hound-secondary: 255, 255, 0;
+  --hound-dark: 12, 5, 50;
 }
 
 .App {
