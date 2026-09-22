@@ -134,12 +134,12 @@ function MediaPageTV(props: any) {
       // animation: "backgroundScroll 40s linear infinite",
     },
     opacityBackdrop: {
-      // backgroundColor: "blue",
+      backgroundColor: "rgba(12, 5, 50, 1)",
       backgroundImage:
-        "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
+        "linear-gradient(rgba(12, 5, 50, 1), rgba(12, 5, 50, 0.9), rgba(12, 5, 50, 0.85)), url(" +
         props.data.backdrop_uri +
         ")",
-      backgroundAttachment: "fixed",
+      backgroundAttachment: "scroll, fixed",
       backgroundSize: "cover",
     },
   };
@@ -292,12 +292,7 @@ function MediaPageTV(props: any) {
               }
             }
             if (mode === "direct") {
-              void openTVStream(
-                selectedStream,
-                season,
-                episode,
-                progress,
-              );
+              void openTVStream(selectedStream, season, episode, progress);
             } else {
               setSelectStreamFetchParams(fetchParams);
               setIsSelectStreamModalOpen(true);

@@ -127,12 +127,13 @@ function MediaPageMovie(props: any) {
       // animation: "backgroundScroll 40s linear infinite",
     },
     opacityBackdrop: {
-      // backgroundColor: "blue",
+      backgroundColor: "rgba(12, 5, 50, 1)",
+      // a bit lighter than tv page, since movie pages tend to be shorter. a bit hacky, should review if more sections are added
       backgroundImage:
-        "linear-gradient(rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.94)), url(" +
+        "linear-gradient(rgba(12, 5, 50, 1), rgba(12, 5, 50, 0.9), rgba(12, 5, 50, 0.8)), url(" +
         props.data.backdrop_uri +
         ")",
-      backgroundAttachment: "fixed",
+      backgroundAttachment: "scroll, fixed",
       backgroundSize: "cover",
     },
   };
@@ -264,7 +265,8 @@ function MediaPageMovie(props: any) {
       if (mode === "direct") {
         const selectedStream =
           streams.streams.find(
-            (stream: any) => stream.encoded_data === watchProgress?.encoded_data,
+            (stream: any) =>
+              stream.encoded_data === watchProgress?.encoded_data,
           ) ?? streams.streams[0];
         void openMovieStream(selectedStream);
         setIsStreamButtonLoading(false);

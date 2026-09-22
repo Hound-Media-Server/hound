@@ -46,13 +46,13 @@ function MediaPageLanding() {
       break;
   }
   return (
-    <>
+    <div className="dark-page media-page">
       {isDataLoaded ? (
         <>{mediaComponent}</>
       ) : (
         <LinearProgress className="progress-margin" />
       )}
-    </>
+    </div>
   );
 }
 

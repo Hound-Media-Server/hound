@@ -1,3 +1,7 @@
+.media-page {
+    color: white;
+}
+
 .media-page-tv-header {
     padding-bottom: 40px;
     min-height: 400px;
@@ -135,7 +139,26 @@
 .media-page-tv-main {
     padding-top: 30px;
     padding-bottom: 70px;
-    /* background-color: rgba(255, 255, 255); */
+    color: white;
+}
+
+.media-page-tv-main .comment-card-container {
+    color: white;
+    background-color: rgba(var(--hound-primary), 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.media-page-tv-main .comment-card-author {
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.media-page-tv-main .comment-card-divider hr {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.media-page-tv-main .comment-card-actions-container .MuiIconButton-root {
+    color: rgba(255, 255, 255, 0.72);
 }
 
 .media-page-section-header {
