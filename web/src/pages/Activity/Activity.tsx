@@ -4,16 +4,21 @@ import WatchStats from "./WatchStats";
 
 function Activity(props: any) {
   return (
-    <div className="activity-main-container">
-      <h2>Your Watch Activity</h2>
-      <hr className="mt-3 mb-4" />
-      <div className="watch-stats-container">
-        <WatchStats />
-      </div>
-      <hr className="mt-4 mb-4" />
-      <div className="activity-calendar-container">
-        <ActivityCalendar />
-      </div>
+    <div className="dark-page activity-page">
+      <main className="activity-main-container">
+        <h1 className="activity-page-title">Your Watch Activity</h1>
+        <div className="activity-section-divider" />
+        <section className="watch-stats-container" aria-label="Watch statistics">
+          <WatchStats />
+        </section>
+        <div className="activity-section-divider" />
+        <section
+          className="activity-calendar-container"
+          aria-label="Watch activity calendar"
+        >
+          <ActivityCalendar />
+        </section>
+      </main>
     </div>
   );
 }

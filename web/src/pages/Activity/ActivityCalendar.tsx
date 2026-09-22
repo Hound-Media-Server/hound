@@ -6,6 +6,7 @@ import { WatchActivity as WatchActivityType } from "../../api/services/watchHist
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import dayjs from "dayjs";
 import { Spinner } from "react-bootstrap";
+import "./ActivityCalendar.css";
 
 const localizer = dayjsLocalizer(dayjs);
 
@@ -126,16 +127,20 @@ export default function ActivityCalendar() {
   };
 
   return (
-    <div style={{ height: "80%" }}>
-      <div style={{ marginBottom: 12, display: "flex", gap: 10 }}>
+    <div className="activity-calendar">
+      <div className="activity-calendar-filters">
         {/* Year Dropdown */}
-        <FormControl>
-          <InputLabel>Year</InputLabel>
+        <FormControl className="activity-date-control">
+          <InputLabel id="activity-year-label">Year</InputLabel>
           <Select
+            labelId="activity-year-label"
             size="small"
             value={dayjs(date).year()}
             onChange={(e) => handleYearChange(Number(e.target.value))}
-            label={"year"}
+            label="Year"
+            MenuProps={{
+              PaperProps: { className: "activity-select-menu" },
+            }}
           >
             {years.map((year) => (
               <MenuItem key={year} value={year}>
@@ -145,13 +150,17 @@ export default function ActivityCalendar() {
           </Select>
         </FormControl>
         {/* Month Dropdown */}
-        <FormControl>
-          <InputLabel>Month</InputLabel>
+        <FormControl className="activity-date-control activity-month-control">
+          <InputLabel id="activity-month-label">Month</InputLabel>
           <Select
+            labelId="activity-month-label"
             size="small"
             value={dayjs(date).month()}
             onChange={(e) => handleMonthChange(Number(e.target.value))}
-            label={"month"}
+            label="Month"
+            MenuProps={{
+              PaperProps: { className: "activity-select-menu" },
+            }}
           >
             {months.map((month, index) => (
               <MenuItem key={month} value={index}>
