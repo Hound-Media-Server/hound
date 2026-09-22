@@ -6,8 +6,9 @@
 }
 
 .search-bar-container input[type=text] {
-    padding: 10px;
-    padding-left: 20px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    padding-left: 22px;
     padding-right: 45px;
     outline: none;
     border: none;
@@ -28,9 +29,9 @@
 .search-bar-container button {
     position: absolute;
     right: 10px;
-    top: 50%;
+    top: 45%;
     transform: translateY(-50%);
-    font-size: 24px;
+    font-size: 30px;
     line-height: 1;
     width: 28px;
     height: 28px;

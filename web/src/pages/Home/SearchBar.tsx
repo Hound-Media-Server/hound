@@ -13,7 +13,7 @@ function SearchBar({
         type="text"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Search Anything..."
+        placeholder="Search Movies, TV Shows..."
         aria-label="Search"
       />
       {value && (

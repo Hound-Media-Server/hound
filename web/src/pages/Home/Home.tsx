@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import LinearProgress from "@mui/material/LinearProgress";
@@ -40,22 +40,15 @@ function Home() {
     enabled: !!debouncedQuery,
   });
 
-  const styles = useMemo(
-    () => ({
-      withBackdrop: {
-        backgroundImage: "url(" + backdropURI + ")",
-        backgroundSize: "cover",
-        animation: "backgroundScroll 150s linear infinite",
-      },
-    }),
-    [backdropURI],
-  );
-
   useEffect(() => {
-    if (backdropsData && !backdropURI) {
-      setBackdropURI(backdropsData);
-    }
-  }, [backdropsData, backdropURI]);
+    if (!backdropsData) return;
+    const image = new Image();
+    image.onload = () => setBackdropURI(backdropsData);
+    image.src = backdropsData;
+    return () => {
+      image.onload = null;
+    };
+  }, [backdropsData]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedQuery(query), 250);
@@ -63,11 +56,15 @@ function Home() {
   }, [query]);
 
   return (
-    <>
-      <div
-        className="home-page-search-section"
-        style={backdropURI ? styles.withBackdrop : {}}
-      >
+    <div className="dark-page">
+      <div className="home-page-search-section">
+        {backdropURI && (
+          <div
+            className="home-page-search-backdrop"
+            style={{ backgroundImage: `url(${backdropURI})` }}
+            aria-hidden="true"
+          />
+        )}
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
       </div>
       {query ? (
@@ -80,15 +77,8 @@ function Home() {
                 Unable to load search results.
               </div>
             ) : searchResults?.tv_results?.length > 0 ||
-              searchResults?.movie_results?.length > 0 ||
-              searchResults?.game_results?.length > 0 ? (
+              searchResults?.movie_results?.length > 0 ? (
               <>
-                <HorizontalSection
-                  items={searchResults?.tv_results}
-                  header="TV Shows"
-                  itemType="search"
-                  itemOnClick={undefined}
-                />
                 <HorizontalSection
                   items={searchResults?.movie_results}
                   header="Movies"
@@ -96,8 +86,8 @@ function Home() {
                   itemOnClick={undefined}
                 />
                 <HorizontalSection
-                  items={searchResults?.game_results}
-                  header="Games"
+                  items={searchResults?.tv_results}
+                  header="TV Shows"
                   itemType="search"
                   itemOnClick={undefined}
                 />
@@ -148,7 +138,7 @@ function Home() {
         </div>
       )}
       {!isPlatformElectron && <Footer />}
-    </>
+    </div>
   );
 }
 

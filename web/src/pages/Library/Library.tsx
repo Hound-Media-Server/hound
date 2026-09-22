@@ -73,7 +73,7 @@ function Library(props: any) {
   const navigate = useNavigate();
 
   return (
-    <>
+    <div className="dark-page">
       {isLoaded ? (
         <div className="library-main-container">
           {recentItems?.length > 0 && (
@@ -169,7 +169,7 @@ function Library(props: any) {
         onSubmit={handleCreateCollection}
       />
       {!isPlatformElectron && <Footer />}
-    </>
+    </div>
   );
 }
 

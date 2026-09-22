@@ -4,6 +4,19 @@
   --hound-dark: 12, 5, 50;
 }
 
+.dark-page {
+  min-height: 100vh;
+  background-color: rgba(var(--hound-dark), 1);
+}
+
+.MuiLinearProgress-root.MuiLinearProgress-root {
+  background-color: rgba(var(--hound-primary), 0.45);
+}
+
+.MuiLinearProgress-root .MuiLinearProgress-bar {
+  background-color: rgba(var(--hound-secondary), 0.8);
+}
+
 .App {
   text-align: center;
 }
