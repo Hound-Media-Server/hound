@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -28,7 +28,7 @@ jobs:
         run: npm ci --prefix web --legacy-peer-deps
 
       - name: Install Electron dependencies
-        run: npm ci --prefix web/electron --ignore-scripts
+        run: npm ci --prefix web/electron --ignore-scripts --legacy-peer-deps
 
       - name: Build the native Electron dependency
         run: npm --prefix web/electron run postinstall
@@ -69,7 +69,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -105,7 +105,7 @@ jobs:
         run: npm ci --prefix web --legacy-peer-deps
 
       - name: Install Electron dependencies
-        run: npm ci --prefix web/electron --ignore-scripts
+        run: npm ci --prefix web/electron --ignore-scripts --legacy-peer-deps
 
       - name: Create the MSVC libmpv import library
         shell: pwsh
