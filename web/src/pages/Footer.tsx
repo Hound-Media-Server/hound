@@ -32,7 +32,7 @@ function Footer(props: any) {
         </a>
       </div>
       <div className="footer-subtitle">
-        Hound Media Server v{serverInfo?.version}
+        Hound Media Server {serverInfo?.version}
       </div>
     </div>
   );
