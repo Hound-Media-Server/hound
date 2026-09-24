@@ -38,7 +38,7 @@ password: password
 
 # Platforms
 
-The desktop clients for Windows, MacOS (arm) are available in the releases section. You can download the Android and Android TV apps from the [App Repo](https://github.com/Hound-Media-Server/hound-app) in the releases page. You'll need to sideload the .APKs. iOS and tvOS share the same codebase, but are not available yet since they have more requirements to publish, for now you can only run them on XCode. Stay tuned.
+The desktop clients for Windows, MacOS (arm) are available in the releases section. You can download the Android and Android TV apps from the [App Repo](https://github.com/Hound-Media-Server/hound-app) in the releases page. You'll need to sideload the .APKs. iOS and tvOS share the same codebase, but are not available yet since they have more requirements to publish, for now you can only run them on XCode and load them manually to your devices. Stay tuned.
 
 # Installation
 
