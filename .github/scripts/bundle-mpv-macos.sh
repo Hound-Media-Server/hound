@@ -10,4 +10,11 @@ test -f "$addon_dir/libmpv.dylib"
 
 dylibbundler -b -x "$addon_dir/libmpv.dylib" -d "$addon_dir" -p '@loader_path/' -of
 
+# remove alias copies
+for alias in "$addon_dir"/libmpv.[0-9]*.dylib; do
+  if [[ -f "$alias" ]]; then
+    rm -- "$alias"
+  fi
+done
+
 bash "$(dirname "$0")/verify-mpv-macos.sh" "$addon_dir"

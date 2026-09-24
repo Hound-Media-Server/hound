@@ -59,7 +59,7 @@ jobs:
 
   build-windows:
     name: Build Windows portable app (x64)
-    runs-on: windows-2025
+    runs-on: windows-2022
     env:
       MPV_RELEASE: "20260923"
       MPV_ARCHIVE: mpv-dev-x86_64-20260923-git-6fd80b2003.7z
