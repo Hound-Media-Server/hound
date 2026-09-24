@@ -1,21 +1,44 @@
 .watch-stats-row {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
 .watch-stats-title {
-  font-size: 14px;
-  margin-bottom: 5px;
+  font-size: 18px;
+  color: white;
 }
 
-.watch-stats-card {
-    display: flex;
-    text-align: left;
-    padding: 10px;
-    min-width: 150px;
-    height: 100px;
-    font-size: 16px;
-    flex-direction: column;
-    background-color: rgba(246, 247, 248, 0.75);
+.watch-stats-card.MuiCard-root {
+  display: flex;
+  min-width: 0;
+  height: 108px;
+  padding: 18px;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
+  background-color: rgba(var(--hound-primary), 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.watch-stats-card h5 {
+  margin: 0;
+  color: rgba(var(--hound-secondary), 0.9);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+@media only screen and (max-width: 850px) {
+  .watch-stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media only screen and (max-width: 480px) {
+  .watch-stats-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }

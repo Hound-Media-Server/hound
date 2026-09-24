@@ -1,4 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
+import LinearProgress from "@mui/material/LinearProgress";
 import HorizontalSection from "./HorizontalSection";
 import SearchBar from "./SearchBar";
 import "./Home.css";
@@ -21,73 +24,121 @@ function Home() {
     isUserHomeRowsLoading ? 0 : (userHomeRows?.home_rows?.length ?? 0),
   );
   const [backdropURI, setBackdropURI] = useState("");
-
-  const styles = useMemo(
-    () => ({
-      withBackdrop: {
-        backgroundImage: "url(" + backdropURI + ")",
-        backgroundSize: "cover",
-        animation: "backgroundScroll 150s linear infinite",
-      },
-    }),
-    [backdropURI],
-  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const query = searchQuery.trim();
+  const {
+    data: searchResults,
+    isPending: isSearchPending,
+    isError: isSearchError,
+  } = useQuery({
+    queryKey: ["search", debouncedQuery],
+    queryFn: ({ signal }) =>
+      axios
+        .get("/api/v1/search", { params: { q: debouncedQuery }, signal })
+        .then((response) => response.data),
+    enabled: !!debouncedQuery,
+  });
 
   useEffect(() => {
-    if (backdropsData && !backdropURI) {
-      setBackdropURI(backdropsData);
-    }
-  }, [backdropsData, backdropURI]);
+    if (!backdropsData) return;
+    const image = new Image();
+    image.onload = () => setBackdropURI(backdropsData);
+    image.src = backdropsData;
+    return () => {
+      image.onload = null;
+    };
+  }, [backdropsData]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedQuery(query), 250);
+    return () => clearTimeout(timeout);
+  }, [query]);
 
   return (
-    <>
-      <div
-        className="home-page-search-section"
-        style={backdropURI ? styles.withBackdrop : {}}
-      >
-        <SearchBar />
-      </div>
-      <div className="home-page-main-section">
-        {!isContinueWatchingLoading && continueWatchingData?.length > 0 ? (
-          <div className="mt-3">
-            <HorizontalSection
-              items={continueWatchingData}
-              header="Continue Watching"
-              itemType="watch_tile"
-              itemOnClick={undefined}
-            />
-          </div>
-        ) : (
-          <></>
+    <div className="dark-page">
+      <div className="home-page-search-section">
+        {backdropURI && (
+          <div
+            className="home-page-search-backdrop"
+            style={{ backgroundImage: `url(${backdropURI})` }}
+            aria-hidden="true"
+          />
         )}
-        {homeRows.map((homeRow, index) => {
-          if (!(homeRow?.data?.items?.length > 0)) {
-            return <></>;
-          }
-          return (
-            <div
-              key={`home-row-${index}`}
-              className={index === 0 ? "home-page-primary-section" : "mt-3"}
-            >
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+      </div>
+      {query ? (
+        query !== debouncedQuery || isSearchPending ? (
+          <LinearProgress className="progress-margin" />
+        ) : (
+          <div className="home-page-search-results">
+            {isSearchError ? (
+              <div className="collection-empty-message home-page-search-message">
+                Unable to load search results.
+              </div>
+            ) : searchResults?.tv_results?.length > 0 ||
+              searchResults?.movie_results?.length > 0 ? (
+              <>
+                <HorizontalSection
+                  items={searchResults?.movie_results}
+                  header="Movies"
+                  itemType="search"
+                  itemOnClick={undefined}
+                />
+                <HorizontalSection
+                  items={searchResults?.tv_results}
+                  header="TV Shows"
+                  itemType="search"
+                  itemOnClick={undefined}
+                />
+              </>
+            ) : (
+              <div className="collection-empty-message home-page-search-message">
+                No results.
+              </div>
+            )}
+          </div>
+        )
+      ) : (
+        <div className="home-page-main-section">
+          {!isContinueWatchingLoading && continueWatchingData?.length > 0 ? (
+            <div className="pt-5">
               <HorizontalSection
-                items={homeRow?.data?.items}
-                header={homeRow?.data?.title}
-                itemType={"poster"}
+                items={continueWatchingData}
+                header="Continue Watching"
+                itemType="watch_tile"
                 itemOnClick={undefined}
               />
-              {index !== 0 &&
-                !homeRow.isLoading &&
-                !homeRow.isError &&
-                index !== homeRows?.length - 1 &&
-                homeRow?.data?.items?.length > 0 && (
-                  <div className="home-page-section-divider" />
-                )}
             </div>
-          );
-        })}
-      </div>
+          ) : (
+            <></>
+          )}
+          {homeRows.map((homeRow, index) => {
+            if (!(homeRow?.data?.items?.length > 0)) {
+              return <></>;
+            }
+            return (
+              <div key={`home-row-${index}`} className="pt-3">
+                <HorizontalSection
+                  items={homeRow?.data?.items}
+                  header={homeRow?.data?.title}
+                  itemType={"poster"}
+                  itemOnClick={undefined}
+                />
+                {index !== 0 &&
+                  !homeRow.isLoading &&
+                  !homeRow.isError &&
+                  index !== homeRows?.length - 1 &&
+                  homeRow?.data?.items?.length > 0 && (
+                    <div className="home-page-section-divider" />
+                  )}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {!isPlatformElectron && <Footer />}
-    </>
+    </div>
   );
 }
 

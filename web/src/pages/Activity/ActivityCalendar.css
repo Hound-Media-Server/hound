@@ -1,0 +1,171 @@
+.activity-calendar {
+  height: 640px;
+}
+
+.activity-calendar-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.activity-date-control {
+  min-width: 92px !important;
+}
+
+.activity-month-control {
+  min-width: 130px !important;
+}
+
+.activity-date-control .MuiInputLabel-root,
+.activity-date-control .MuiSelect-select,
+.activity-date-control .MuiSelect-icon {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.activity-date-control .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.activity-date-control .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(var(--hound-secondary), 0.75);
+}
+
+.activity-date-control .Mui-focused .MuiOutlinedInput-notchedOutline,
+.activity-date-control .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(var(--hound-secondary), 0.9);
+}
+
+.activity-date-control .MuiInputLabel-root.Mui-focused {
+  color: rgba(var(--hound-secondary), 0.9);
+}
+
+.activity-select-menu.MuiPaper-root {
+  color: white;
+  background-color: rgba(var(--hound-primary), 1);
+}
+
+.activity-select-menu .MuiMenuItem-root:hover,
+.activity-select-menu .MuiMenuItem-root.Mui-selected,
+.activity-select-menu .MuiMenuItem-root.Mui-selected:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.activity-calendar .rbc-calendar {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.activity-calendar .rbc-toolbar {
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.activity-calendar .rbc-toolbar button {
+  color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(var(--hound-primary), 0.55);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.activity-calendar .rbc-toolbar button:hover,
+.activity-calendar .rbc-toolbar button:focus,
+.activity-calendar .rbc-toolbar button:active,
+.activity-calendar .rbc-toolbar button.rbc-active,
+.activity-calendar .rbc-toolbar button.rbc-active:hover,
+.activity-calendar .rbc-toolbar button.rbc-active:focus {
+  color: rgba(var(--hound-secondary), 1);
+  background-color: rgba(var(--hound-primary), 1);
+  border-color: rgba(var(--hound-secondary), 0.55);
+  box-shadow: none;
+}
+
+.activity-calendar .rbc-month-view,
+.activity-calendar .rbc-time-view,
+.activity-calendar .rbc-agenda-view table.rbc-agenda-table {
+  overflow: hidden;
+  background-color: rgba(var(--hound-primary), 0.18);
+  border-color: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+}
+
+.activity-calendar .rbc-header,
+.activity-calendar .rbc-day-bg,
+.activity-calendar .rbc-month-row,
+.activity-calendar .rbc-agenda-view table.rbc-agenda-table tbody > tr > td,
+.activity-calendar .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.activity-calendar .rbc-header {
+  padding: 9px 4px;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 500;
+}
+
+.activity-calendar .rbc-off-range-bg {
+  background-color: rgba(0, 0, 0, 0.24);
+}
+
+.activity-calendar .rbc-off-range {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.activity-calendar .rbc-today {
+  background-color: rgba(var(--hound-primary), 0.52);
+}
+
+.activity-calendar .rbc-date-cell {
+  padding: 5px 7px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.activity-calendar .rbc-event {
+  color: white;
+  background-color: rgba(var(--hound-primary), 1);
+  border: 1px solid rgba(var(--hound-secondary), 0.28);
+}
+
+.activity-calendar .rbc-event.rbc-selected,
+.activity-calendar .rbc-event:focus {
+  background-color: rgb(49, 31, 155);
+  outline-color: rgba(var(--hound-secondary), 0.75);
+}
+
+.activity-calendar .rbc-show-more {
+  color: rgba(var(--hound-secondary), 0.9);
+  background-color: transparent;
+}
+
+.activity-calendar .rbc-overlay {
+  color: white;
+  background-color: rgba(var(--hound-dark), 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.activity-calendar .rbc-overlay-header {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.activity-calendar .rbc-agenda-empty {
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+}
+
+@media only screen and (max-width: 600px) {
+  .activity-calendar {
+    height: 580px;
+  }
+
+  .activity-calendar .rbc-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .activity-calendar .rbc-toolbar-label {
+    padding: 4px;
+  }
+
+  .activity-calendar .rbc-header {
+    font-size: 12px;
+  }
+}

@@ -9,7 +9,6 @@ import Home from "./pages/Home/Home";
 import Logout from "./pages/Logout";
 import axios from "axios";
 import MediaPageLanding from "./pages/MediaPage/MediaPageLanding";
-import SearchPage from "./pages/Search/SearchPage";
 import Library from "./pages/Library/Library";
 import Collection from "./pages/Collection/Collection";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -207,10 +206,6 @@ function App() {
               <Route
                 path="/game/:id"
                 element={<ProtectedRoute component={<MediaPageLanding />} />}
-              />
-              <Route
-                path="/search"
-                element={<ProtectedRoute component={<SearchPage />} />}
               />
               <Route
                 path="/collection/:id"

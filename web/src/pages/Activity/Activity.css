@@ -1,10 +1,48 @@
+.activity-page {
+  color: white;
+}
+
 .activity-main-container {
-  padding-top: 50px;
+  box-sizing: border-box;
   width: 90%;
-  max-width: 1000px;
-  margin: auto;
+  max-width: 1200px;
+  min-height: calc(100vh - 56px);
+  margin: 0 auto;
+  padding: 42px 0 64px;
+}
+
+.activity-page-title {
+  width: fit-content;
+  margin: 0;
+  font-family: "Cabin Condensed", sans-serif;
+  font-size: 35px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.activity-section-divider {
+  width: 80px;
+  height: 6px;
+  margin: 15px 0 28px;
+  background-color: red;
+  opacity: 0.7;
+}
+
+.watch-stats-container {
+  margin-bottom: 30px;
 }
 
 .activity-calendar-container {
-  height: 800px;
+  min-height: 680px;
+}
+
+@media only screen and (max-width: 700px) {
+  .activity-main-container {
+    width: 100%;
+    padding: 28px 20px 48px;
+  }
+
+  .activity-page-title {
+    font-size: 30px;
+  }
 }

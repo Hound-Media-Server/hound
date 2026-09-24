@@ -1,29 +1,26 @@
 .library-main-container {
     padding-top: 30px;
     width: 100%;
+    background-color: rgba(var(--hound-dark), 1);
+    color: white;
 }
 
 .library-collections-section {
-    margin-top: 35px;
-    padding-top: 10px;
     padding-left: 90px;
     padding-right: 90px;
-    padding-bottom: 50px;
-    background-color: rgba(var(--hound-primary), 1);
+    background-color: rgba(var(--hound-dark), 1);
     color: white;
 }
 
 .library-public-collections-section {
-    padding-top: 10px;
     padding-left: 90px;
     padding-right: 90px;
     padding-bottom: 50px;
-    background-color: white;
 }
 
 #library-collection-create-cover {
-    background-color: white;
-    color: rgba(var(--hound-primary), 1);;
+    color: white;
+    background-color: rgba(var(--hound-primary), 1);;
 }
 
 .library-collections-section .itemcard-item-caption-secondary {
@@ -39,8 +36,8 @@
 }
 
 .library-collections-header {
-    padding-top: 30px;
-    margin-bottom: 20px;
+    margin-top: 10px;
+    margin-bottom: 15px;
     color: white;
     user-select: none;
     font-size: 35px;

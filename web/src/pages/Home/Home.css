@@ -1,27 +1,39 @@
 .home-page-search-section {
+  position: relative;
   height: 350px;
-  background: url("https://image.tmdb.org/t/p/original/6Lw54zxm6BAEKJeGlabyzzR5Juu.jpg")
-    no-repeat;
-  background-size: cover;
-  animation: backgroundScroll 150s linear infinite;
+  background-color: rgba(var(--hound-dark), 1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.home-page-primary-section {
-  color: white;
-  background-color: rgba(var(--hound-primary), 1);
-  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-  padding-top: 30px;
-  padding-bottom: 30px;
-  margin-bottom: 20px;
+.home-page-search-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-repeat: no-repeat;
+  animation: backgroundScroll 150s linear infinite, backdropFadeIn 0.3s ease-out;
+}
+
+.home-page-search-section .search-bar-container {
+  z-index: 1;
 }
 
 .home-page-main-section {
   padding-bottom: 30px;
-  /* background-color: rgba(var(--hound-primary), 1);
-  color: white; */
+  background-color: rgba(var(--hound-dark), 1);
+  color: white;
+}
+
+.home-page-search-results {
+  color: white;
+  background-color: rgba(var(--hound-dark), 1);
+  padding-top: 30px;
+  padding-bottom: 70px;
+}
+
+.home-page-search-message {
+  margin-left: 90px;
 }
 
 .home-page-section-divider {
@@ -52,5 +64,14 @@
   }
   100% {
     background-position: 0 0%;
+  }
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
