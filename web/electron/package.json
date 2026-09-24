@@ -49,11 +49,27 @@
       "output": "../dist-electron"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Hound-Desktop-${version}-Windows-${arch}.${ext}",
       "icon": "../build/android-chrome-512x512.png"
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "Hound-Desktop-${version}-macOS-${arch}.${ext}",
       "icon": "../build/android-chrome-512x512.png"
     }
   }

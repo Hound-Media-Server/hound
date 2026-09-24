@@ -1,0 +1,165 @@
+name: Publish Electron apps
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-macos:
+    name: Build macOS DMG (arm64)
+    runs-on: macos-15
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            web/electron/package-lock.json
+
+      - name: Install libmpv and dylib bundler
+        run: brew install mpv dylibbundler
+
+      - name: Install web dependencies
+        run: npm ci --prefix web --legacy-peer-deps
+
+      - name: Install Electron dependencies
+        run: npm ci --prefix web/electron --ignore-scripts
+
+      - name: Build the native Electron dependency
+        run: npm --prefix web/electron run postinstall
+
+      - name: Bundle libmpv dependencies
+        run: bash .github/scripts/bundle-mpv-macos.sh web/electron/node_modules/electron-mpv-video/native/mpv-addon/build/Release
+
+      - name: Set desktop version from release tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        working-directory: web/electron
+        run: npm version "${RELEASE_TAG#v}" --no-git-tag-version --allow-same-version
+
+      - name: Build DMG
+        working-directory: web/electron
+        run: npm run dist -- --mac dmg --arm64
+
+      - name: Verify packaged libmpv dependencies
+        run: bash .github/scripts/verify-mpv-macos.sh web/dist-electron
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-macos
+          path: web/dist-electron/*.dmg
+          if-no-files-found: error
+          retention-days: 1
+
+  build-windows:
+    name: Build Windows portable app (x64)
+    runs-on: windows-2025
+    env:
+      MPV_RELEASE: "20260923"
+      MPV_ARCHIVE: mpv-dev-x86_64-20260923-git-6fd80b2003.7z
+      MPV_SHA256: 372f29c292d0c8b4ce916225739e5872e35b8e11f3f4590c285baed8ba551100
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            web/electron/package-lock.json
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install libmpv SDK
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP $env:MPV_ARCHIVE
+          $sdk = Join-Path $env:USERPROFILE 'libmpv'
+          Invoke-WebRequest `
+            -Uri "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/$env:MPV_RELEASE/$env:MPV_ARCHIVE" `
+            -OutFile $archive
+
+          $actualHash = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant()
+          if ($actualHash -ne $env:MPV_SHA256) {
+            throw "libmpv archive checksum mismatch: $actualHash"
+          }
+
+          New-Item -ItemType Directory -Force -Path $sdk | Out-Null
+          7z x $archive "-o$sdk" -y
+          New-Item -ItemType Directory -Force -Path (Join-Path $sdk 'bin') | Out-Null
+          Copy-Item (Join-Path $sdk 'libmpv-2.dll') (Join-Path $sdk 'bin/libmpv-2.dll')
+
+      - name: Install web dependencies
+        run: npm ci --prefix web --legacy-peer-deps
+
+      - name: Install Electron dependencies
+        run: npm ci --prefix web/electron --ignore-scripts
+
+      - name: Create the MSVC libmpv import library
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File web/electron/node_modules/electron-mpv-video/scripts/create-libmpv-import-lib.ps1
+
+      - name: Build the native Electron dependency
+        run: npm --prefix web/electron run postinstall
+
+      - name: Set desktop version from release tag
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        working-directory: web/electron
+        run: |
+          $version = $env:RELEASE_TAG -replace '^v', ''
+          npm version $version --no-git-tag-version --allow-same-version
+
+      - name: Build portable executable
+        working-directory: web/electron
+        run: npm run dist -- --win portable --x64
+
+      - name: Zip portable executable
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          $version = $env:RELEASE_TAG -replace '^v', ''
+          $output = "web/dist-electron/Hound-Desktop-$version-Windows-x64"
+          Compress-Archive -LiteralPath "$output.exe" -DestinationPath "$output.zip"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-windows
+          path: web/dist-electron/*.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  upload-release-assets:
+    name: Upload Electron release assets
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download packaged apps
+        uses: actions/download-artifact@v5
+        with:
+          pattern: electron-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Upload assets to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" release-assets/* --clobber
