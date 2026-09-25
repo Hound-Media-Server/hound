@@ -40,8 +40,8 @@ function StreamModal(props: any) {
     () =>
       Boolean(
         watchProgress &&
-          watchProgress.encoded_data &&
-          watchProgress.encoded_data === streamDetails?.encoded_data,
+        watchProgress.encoded_data &&
+        watchProgress.encoded_data === streamDetails?.encoded_data,
       ),
     [watchProgress, streamDetails?.encoded_data],
   );
@@ -201,7 +201,6 @@ function StreamModal(props: any) {
           onVideoProgress={handleVideoProgress}
           setLoading={setLoading}
           subtitles={subtitles}
-          onChangeSource={onChangeSource}
         />
       )}
       <InfoModal
@@ -226,12 +225,14 @@ function InfoModal({
     setOpen(false);
   };
   return (
-    <Dialog onClose={handleClose} open={open}>
-      <DialogTitle>Stream Info</DialogTitle>
+    <Dialog
+      onClose={handleClose}
+      open={open}
+      className="stream-info-modal"
+    >
+      <DialogTitle>{decodedData?.title}</DialogTitle>
       <DialogContent>
-        <hr />
         <DialogContentText>
-          <h4> {decodedData?.title}</h4>
           {decodedData?.description}
           <br />
           <hr />

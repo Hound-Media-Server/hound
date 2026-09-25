@@ -23,7 +23,7 @@ import SelectStreamModal from "../Modals/StreamSelectModal";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
-import { useMediaFiles } from "../../api/hooks/media";
+import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
 import {
   useDirectStreamMutation,
   useUnifiedStreamsMutation,
@@ -81,7 +81,6 @@ function MediaPageTV(props: any) {
     | undefined
   >(undefined);
   const [activeWatchProgress, setActiveWatchProgress] = useState<any>(null);
-  const [continueWatchingData, setContinueWatchingData] = useState<any>(null);
   const { data: mediaFiles, isLoading: isMediaFilesLoading } = useMediaFiles(
     "tv",
     props.data.media_source,
@@ -91,6 +90,10 @@ function MediaPageTV(props: any) {
   const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
   const directStreamRequestId = useRef(0);
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
+  const {
+    data: continueWatchingData,
+    refetch: refetchWatchAction,
+  } = useWatchAction("tv", props.data.media_source, props.data.source_id);
 
   const openTVStream = (
     stream: any,
@@ -181,26 +184,13 @@ function MediaPageTV(props: any) {
     setIsSeasonModalOpen(true);
   };
 
-  console.log(continueWatchingData);
-
   useEffect(() => {
-    if (props.data) {
-      const mediaSource = props.data.media_source;
-      const sourceID = props.data.source_id;
-      axios
-        .get(`/api/v1/tv/${mediaSource}-${sourceID}/continue_watching`)
-        .then((res) => {
-          setContinueWatchingData(res.data);
-        })
-        .catch((err) => {
-          console.error("Failed to fetch continue watching data", err);
-        });
-    }
+    void refetchWatchAction();
   }, [
-    props.data,
     isStreamModalOpen,
     isSeasonModalOpen,
     isConfirmRewatchModalOpen,
+    refetchWatchAction,
   ]);
 
   const handleStreamButtonClick = (

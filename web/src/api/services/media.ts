@@ -1,5 +1,34 @@
 import axios from "axios";
 
+export type MediaType = "movie" | "tv" | "game";
+export type WatchableMediaType = Exclude<MediaType, "game">;
+
+export const fetchMediaDetails = async (
+  mediaType: MediaType,
+  mediaSource: string,
+  sourceID: string,
+  signal?: AbortSignal,
+) => {
+  const { data } = await axios.get<any>(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}`,
+    { signal },
+  );
+  return data;
+};
+
+export const fetchWatchAction = async (
+  mediaType: WatchableMediaType,
+  mediaSource: string,
+  sourceID: string,
+  signal?: AbortSignal,
+) => {
+  const { data } = await axios.get<any>(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/continue_watching`,
+    { signal },
+  );
+  return data;
+};
+
 interface GetIngestTasksResponse {
   total_records: number;
   limit: number;
@@ -70,12 +99,17 @@ export const fetchMediaFiles = async (
   season?: number | null,
   episode?: number | null,
   checkFile = false,
+  signal?: AbortSignal,
 ) => {
   mediaType = mediaType === "tvshow" ? "tv" : mediaType;
   const { data } = await axios.get<any>(
     `/api/v1/${mediaType}/${mediaSource}-${sourceID}/media_files`,
     {
-      params: mediaType === "tv" ? { season, episode, check_file: checkFile } : {check_file: checkFile},
+      params:
+        mediaType === "tv"
+          ? { season, episode, check_file: checkFile }
+          : { check_file: checkFile },
+      signal,
     },
   );
   return data;

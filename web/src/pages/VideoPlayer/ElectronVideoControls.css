@@ -45,6 +45,16 @@
   z-index: 10;
 }
 
+.controls-top-right {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .controls-row {
   display: flex;
   align-items: center;
