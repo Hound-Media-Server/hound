@@ -6,14 +6,14 @@
   z-index: 1400;
 }
 
-.media-preview-card {
+.media-preview-card.MuiPaper-root {
   position: relative;
   width: min(540px, calc(100vw - 32px));
   height: 300px;
   overflow: hidden;
   color: #fff !important;
   background: rgba(var(--hound-dark), 1) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  border: 2px solid rgba(255, 255, 255, 0.65);
   border-radius: 8px !important;
 }
 
@@ -87,6 +87,11 @@
   font-family: "Cabin", sans-serif !important;
 }
 
+.media-preview-hound-chip .MuiChip-icon {
+  color: black !important;
+  font-size: 16px;
+}
+
 .media-preview-metadata {
   overflow: hidden;
   color: rgba(var(--hound-secondary), 0.85);
@@ -147,7 +152,7 @@
 }
 
 #media-preview-collection-button {
-  background-color: rgba(255, 255, 255, 0.85) !important;
+  background-color: rgba(255, 255, 255, 0.65) !important;
   color: black;
   margin-left: 10px;
   font-weight: 400;

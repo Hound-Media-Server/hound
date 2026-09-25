@@ -1,5 +1,6 @@
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { Button, Chip, Fade, Paper, Popper, Skeleton } from "@mui/material";
 import {
   FocusEvent,
@@ -247,6 +248,7 @@ function MediaPreview({
               <div className="media-preview-content">
                 {isInHound && (
                   <Chip
+                    icon={<DoneAllIcon />}
                     label="In Hound"
                     size="small"
                     className="media-preview-hound-chip"
