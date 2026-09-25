@@ -638,10 +638,7 @@ func UpsertMovieRecordTMDB(sourceID int) (*database.MediaRecord, error) {
 	if movie.BackdropPath == "" {
 		backdropURI = ""
 	}
-	logoURI := ""
-	if len(movie.Images.Logos) > 0 {
-		logoURI = tmdb.GetImageURL(movie.Images.Logos[0].FilePath, tmdb.W500)
-	}
+	logoURI := internal.GetPreferredTMDBMovieLogoURL(movie.Images.Logos, tmdb.W500)
 	entry := database.MediaRecord{
 		RecordType:       database.RecordTypeMovie,
 		MediaSource:      MediaSourceTMDB,
@@ -730,10 +727,7 @@ func UpsertTVShowRecordTMDB(showSourceID int) (*database.MediaRecord, error) {
 	if showData.BackdropPath == "" {
 		backdropURI = ""
 	}
-	logoURI := ""
-	if len(showData.Images.Logos) > 0 {
-		logoURI = tmdb.GetImageURL(showData.Images.Logos[0].FilePath, tmdb.W500)
-	}
+	logoURI := internal.GetPreferredTMDBTVLogoURL(showData.Images.Logos, tmdb.W500)
 	// construct show (parent)
 	tvShowEntry := database.MediaRecord{
 		RecordType:       database.RecordTypeTVShow,

@@ -61,10 +61,7 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		duration = showDetails.EpisodeRunTime[0]
 	}
 	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeTVShow, showDetails.Genres)
-	logoURI := ""
-	if len(showDetails.Images.Logos) > 0 {
-		logoURI = internal.GetTMDBImageURL(showDetails.Images.Logos[0].FilePath, tmdb.W500)
-	}
+	logoURI := internal.GetPreferredTMDBTVLogoURL(showDetails.Images.Logos, tmdb.W500)
 	showObject := view.TVShowCatalogObject{
 		MediaRecordCatalog: view.MediaRecordCatalog{
 			MediaSource:      sources.MediaSourceTMDB,

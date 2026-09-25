@@ -376,10 +376,7 @@ func createTMDBMovieCatalogObject(item *tmdb.MovieDetails) *view.MediaRecordCata
 	for _, genre := range item.Genres {
 		genreIDs = append(genreIDs, genre.ID)
 	}
-	logoURI := ""
-	if len(item.Images.Logos) > 0 {
-		logoURI = internal.GetTMDBImageURL(item.Images.Logos[0].FilePath, tmdb.W500)
-	}
+	logoURI := internal.GetPreferredTMDBMovieLogoURL(item.Images.Logos, tmdb.W500)
 	genreArray := sources.GetGenresMapFromTMDBIDs(genreIDs, database.MediaTypeMovie)
 	viewObject := view.MediaRecordCatalog{
 		MediaType:        database.MediaTypeMovie,
@@ -416,10 +413,7 @@ func createTMDBShowCatalogObject(item *tmdb.TVDetails) *view.MediaRecordCatalog 
 	if len(item.EpisodeRunTime) > 0 {
 		duration = item.EpisodeRunTime[0]
 	}
-	logoURI := ""
-	if len(item.Images.Logos) > 0 {
-		logoURI = internal.GetTMDBImageURL(item.Images.Logos[0].FilePath, tmdb.W500)
-	}
+	logoURI := internal.GetPreferredTMDBTVLogoURL(item.Images.Logos, tmdb.W500)
 	viewObject := view.MediaRecordCatalog{
 		MediaType:        database.MediaTypeTVShow,
 		MediaSource:      sources.MediaSourceTMDB,

@@ -191,45 +191,31 @@ export default function ElectronVideoControls({
               >
                 <ArrowBack />
               </IconButton>
-              <IconButton
-                onClick={handleViewEpisodes}
-                title="View episodes"
-                sx={{
-                  display: handleViewEpisodes ? "inline-flex" : "none",
-                  position: "absolute",
-                  top: 16,
-                  right: 96,
-                  color: "white",
-                  zIndex: 10,
-                }}
-              >
-                <PlaylistPlay />
-              </IconButton>
-              <IconButton
-                onClick={handleChangeSource}
-                title="Change source"
-                sx={{
-                  position: "absolute",
-                  top: 16,
-                  right: 56,
-                  color: "white",
-                  zIndex: 10,
-                }}
-              >
-                <VideoLibraryOutlined />
-              </IconButton>
-              <IconButton
-                onClick={() => setInfoModalOpen?.(true)}
-                sx={{
-                  position: "absolute",
-                  top: 16,
-                  right: 16,
-                  color: "white",
-                  zIndex: 10,
-                }}
-              >
-                <InfoOutlined />
-              </IconButton>
+              <div className="controls-top-right">
+                {handleViewEpisodes && (
+                  <IconButton
+                    onClick={handleViewEpisodes}
+                    sx={{ color: "white" }}
+                    aria-label="View episodes"
+                  >
+                    <PlaylistPlay />
+                  </IconButton>
+                )}
+                <IconButton
+                  onClick={handleChangeSource}
+                  sx={{ color: "white" }}
+                  aria-label="Change source"
+                >
+                  <VideoLibraryOutlined />
+                </IconButton>
+                <IconButton
+                  onClick={() => setInfoModalOpen?.(true)}
+                  sx={{ color: "white" }}
+                  aria-label="Stream Info"
+                >
+                  <InfoOutlined />
+                </IconButton>
+              </div>
             </>
           )}
           {streamType === "live" && (

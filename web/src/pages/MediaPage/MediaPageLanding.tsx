@@ -1,38 +1,34 @@
-import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import MediaPageTV from "./MediaPageTV";
 import MediaPageMovie from "./MediaPageMovie";
 import { LinearProgress } from "@mui/material";
-import MediaPageGame from "./MediaPageGame.backup";
 import toast from "react-hot-toast";
+import { useMediaDetails } from "../../api/hooks/media";
+import type { MediaType } from "../../api/services/media";
 
 function MediaPageLanding() {
-  const [data, setData] = useState<any[]>([]);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const location = useLocation();
-  // get data from api
-  useEffect(() => {
-    if (!isDataLoaded) {
-      // backend api happens to have same path as fe path
-      axios
-        .get("/api/v1" + location.pathname)
-        .then((res) => {
-          setData(res.data);
-          setIsDataLoaded(true);
-        })
-        .catch((err) => {
-          console.error(err);
-          if (err.response && err.response.status === 500) {
-            toast.error("Server Error (500)");
-          } else {
-            toast.error("Failed to load content");
-          }
-        });
-    }
-  }, [location.pathname, isDataLoaded]);
-  var pathData = location.pathname.split("/");
+  const pathData = location.pathname.split("/");
   const mediaType = pathData[1];
+  const isSupportedMediaType = ["movie", "tv", "game"].includes(mediaType);
+  const queryMediaType: MediaType = isSupportedMediaType
+    ? (mediaType as MediaType)
+    : "movie";
+  const mediaID = pathData[2] ?? "";
+  const mediaSource = mediaID.split("-")?.[0] || "";
+  const sourceID = mediaID.split("-")?.[1] || "";
+  const { data, isLoading, isError } = useMediaDetails(
+    queryMediaType,
+    mediaSource,
+    sourceID,
+    isSupportedMediaType,
+  );
+
+  useEffect(() => {
+    if (isError) toast.error("Failed to load content");
+  }, [isError]);
+
   var mediaComponent;
   switch (mediaType) {
     case "tv":
@@ -41,13 +37,10 @@ function MediaPageLanding() {
     case "movie":
       mediaComponent = <MediaPageMovie data={data} />;
       break;
-    case "game":
-      mediaComponent = <MediaPageGame data={data} />;
-      break;
   }
   return (
     <div className="dark-page media-page">
-      {isDataLoaded ? (
+      {!isLoading && data ? (
         <>{mediaComponent}</>
       ) : (
         <LinearProgress className="progress-margin" />
