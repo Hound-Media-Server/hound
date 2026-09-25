@@ -5,6 +5,7 @@ import PlayCircleFilledIcon from "@mui/icons-material/PlayCircleFilled";
 import CommentCard from "../Comments/CommentCard";
 import WatchTile from "../ContinueWatching/WatchTile";
 import { useState } from "react";
+import MediaPreview from "./MediaPreview";
 
 const maxTitleLength = 30;
 
@@ -28,38 +29,42 @@ function ItemCard(props: {
     let mediaPagePath = `/${mediaType}/${props.item.media_source}-${props.item.source_id}`;
     if (!props.item.thumbnail_uri) {
       return (
-        <a href={mediaPagePath} className="itemcard-img-poster-container">
-          <div
-            className={
-              "rounded w-100 h-100 itemcard-img-poster item-card-no-thumbnail border border-primary"
-            }
-          >
-            {props.item.media_title + releaseYearText}
-          </div>
-        </a>
+        <MediaPreview item={props.item}>
+          <a href={mediaPagePath} className="itemcard-img-poster-container">
+            <div
+              className={
+                "rounded w-100 h-100 itemcard-img-poster item-card-no-thumbnail border border-primary"
+              }
+            >
+              {props.item.media_title + releaseYearText}
+            </div>
+          </a>
+        </MediaPreview>
       );
     }
     return (
-      <a href={mediaPagePath} className="itemcard-img-poster-container">
-        {!loaded && (
-          <Skeleton
-            variant="rounded"
-            className="rounded w-100 h-100"
-            animation="wave"
+      <MediaPreview item={props.item}>
+        <a href={mediaPagePath} className="itemcard-img-poster-container">
+          {!loaded && (
+            <Skeleton
+              variant="rounded"
+              className="rounded w-100 h-100"
+              animation="wave"
+            />
+          )}
+          <img
+            className="rounded itemcard-img-poster"
+            src={props.item.thumbnail_uri}
+            alt={props.item.media_title}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            style={{
+              opacity: loaded ? 1 : 0,
+              transition: "opacity 0.5s ease",
+            }}
           />
-        )}
-        <img
-          className="rounded itemcard-img-poster"
-          src={props.item.thumbnail_uri}
-          alt={props.item.media_title}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          style={{
-            opacity: loaded ? 1 : 0,
-            transition: "opacity 0.5s ease",
-          }}
-        />
-      </a>
+        </a>
+      </MediaPreview>
     );
   }
   function itemTypeCast() {
@@ -209,41 +214,43 @@ function ItemCard(props: {
     let gameAspectRatioClass =
       mediaType === "game" && "itemcard-img-poster-game-cover";
     return (
-      <a href={mediaPagePath}>
-        {props.item.thumbnail_uri ? (
-          <div className="itemcard-img-poster-container">
-            {!loaded && (
-              <Skeleton
-                variant="rounded"
-                className="rounded w-100 h-100"
-                animation="wave"
+      <MediaPreview item={props.item}>
+        <a href={mediaPagePath}>
+          {props.item.thumbnail_uri ? (
+            <div className="itemcard-img-poster-container">
+              {!loaded && (
+                <Skeleton
+                  variant="rounded"
+                  className="rounded w-100 h-100"
+                  animation="wave"
+                />
+              )}
+              <img
+                className={"rounded itemcard-img-poster"}
+                src={props.item.thumbnail_uri}
+                alt={props.item.media_title}
+                loading="lazy"
+                onLoad={() => setLoaded(true)}
+                style={{
+                  opacity: loaded ? 1 : 0,
+                  transition: "opacity 0.5s ease",
+                }}
               />
-            )}
-            <img
-              className={"rounded itemcard-img-poster"}
-              src={props.item.thumbnail_uri}
-              alt={props.item.media_title}
-              loading="lazy"
-              onLoad={() => setLoaded(true)}
-              style={{
-                opacity: loaded ? 1 : 0,
-                transition: "opacity 0.5s ease",
-              }}
-            />
-          </div>
-        ) : (
-          <div className="itemcard-img-poster-container">
-            <div
-              className={
-                "rounded itemcard-img-poster item-card-no-thumbnail " +
-                gameAspectRatioClass
-              }
-            >
-              {props.item.media_title + releaseYearText}
             </div>
-          </div>
-        )}
-      </a>
+          ) : (
+            <div className="itemcard-img-poster-container">
+              <div
+                className={
+                  "rounded itemcard-img-poster item-card-no-thumbnail " +
+                  gameAspectRatioClass
+                }
+              >
+                {props.item.media_title + releaseYearText}
+              </div>
+            </div>
+          )}
+        </a>
+      </MediaPreview>
     );
   }
   function itemTypeVideo() {

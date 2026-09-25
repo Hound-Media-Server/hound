@@ -4,9 +4,44 @@ import {
   deleteMediaFile,
   downloadSeason,
   fetchDownloads,
+  fetchMediaDetails,
   fetchMediaFiles,
+  fetchWatchAction,
   fetchSeasonDetails,
+  type MediaType,
+  type WatchableMediaType,
 } from "../services/media";
+
+export const useMediaDetails = (
+  mediaType: MediaType,
+  mediaSource: string,
+  sourceID: string,
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: ["media-details", mediaType, mediaSource, sourceID],
+    queryFn: ({ signal }) =>
+      fetchMediaDetails(mediaType, mediaSource, sourceID, signal),
+    enabled: enabled && !!mediaSource && !!sourceID,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+};
+
+export const useWatchAction = (
+  mediaType: WatchableMediaType,
+  mediaSource: string,
+  sourceID: string,
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: ["next-watch-action", mediaType, mediaSource, sourceID],
+    queryFn: ({ signal }) =>
+      fetchWatchAction(mediaType, mediaSource, sourceID, signal),
+    enabled: enabled && !!mediaSource && !!sourceID,
+    staleTime: 60 * 1000,
+  });
+};
 
 export const useDownloads = (
   limit: number,
@@ -33,6 +68,7 @@ export const useMediaFiles = (
   season?: number | null,
   episode?: number | null,
   checkFile = false,
+  enabled = true,
 ) => {
   return useQuery({
     queryKey: [
@@ -44,7 +80,7 @@ export const useMediaFiles = (
       episode,
       checkFile,
     ],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       fetchMediaFiles(
         mediaType,
         mediaSource,
@@ -52,7 +88,9 @@ export const useMediaFiles = (
         season,
         episode,
         checkFile,
+        signal,
       ),
+    enabled: enabled && !!mediaType && !!mediaSource && !!sourceID,
   });
 };
 

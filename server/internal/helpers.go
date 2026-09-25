@@ -79,6 +79,34 @@ func GetTMDBImageURL(path string, size string) string {
 	return tmdb.GetImageURL(path, size)
 }
 
+func GetPreferredTMDBMovieLogoURL(logos []tmdb.MovieImage, size string) string {
+	if len(logos) == 0 {
+		return ""
+	}
+	selected := logos[0]
+	for _, logo := range logos {
+		if strings.EqualFold(logo.Iso639_1, "en") {
+			selected = logo
+			break
+		}
+	}
+	return GetTMDBImageURL(selected.FilePath, size)
+}
+
+func GetPreferredTMDBTVLogoURL(logos []tmdb.TVImage, size string) string {
+	if len(logos) == 0 {
+		return ""
+	}
+	selected := logos[0]
+	for _, logo := range logos {
+		if strings.EqualFold(logo.Iso639_1, "en") {
+			selected = logo
+			break
+		}
+	}
+	return GetTMDBImageURL(selected.FilePath, size)
+}
+
 func IsValidURL(str string) bool {
 	u, err := url.ParseRequestURI(str)
 	if err != nil {
