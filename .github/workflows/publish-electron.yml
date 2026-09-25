@@ -127,20 +127,11 @@ jobs:
         working-directory: web/electron
         run: npm run dist -- --win portable --x64
 
-      - name: Zip portable executable
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          $version = $env:RELEASE_TAG -replace '^v', ''
-          $output = "web/dist-electron/Hound-Desktop-$version-Windows-x64"
-          Compress-Archive -LiteralPath "$output.exe" -DestinationPath "$output.zip"
-
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: electron-windows
-          path: web/dist-electron/*.zip
+          path: web/dist-electron/*.exe
           if-no-files-found: error
           retention-days: 1
 
