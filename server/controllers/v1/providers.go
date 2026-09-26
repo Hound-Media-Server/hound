@@ -6,6 +6,7 @@ import (
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/providers"
 	"github.com/mcay23/hound/sources"
 
@@ -193,6 +194,46 @@ func SearchSubtitlesMovieHandler(c *gin.Context) {
 		return
 	}
 	internal.SuccessResponse(c, results, 200)
+}
+
+// @Router /api/v1/tv/{id}/segments [get]
+// @Summary Get Intro Segments for a TV Show Episode
+// @ID search-segments-tvshow
+// @Tags Providers
+// @Accept json
+// @Produce json
+// @Param id path string true "Media ID" example(tmdb-1234)
+// @Param season query int true "Season Number"
+// @Param episode query int true "Episode Number"
+// @Param duration_ms query int false "Episode duration in milliseconds"
+// @Success 200 {object} V1SuccessResponse{data=sources.IntroSegments}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func SearchSegmentsTVHandler(c *gin.Context) {
+	mediaSource, sourceID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil || mediaSource != sources.MediaSourceTMDB {
+		internal.ErrorResponse(c, fmt.Errorf("invalid media ID: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	season, episode, err := getSeasonEpisode(c.Query("season"), c.Query("episode"))
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	duration := 0
+	if durationQuery := c.Query("duration_ms"); durationQuery != "" {
+		duration, err = strconv.Atoi(durationQuery)
+		if err != nil || duration <= 0 {
+			internal.ErrorResponse(c, fmt.Errorf("invalid duration_ms query param: %w", internal.BadRequestError))
+			return
+		}
+	}
+	segments, err := model.GetTVShowIntroSegments(mediaSource, strconv.Itoa(sourceID), season, episode, duration)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get TV show intro segments: %w", err))
+		return
+	}
+	internal.SuccessResponse(c, segments, 200)
 }
 
 func getProvidersQueryTV(c *gin.Context) (*providers.ProvidersQueryRequest, error) {
