@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import ElectronVideoControls from "./ElectronVideoControls";
 import { get2LetterLangCode } from "../../helpers/locale";
+import { IconButton } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
 
 interface IVideoPlayerProps {
   options: any;
@@ -16,6 +18,7 @@ interface IVideoPlayerProps {
   playerSettings?: any;
   isStreamsMatch?: boolean;
   originalAudioLang?: string;
+  mediaDetails?: any;
   onChangeSource?: (currentTime: number) => void;
   onViewEpisodes?: () => void;
 }
@@ -30,6 +33,7 @@ const MPVElectronPlayer = React.memo(
     playerSettings,
     isStreamsMatch,
     originalAudioLang,
+    mediaDetails,
     onChangeSource,
     onViewEpisodes,
   }: IVideoPlayerProps) => {
@@ -61,8 +65,14 @@ const MPVElectronPlayer = React.memo(
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
+    const [isVideoLoading, setIsVideoLoading] = useState(true);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
+
+    var releaseYear =
+      mediaDetails?.release_date.length > 4
+        ? mediaDetails?.release_date.slice(0, 4)
+        : "";
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -271,32 +281,53 @@ const MPVElectronPlayer = React.memo(
       let destroyed = false;
       let seekAttempts = 0;
       let seekTimer: ReturnType<typeof setTimeout> | undefined;
+      let loadingFallbackTimer: ReturnType<typeof setTimeout> | undefined;
       const source = options?.sources?.[0]?.src;
       if (!source) {
         console.warn("MPV: no source specified");
+        setIsVideoLoading(false);
         return;
       }
       const startTime = options?.startTime;
       seekDoneRef.current = !startTime || startTime <= 0;
+      setIsVideoLoading(true);
+
+      // fallback, if failed, still show video
+      const finishLoading = () => {
+        setIsVideoLoading(false);
+        if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
+      };
+      loadingFallbackTimer = setTimeout(finishLoading, 20000);
 
       const scheduleInitialSeek = () => {
-        if (destroyed || seekDoneRef.current || seekTimer || seekAttempts >= 12) {
+        if (
+          destroyed ||
+          seekDoneRef.current ||
+          seekTimer ||
+          seekAttempts >= 12
+        ) {
           return;
         }
-        seekTimer = setTimeout(async () => {
-          seekTimer = undefined;
-          if (destroyed || seekDoneRef.current) return;
-          seekAttempts++;
-          try {
-            await video.seek(startTime);
-          } catch (error) {
-            console.warn("MPV resume seek not ready; retrying", error);
-          }
-          if (!destroyed && !seekDoneRef.current && seekAttempts >= 12) {
-            console.warn("MPV could not confirm the restored playback position");
-            seekDoneRef.current = true;
-          }
-        }, seekAttempts === 0 ? 150 : 750);
+        seekTimer = setTimeout(
+          async () => {
+            seekTimer = undefined;
+            if (destroyed || seekDoneRef.current) return;
+            seekAttempts++;
+            try {
+              await video.seek(startTime);
+            } catch (error) {
+              console.warn("MPV resume seek not ready; retrying", error);
+            }
+            if (!destroyed && !seekDoneRef.current && seekAttempts >= 12) {
+              console.warn(
+                "MPV could not confirm the restored playback position",
+              );
+              seekDoneRef.current = true;
+              finishLoading();
+            }
+          },
+          seekAttempts === 0 ? 150 : 750,
+        );
       };
       const load = async () => {
         try {
@@ -307,6 +338,7 @@ const MPVElectronPlayer = React.memo(
           await video.play();
         } catch (error) {
           console.error("MPV playback error:", error);
+          finishLoading();
         }
       };
 
@@ -339,6 +371,14 @@ const MPVElectronPlayer = React.memo(
           dur > 0
         ) {
           scheduleInitialSeek();
+        }
+        if (
+          seekDoneRef.current &&
+          detail.status === "Playing" &&
+          typeof dur === "number" &&
+          dur > 0
+        ) {
+          finishLoading();
         }
         if (typeof current === "number") {
           setCurrentTime(current);
@@ -406,6 +446,7 @@ const MPVElectronPlayer = React.memo(
       return () => {
         destroyed = true;
         if (seekTimer) clearTimeout(seekTimer);
+        if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
         video.removeEventListener("mpv-state", handleState);
       };
     }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
@@ -469,6 +510,42 @@ const MPVElectronPlayer = React.memo(
           selectedSubIdx={selectedSubIdx}
           streamType="vod"
         />
+        <div
+          className={`mpv-loading-overlay${isVideoLoading ? "" : " mpv-loading-overlay-hidden"}`}
+        >
+          <IconButton
+            onClick={handleClose}
+            sx={{
+              position: "absolute",
+              top: 16,
+              left: 16,
+              color: "white",
+              zIndex: 10,
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          {mediaDetails?.backdrop_uri && (
+            <div
+              className="mpv-loading-backdrop"
+              style={{ backgroundImage: `url(${mediaDetails?.backdrop_uri})` }}
+            />
+          )}
+          <div className="mpv-loading-shade" />
+          {mediaDetails?.logo_uri && (
+            <img
+              className="mpv-loading-logo"
+              src={mediaDetails?.logo_uri}
+              alt=""
+            />
+          )}
+          {!mediaDetails?.logo_uri && (
+            <div className="mpv-loading-title">
+              {mediaDetails?.media_title}{" "}
+              {releaseYear ? `(${releaseYear})` : ""}
+            </div>
+          )}
+        </div>
       </div>
     );
   },

@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import toast from "react-hot-toast";
+import { useMediaDetails } from "../../api/hooks/media";
 import { fetchMediaFiles } from "../../api/services/media";
 import { fetchProviders } from "../../api/services/providers";
 import StreamModal from "./StreamModal";
@@ -43,6 +44,12 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
   const [switchProgress, setSwitchProgress] = useState<any>(null);
   const [sourceSelectTarget, setSourceSelectTarget] =
     useState<StreamPlaybackRequest | null>(null);
+  const { data: mediaDetails } = useMediaDetails(
+    request?.mediaType === "tv" ? "tv" : "movie",
+    request?.mediaSource ?? "",
+    request?.sourceId ?? "",
+    request !== null,
+  );
   const requestId = useRef(0);
   const closeStream = useCallback(() => {
     setIsSourceSelectOpen(false);
@@ -122,6 +129,7 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
         streams={streamContext}
         watchProgress={request?.watchProgress}
         originalAudioLang={request?.originalAudioLang}
+        mediaDetails={mediaDetails}
         onChangeSource={(currentTime: number) => {
           setSwitchProgress({
             ...request?.watchProgress,

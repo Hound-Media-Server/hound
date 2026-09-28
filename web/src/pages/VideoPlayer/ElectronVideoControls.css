@@ -6,6 +6,74 @@
   background: #000;
 }
 
+.mpv-loading-overlay,
+.mpv-loading-backdrop,
+.mpv-loading-shade {
+  position: absolute;
+  inset: 0;
+}
+
+.mpv-loading-overlay {
+  z-index: 20;
+  overflow: hidden;
+  background: #000;
+  opacity: 1;
+  transition: opacity 500ms ease;
+}
+
+.mpv-loading-overlay-hidden {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.mpv-loading-backdrop {
+  background-position: center;
+  background-size: cover;
+}
+
+.mpv-loading-shade {
+  background:
+    linear-gradient(90deg, rgba(var(--hound-dark), 0.4) 0%, rgba(var(--hound-dark), 0.2) 55%, rgba(var(--hound-dark), 0.2) 100%),
+    linear-gradient(0deg, rgba(var(--hound-dark), 0.85) 0%, transparent 55%);
+}
+
+.mpv-loading-logo {
+  position: absolute;
+  right: 3vw;
+  bottom: 5vh;
+  z-index: 1;
+  display: block;
+  max-width: min(36vw, 420px);
+  max-height: min(18vh, 150px);
+  object-fit: contain;
+  object-position: right bottom;
+  filter: drop-shadow(0 2px 8px #000000);
+  animation: mpv-loading-pulse 1.4s ease-in-out infinite;
+}
+
+.mpv-loading-title {
+  position: absolute;
+  right: 3vw;
+  bottom: 5vh;
+  z-index: 1;
+  display: block;
+  color: white;
+  font-family: "Cabin", sans-serif;
+  font-size: min(3vh, 40px);
+  filter: drop-shadow(0 2px 8px #000000);
+  animation: mpv-loading-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes mpv-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .controls-overlay {
   position: absolute;
   top: 0;

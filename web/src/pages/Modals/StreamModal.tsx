@@ -28,6 +28,7 @@ function StreamModal(props: any) {
     open,
     watchProgress,
     originalAudioLang,
+    mediaDetails,
     onChangeSource,
     onViewEpisodes,
   } = props;
@@ -191,6 +192,7 @@ function StreamModal(props: any) {
           playerSettings={watchProgress?.player_settings}
           isStreamsMatch={isStreamsMatch}
           originalAudioLang={originalAudioLang}
+          mediaDetails={mediaDetails}
           onChangeSource={onChangeSource}
           onViewEpisodes={onViewEpisodes}
         />
@@ -225,11 +227,7 @@ function InfoModal({
     setOpen(false);
   };
   return (
-    <Dialog
-      onClose={handleClose}
-      open={open}
-      className="stream-info-modal"
-    >
+    <Dialog onClose={handleClose} open={open} className="stream-info-modal">
       <DialogTitle>{decodedData?.title}</DialogTitle>
       <DialogContent>
         <DialogContentText>
