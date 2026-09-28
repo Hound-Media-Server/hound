@@ -66,6 +66,7 @@ const MPVElectronPlayer = React.memo(
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
     const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
 
@@ -73,6 +74,17 @@ const MPVElectronPlayer = React.memo(
       mediaDetails?.release_date.length > 4
         ? mediaDetails?.release_date.slice(0, 4)
         : "";
+
+    useEffect(() => {
+      setIsBackdropLoaded(false);
+      const backdropURI = mediaDetails?.backdrop_uri;
+      if (!backdropURI) return;
+
+      const backdrop = new Image();
+      backdrop.onload = () => setIsBackdropLoaded(true);
+      backdrop.onerror = () => setIsBackdropLoaded(true);
+      backdrop.src = backdropURI;
+    }, [mediaDetails?.backdrop_uri]);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -527,7 +539,7 @@ const MPVElectronPlayer = React.memo(
           </IconButton>
           {mediaDetails?.backdrop_uri && (
             <div
-              className="mpv-loading-backdrop"
+              className={`mpv-loading-backdrop${isBackdropLoaded ? " mpv-loading-backdrop-visible" : ""}`}
               style={{ backgroundImage: `url(${mediaDetails?.backdrop_uri})` }}
             />
           )}

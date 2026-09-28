@@ -29,6 +29,12 @@
 .mpv-loading-backdrop {
   background-position: center;
   background-size: cover;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.mpv-loading-backdrop-visible {
+  opacity: 1;
 }
 
 .mpv-loading-shade {
