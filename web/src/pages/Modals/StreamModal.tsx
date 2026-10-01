@@ -31,6 +31,9 @@ function StreamModal(props: any) {
     mediaDetails,
     onChangeSource,
     onViewEpisodes,
+    onNextEpisode,
+    onPrefetchNextEpisode,
+    isOverlayOpen,
   } = props;
   const startTime = watchProgress?.current_progress_seconds ?? 0;
   const [videoURL, setVideoURL] = useState("");
@@ -131,6 +134,10 @@ function StreamModal(props: any) {
 
   const handleVideoProgress = useCallback(
     (current: number, total: number, playerSettings?: any) => {
+      if (isPlatformElectron && current > 0 && total > 0 &&
+        (total - current < 300 || current / total > 0.8)) {
+        onPrefetchNextEpisode?.();
+      }
       if (current < 120) return; // don't log before 2 minutes
       const payload: any = {
         stream_protocol: streamDetails?.stream_protocol,
@@ -162,7 +169,7 @@ function StreamModal(props: any) {
           console.log(err);
         });
     },
-    [streamDetails, streams],
+    [streamDetails, streams, onPrefetchNextEpisode],
   );
   return (
     <Dialog
@@ -193,6 +200,9 @@ function StreamModal(props: any) {
           isStreamsMatch={isStreamsMatch}
           originalAudioLang={originalAudioLang}
           mediaDetails={mediaDetails}
+          segmentMedia={streams}
+          onNextEpisode={onNextEpisode}
+          isOverlayOpen={infoModalOpen || isOverlayOpen}
           onChangeSource={onChangeSource}
           onViewEpisodes={onViewEpisodes}
         />

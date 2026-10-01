@@ -14,6 +14,8 @@ export const useCreateProviderProfileMutation = () => {
     mutationFn: (profile: {name: string, manifestURL: string}) => createProviderProfile(profile.name, profile.manifestURL),
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["provider-profiles"] });
+        queryClient.invalidateQueries({ queryKey: ["providers"] });
+        queryClient.invalidateQueries({ queryKey: ["direct-stream-providers"] });
     }
   });
 };
@@ -25,6 +27,8 @@ export const useUpdateProviderProfileMutation = () => {
       updateProviderProfile(profile.id, profile.isDefaultStreaming, profile.isDefaultDownloading),
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["provider-profiles"] });
+        queryClient.invalidateQueries({ queryKey: ["providers"] });
+        queryClient.invalidateQueries({ queryKey: ["direct-stream-providers"] });
     }
   });
 };
@@ -35,6 +39,8 @@ export const useDeleteProviderProfileMutation = () => {
     mutationFn: (id: number) => deleteProviderProfile(id),
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["provider-profiles"] });
+        queryClient.invalidateQueries({ queryKey: ["providers"] });
+        queryClient.invalidateQueries({ queryKey: ["direct-stream-providers"] });
     }
   });
 };

@@ -9,8 +9,7 @@ import {
 } from "react";
 import toast from "react-hot-toast";
 import { useMediaDetails } from "../../api/hooks/media";
-import { fetchMediaFiles } from "../../api/services/media";
-import { fetchProviders } from "../../api/services/providers";
+import { useDirectStreamMutation } from "../../api/hooks/providers";
 import StreamModal from "./StreamModal";
 import SelectStreamModal from "./StreamSelectModal";
 import SeasonModal from "./SeasonModal";
@@ -34,10 +33,14 @@ type StreamModalContextValue = {
 };
 
 const StreamModalContext = createContext<StreamModalContextValue | null>(null);
-const flattenStreams = (data: any) =>
-  data?.providers?.flatMap((provider: any) => provider.streams || []) || [];
+const streamKey = (request: StreamPlaybackRequest) => JSON.stringify([
+  request.mediaType, request.mediaSource, request.sourceId,
+  request.season, request.episode,
+]);
 
 export function StreamModalProvider({ children }: { children: ReactNode }) {
+  const { mutateAsync: resolveStream } = useDirectStreamMutation();
+  const prefetchedEpisode = useRef<string | null>(null);
   const [request, setRequest] = useState<StreamPlaybackRequest | null>(null);
   const [isSourceSelectOpen, setIsSourceSelectOpen] = useState(false);
   const [isEpisodeSelectOpen, setIsEpisodeSelectOpen] = useState(false);
@@ -51,7 +54,10 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
     request !== null,
   );
   const requestId = useRef(0);
+  const nextEpisodePending = useRef(false);
   const closeStream = useCallback(() => {
+    requestId.current++;
+    prefetchedEpisode.current = null;
     setIsSourceSelectOpen(false);
     setIsEpisodeSelectOpen(false);
     setSwitchProgress(null);
@@ -67,34 +73,21 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
     }
 
     const loadingToast = toast.loading("Searching streams...");
-    const [files, providers] = await Promise.all([
-      fetchMediaFiles(
-        next.mediaType,
-        next.mediaSource,
-        next.sourceId,
-        next.season,
-        next.episode,
-      ).catch(() => null),
-      fetchProviders(
-        next.mediaType,
-        next.mediaSource,
-        next.sourceId,
-        next.season,
-        next.episode,
-      ).catch(() => null),
-    ]);
-    if (currentRequestId !== requestId.current) {
+    try {
+      const { selectedStream: stream } = await resolveStream(next);
+      if (!stream) throw new Error("No streams found");
+      if (currentRequestId === requestId.current) {
+        setRequest({ ...next, stream });
+      }
       toast.dismiss(loadingToast);
-      return;
+    } catch {
+      if (currentRequestId === requestId.current) {
+        toast.error("No streams found", { id: loadingToast });
+      } else {
+        toast.dismiss(loadingToast);
+      }
     }
-    const streams = [...flattenStreams(files), ...flattenStreams(providers)];
-    if (!streams.length) {
-      toast.error("No streams found", { id: loadingToast });
-      return;
-    }
-    toast.dismiss(loadingToast);
-    setRequest({ ...next, stream: streams[0] });
-  }, []);
+  }, [resolveStream]);
 
   const value = useMemo(
     () => ({ isOpen: request !== null, openStream, closeStream }),
@@ -118,6 +111,22 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
         episode_number: request.episode,
       }
     : null;
+  const nextEpisode = useMemo(() => {
+    if (
+      request?.mediaType !== "tv" || request.season === undefined ||
+      request.episode === undefined
+    ) return null;
+    const seasons = mediaDetails?.seasons || [];
+    const current = seasons.find((s: any) => s.season_number === request.season);
+    if (!current) return null;
+    if (request.episode < current.episode_count) {
+      return { season: request.season, episode: request.episode + 1 };
+    }
+    const next = [...seasons]
+      .filter((s: any) => s.season_number > request.season! && s.episode_count > 0)
+      .sort((a: any, b: any) => a.season_number - b.season_number)[0];
+    return next ? { season: next.season_number, episode: 1 } : null;
+  }, [request, mediaDetails]);
 
   return (
     <StreamModalContext.Provider value={value}>
@@ -130,7 +139,36 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
         watchProgress={request?.watchProgress}
         originalAudioLang={request?.originalAudioLang}
         mediaDetails={mediaDetails}
+        isOverlayOpen={isSourceSelectOpen || isEpisodeSelectOpen}
+        onPrefetchNextEpisode={nextEpisode && request ? () => {
+          const target = { ...request, ...nextEpisode, encodedData: undefined };
+          const key = streamKey(target);
+          if (prefetchedEpisode.current === key) return;
+          prefetchedEpisode.current = key;
+          void resolveStream(target).catch(() => null);
+        } : undefined}
+        onNextEpisode={
+          nextEpisode && request ? async (playerSettings: any) => {
+            if (nextEpisodePending.current) return;
+            nextEpisodePending.current = true;
+            try {
+              await openStream({
+                ...request,
+                ...nextEpisode,
+                stream: undefined,
+                encodedData: undefined,
+                watchProgress: {
+                  current_progress_seconds: 0,
+                  player_settings: playerSettings,
+                },
+              });
+            } finally {
+              nextEpisodePending.current = false;
+            }
+          } : undefined
+        }
         onChangeSource={(currentTime: number) => {
+          requestId.current++;
           setSwitchProgress({
             ...request?.watchProgress,
             current_progress_seconds: Math.floor(currentTime),
@@ -140,7 +178,10 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
         }}
         onViewEpisodes={
           request?.mediaType === "tv"
-            ? () => setIsEpisodeSelectOpen(true)
+            ? () => {
+                requestId.current++;
+                setIsEpisodeSelectOpen(true);
+              }
             : undefined
         }
       />

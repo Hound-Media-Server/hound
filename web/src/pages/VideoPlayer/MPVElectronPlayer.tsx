@@ -3,6 +3,7 @@ import ElectronVideoControls from "./ElectronVideoControls";
 import { get2LetterLangCode } from "../../helpers/locale";
 import { IconButton } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
+import { SegmentMedia, useVideoSegments } from "../../api/hooks/segments";
 
 interface IVideoPlayerProps {
   options: any;
@@ -21,6 +22,9 @@ interface IVideoPlayerProps {
   mediaDetails?: any;
   onChangeSource?: (currentTime: number) => void;
   onViewEpisodes?: () => void;
+  segmentMedia?: SegmentMedia;
+  onNextEpisode?: (settings: any) => Promise<void>;
+  isOverlayOpen?: boolean;
 }
 
 const MPVElectronPlayer = React.memo(
@@ -36,6 +40,9 @@ const MPVElectronPlayer = React.memo(
     mediaDetails,
     onChangeSource,
     onViewEpisodes,
+    segmentMedia,
+    onNextEpisode,
+    isOverlayOpen,
   }: IVideoPlayerProps) => {
     const videoRef = useRef<any>(null);
     const lastReportTimeRef = useRef(0);
@@ -69,6 +76,13 @@ const MPVElectronPlayer = React.memo(
     const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
+    const skipSegment = useVideoSegments(
+      segmentMedia,
+      options?.sources?.[0]?.src,
+      duration,
+      currentTime,
+      !!onNextEpisode,
+    );
 
     var releaseYear =
       mediaDetails?.release_date.length > 4
@@ -125,7 +139,6 @@ const MPVElectronPlayer = React.memo(
       if (!video) return;
       try {
         await video.seek(time);
-        setCurrentTime(time);
       } catch (error) {
         console.error("MPV seek error:", error);
       }
@@ -193,6 +206,30 @@ const MPVElectronPlayer = React.memo(
     const subTracks = (tracks || []).filter(
       (t) => t.type === "sub" || t.type === "s",
     );
+
+    const handleSkip = async () => {
+      if (
+        !skipSegment || isVideoLoading || isOverlayOpen || !seekDoneRef.current
+      ) return;
+      try {
+        if (skipSegment.nextEpisode) {
+          await onNextEpisode?.({
+            player: "desktop",
+            resize_mode: "contain",
+            audio_lang: get2LetterLangCode(
+              audioTracks.find((t) => Number(t.id) === selectedAudioIdx)?.lang,
+            ),
+            subtitle_lang: get2LetterLangCode(
+              subTracks.find((t) => Number(t.id) === selectedSubIdx)?.lang,
+            ),
+          });
+        } else {
+          await handleSeek(skipSegment.end);
+        }
+      } catch (error) {
+        console.error("MPV skip error:", error);
+      }
+    };
 
     const initializeTracks = useCallback(async (trackList: any[]) => {
       const video = videoRef.current;
@@ -302,6 +339,9 @@ const MPVElectronPlayer = React.memo(
       }
       const startTime = options?.startTime;
       seekDoneRef.current = !startTime || startTime <= 0;
+      setDuration(0);
+      setCurrentTime(0);
+      lastReportTimeRef.current = 0;
       setIsVideoLoading(true);
 
       // fallback, if failed, still show video
@@ -521,6 +561,10 @@ const MPVElectronPlayer = React.memo(
           selectedAudioIdx={selectedAudioIdx}
           selectedSubIdx={selectedSubIdx}
           streamType="vod"
+          skipSegment={skipSegment}
+          handleSkip={handleSkip}
+          skipBlocked={isVideoLoading || !seekDoneRef.current}
+          isOverlayOpen={isOverlayOpen}
         />
         <div
           className={`mpv-loading-overlay${isVideoLoading ? "" : " mpv-loading-overlay-hidden"}`}
