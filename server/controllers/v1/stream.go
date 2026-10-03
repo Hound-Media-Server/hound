@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/mcay23/hound/database"
@@ -93,6 +94,12 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 		return
 	}
 	c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
+	if c.Request.Method == http.MethodHead {
+		c.Header("Content-Length", strconv.FormatInt(file.Length(), 10))
+		c.Header("Accept-Ranges", "bytes")
+		c.Status(http.StatusOK)
+		return
+	}
 	// if file already exists, serve that instead
 	// this is an edge case, completed files
 	// aren't served properly by the reader if the torrent session is restarted
@@ -142,6 +149,11 @@ func handleProxyStream(c *gin.Context, url string) {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return
 	}
+	if c.Request.Method == http.MethodHead {
+		// HttpSource will determine the size with its own ranged GET.
+		c.Status(http.StatusOK)
+		return
+	}
 	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", url, nil)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("error creating URL: %w", err))
@@ -167,6 +179,7 @@ func handleProxyStream(c *gin.Context, url string) {
 	}
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Accept-Ranges", "bytes")
+	c.Writer.Header().Add("Access-Control-Expose-Headers", "Content-Range")
 	//c.Writer.Header().Set("Cache-Control", "no-store")
 	c.Status(resp.StatusCode)
 

@@ -16,9 +16,9 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
-import VideoPlayer from "../VideoPlayer/VideoPlayer";
 import { isPlatformElectron } from "../../utils/platform";
 import { get2LetterLangCode } from "../../helpers/locale";
+import { WebPlayer } from "../VideoPlayer/WebPlayer";
 
 function StreamModal(props: any) {
   const {
@@ -195,13 +195,16 @@ function StreamModal(props: any) {
           onViewEpisodes={onViewEpisodes}
         />
       ) : (
-        <VideoPlayer
-          key={streamDetails?.encoded_data}
-          options={videoJsOptions}
-          onVideoProgress={handleVideoProgress}
-          setLoading={setLoading}
-          subtitles={subtitles}
-        />
+        <>
+          <WebPlayer key={streamDetails?.encoded_data} src={videoURL} />
+          <IconButton
+            aria-label="Close player"
+            onClick={handleClose}
+            sx={{ position: "absolute", top: 16, left: 16, zIndex: 1, color: "white" }}
+          >
+            <ArrowBack />
+          </IconButton>
+        </>
       )}
       <InfoModal
         open={infoModalOpen}
@@ -225,11 +228,7 @@ function InfoModal({
     setOpen(false);
   };
   return (
-    <Dialog
-      onClose={handleClose}
-      open={open}
-      className="stream-info-modal"
-    >
+    <Dialog onClose={handleClose} open={open} className="stream-info-modal">
       <DialogTitle>{decodedData?.title}</DialogTitle>
       <DialogContent>
         <DialogContentText>
