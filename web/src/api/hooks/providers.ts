@@ -88,6 +88,7 @@ const getMatchingStream = (streams: any[], encodedData?: string) => {
 };
 
 export const useDirectStreamMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       mediaType,
@@ -108,21 +109,20 @@ export const useDirectStreamMutation = () => {
       encodedData?: string;
       onImmediateStream?: (stream: any) => void;
     }) => {
-      const mediaFilesPromise = fetchMediaFiles(
-        mediaType,
-        mediaSource,
-        sourceId,
-        season,
-        episode,
-      ).catch(() => null);
-      const providersPromise = fetchProviders(
-        mediaType,
-        mediaSource,
-        sourceId,
-        season,
-        episode,
-        providerProfileId,
-      ).catch(() => null);
+      const mediaFilesPromise = queryClient.fetchQuery({
+        queryKey: ["direct-stream-files", mediaType, mediaSource, sourceId, season, episode],
+        queryFn: () => fetchMediaFiles(mediaType, mediaSource, sourceId, season, episode),
+        staleTime: (query) => getProviderStreams(query.state.data).length ? 15 * 60 * 1000 : 0,
+        gcTime: 15 * 60 * 1000,
+        retry: false,
+      }).catch(() => null);
+      const providersPromise = queryClient.fetchQuery({
+        queryKey: ["direct-stream-providers", mediaType, mediaSource, sourceId, season, episode, providerProfileId],
+        queryFn: () => fetchProviders(mediaType, mediaSource, sourceId, season, episode, providerProfileId),
+        staleTime: (query) => getProviderStreams(query.state.data).length ? 15 * 60 * 1000 : 0,
+        gcTime: 15 * 60 * 1000,
+        retry: false,
+      }).catch(() => null);
 
       let startedImmediately = false;
       const mediaFilesData = await mediaFilesPromise;

@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import ElectronVideoControls from "./ElectronVideoControls";
 import { get2LetterLangCode } from "../../helpers/locale";
+import { IconButton } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
+import { SegmentMedia, useVideoSegments } from "../../api/hooks/segments";
 
 interface IVideoPlayerProps {
   options: any;
@@ -16,8 +19,12 @@ interface IVideoPlayerProps {
   playerSettings?: any;
   isStreamsMatch?: boolean;
   originalAudioLang?: string;
+  mediaDetails?: any;
   onChangeSource?: (currentTime: number) => void;
   onViewEpisodes?: () => void;
+  segmentMedia?: SegmentMedia;
+  onNextEpisode?: (settings: any) => Promise<void>;
+  isOverlayOpen?: boolean;
 }
 
 const MPVElectronPlayer = React.memo(
@@ -30,8 +37,12 @@ const MPVElectronPlayer = React.memo(
     playerSettings,
     isStreamsMatch,
     originalAudioLang,
+    mediaDetails,
     onChangeSource,
     onViewEpisodes,
+    segmentMedia,
+    onNextEpisode,
+    isOverlayOpen,
   }: IVideoPlayerProps) => {
     const videoRef = useRef<any>(null);
     const lastReportTimeRef = useRef(0);
@@ -61,8 +72,33 @@ const MPVElectronPlayer = React.memo(
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
+    const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
+    const skipSegment = useVideoSegments(
+      segmentMedia,
+      options?.sources?.[0]?.src,
+      duration,
+      currentTime,
+      !!onNextEpisode,
+    );
+
+    var releaseYear =
+      mediaDetails?.release_date.length > 4
+        ? mediaDetails?.release_date.slice(0, 4)
+        : "";
+
+    useEffect(() => {
+      setIsBackdropLoaded(false);
+      const backdropURI = mediaDetails?.backdrop_uri;
+      if (!backdropURI) return;
+
+      const backdrop = new Image();
+      backdrop.onload = () => setIsBackdropLoaded(true);
+      backdrop.onerror = () => setIsBackdropLoaded(true);
+      backdrop.src = backdropURI;
+    }, [mediaDetails?.backdrop_uri]);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -103,7 +139,6 @@ const MPVElectronPlayer = React.memo(
       if (!video) return;
       try {
         await video.seek(time);
-        setCurrentTime(time);
       } catch (error) {
         console.error("MPV seek error:", error);
       }
@@ -171,6 +206,30 @@ const MPVElectronPlayer = React.memo(
     const subTracks = (tracks || []).filter(
       (t) => t.type === "sub" || t.type === "s",
     );
+
+    const handleSkip = async () => {
+      if (
+        !skipSegment || isVideoLoading || isOverlayOpen || !seekDoneRef.current
+      ) return;
+      try {
+        if (skipSegment.nextEpisode) {
+          await onNextEpisode?.({
+            player: "desktop",
+            resize_mode: "contain",
+            audio_lang: get2LetterLangCode(
+              audioTracks.find((t) => Number(t.id) === selectedAudioIdx)?.lang,
+            ),
+            subtitle_lang: get2LetterLangCode(
+              subTracks.find((t) => Number(t.id) === selectedSubIdx)?.lang,
+            ),
+          });
+        } else {
+          await handleSeek(skipSegment.end);
+        }
+      } catch (error) {
+        console.error("MPV skip error:", error);
+      }
+    };
 
     const initializeTracks = useCallback(async (trackList: any[]) => {
       const video = videoRef.current;
@@ -271,32 +330,56 @@ const MPVElectronPlayer = React.memo(
       let destroyed = false;
       let seekAttempts = 0;
       let seekTimer: ReturnType<typeof setTimeout> | undefined;
+      let loadingFallbackTimer: ReturnType<typeof setTimeout> | undefined;
       const source = options?.sources?.[0]?.src;
       if (!source) {
         console.warn("MPV: no source specified");
+        setIsVideoLoading(false);
         return;
       }
       const startTime = options?.startTime;
       seekDoneRef.current = !startTime || startTime <= 0;
+      setDuration(0);
+      setCurrentTime(0);
+      lastReportTimeRef.current = 0;
+      setIsVideoLoading(true);
+
+      // fallback, if failed, still show video
+      const finishLoading = () => {
+        setIsVideoLoading(false);
+        if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
+      };
+      loadingFallbackTimer = setTimeout(finishLoading, 20000);
 
       const scheduleInitialSeek = () => {
-        if (destroyed || seekDoneRef.current || seekTimer || seekAttempts >= 12) {
+        if (
+          destroyed ||
+          seekDoneRef.current ||
+          seekTimer ||
+          seekAttempts >= 12
+        ) {
           return;
         }
-        seekTimer = setTimeout(async () => {
-          seekTimer = undefined;
-          if (destroyed || seekDoneRef.current) return;
-          seekAttempts++;
-          try {
-            await video.seek(startTime);
-          } catch (error) {
-            console.warn("MPV resume seek not ready; retrying", error);
-          }
-          if (!destroyed && !seekDoneRef.current && seekAttempts >= 12) {
-            console.warn("MPV could not confirm the restored playback position");
-            seekDoneRef.current = true;
-          }
-        }, seekAttempts === 0 ? 150 : 750);
+        seekTimer = setTimeout(
+          async () => {
+            seekTimer = undefined;
+            if (destroyed || seekDoneRef.current) return;
+            seekAttempts++;
+            try {
+              await video.seek(startTime);
+            } catch (error) {
+              console.warn("MPV resume seek not ready; retrying", error);
+            }
+            if (!destroyed && !seekDoneRef.current && seekAttempts >= 12) {
+              console.warn(
+                "MPV could not confirm the restored playback position",
+              );
+              seekDoneRef.current = true;
+              finishLoading();
+            }
+          },
+          seekAttempts === 0 ? 150 : 750,
+        );
       };
       const load = async () => {
         try {
@@ -307,6 +390,7 @@ const MPVElectronPlayer = React.memo(
           await video.play();
         } catch (error) {
           console.error("MPV playback error:", error);
+          finishLoading();
         }
       };
 
@@ -339,6 +423,14 @@ const MPVElectronPlayer = React.memo(
           dur > 0
         ) {
           scheduleInitialSeek();
+        }
+        if (
+          seekDoneRef.current &&
+          detail.status === "Playing" &&
+          typeof dur === "number" &&
+          dur > 0
+        ) {
+          finishLoading();
         }
         if (typeof current === "number") {
           setCurrentTime(current);
@@ -411,6 +503,7 @@ const MPVElectronPlayer = React.memo(
       return () => {
         destroyed = true;
         if (seekTimer) clearTimeout(seekTimer);
+        if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
         video.removeEventListener("mpv-state", handleState);
       };
     }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
@@ -473,7 +566,47 @@ const MPVElectronPlayer = React.memo(
           selectedAudioIdx={selectedAudioIdx}
           selectedSubIdx={selectedSubIdx}
           streamType="vod"
+          skipSegment={skipSegment}
+          handleSkip={handleSkip}
+          skipBlocked={isVideoLoading || !seekDoneRef.current}
+          isOverlayOpen={isOverlayOpen}
         />
+        <div
+          className={`mpv-loading-overlay${isVideoLoading ? "" : " mpv-loading-overlay-hidden"}`}
+        >
+          <IconButton
+            onClick={handleClose}
+            sx={{
+              position: "absolute",
+              top: 16,
+              left: 16,
+              color: "white",
+              zIndex: 10,
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          {mediaDetails?.backdrop_uri && (
+            <div
+              className={`mpv-loading-backdrop${isBackdropLoaded ? " mpv-loading-backdrop-visible" : ""}`}
+              style={{ backgroundImage: `url(${mediaDetails?.backdrop_uri})` }}
+            />
+          )}
+          <div className="mpv-loading-shade" />
+          {mediaDetails?.logo_uri && (
+            <img
+              className="mpv-loading-logo"
+              src={mediaDetails?.logo_uri}
+              alt=""
+            />
+          )}
+          {!mediaDetails?.logo_uri && (
+            <div className="mpv-loading-title">
+              {mediaDetails?.media_title}{" "}
+              {releaseYear ? `(${releaseYear})` : ""}
+            </div>
+          )}
+        </div>
       </div>
     );
   },
