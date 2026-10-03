@@ -15,6 +15,7 @@ import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
 import { isPlatformElectron } from "../../utils/platform";
 import { get2LetterLangCode } from "../../helpers/locale";
 import { WebPlayer } from "../VideoPlayer/WebPlayer";
+import { shouldPrefetchNextEpisode } from "../../utils/videoSegments";
 
 function StreamModal(props: any) {
   const {
@@ -101,7 +102,8 @@ function StreamModal(props: any) {
           setLoading(false);
         })
         .catch((err) => {
-          if (active) toast.error("Failed to add torrent " + err, { id: fetchToast });
+          if (active)
+            toast.error("Failed to add torrent " + err, { id: fetchToast });
         });
       return () => {
         active = false;
@@ -129,8 +131,7 @@ function StreamModal(props: any) {
 
   const handleVideoProgress = useCallback(
     (current: number, total: number, playerSettings?: any) => {
-      if (isPlatformElectron && current > 0 && total > 0 &&
-        (total - current < 300 || current / total > 0.8)) {
+      if (shouldPrefetchNextEpisode(current, total)) {
         onPrefetchNextEpisode?.();
       }
       if (current < 120) return; // don't log before 2 minutes
@@ -212,10 +213,14 @@ function StreamModal(props: any) {
             playerSettings={watchProgress?.player_settings}
             isStreamsMatch={isStreamsMatch}
             originalAudioLang={originalAudioLang}
+            mediaDetails={mediaDetails}
             handleClose={handleClose}
             setInfoModalOpen={setInfoModalOpen}
             onChangeSource={onChangeSource}
             onViewEpisodes={onViewEpisodes}
+            segmentMedia={streams}
+            onNextEpisode={onNextEpisode}
+            isOverlayOpen={infoModalOpen || isOverlayOpen}
           />
         ))}
       <InfoModal

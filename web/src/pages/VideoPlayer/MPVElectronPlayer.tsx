@@ -4,6 +4,11 @@ import { get2LetterLangCode } from "../../helpers/locale";
 import { IconButton } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { SegmentMedia, useVideoSegments } from "../../api/hooks/segments";
+import {
+  canSkipSegment,
+  nextEpisodePlayerSettings,
+  skipVideoSegment,
+} from "../../utils/videoSegments";
 
 interface IVideoPlayerProps {
   options: any;
@@ -208,24 +213,26 @@ const MPVElectronPlayer = React.memo(
     );
 
     const handleSkip = async () => {
-      if (
-        !skipSegment || isVideoLoading || isOverlayOpen || !seekDoneRef.current
-      ) return;
+      if (!canSkipSegment(
+        skipSegment,
+        isVideoLoading || !seekDoneRef.current,
+        isOverlayOpen,
+      )) return;
       try {
-        if (skipSegment.nextEpisode) {
-          await onNextEpisode?.({
-            player: "desktop",
-            resize_mode: "contain",
-            audio_lang: get2LetterLangCode(
-              audioTracks.find((t) => Number(t.id) === selectedAudioIdx)?.lang,
+        await skipVideoSegment(skipSegment, handleSeek, () =>
+          onNextEpisode?.(
+            nextEpisodePlayerSettings(
+              "desktop",
+              "contain",
+              get2LetterLangCode(
+                audioTracks.find((t) => Number(t.id) === selectedAudioIdx)?.lang,
+              ),
+              get2LetterLangCode(
+                subTracks.find((t) => Number(t.id) === selectedSubIdx)?.lang,
+              ),
             ),
-            subtitle_lang: get2LetterLangCode(
-              subTracks.find((t) => Number(t.id) === selectedSubIdx)?.lang,
-            ),
-          });
-        } else {
-          await handleSeek(skipSegment.end);
-        }
+          ),
+        );
       } catch (error) {
         console.error("MPV skip error:", error);
       }

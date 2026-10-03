@@ -8,6 +8,13 @@ import {
 } from "@mui/icons-material";
 import { MoviPlayer, type MoviElement } from "movi-player/react";
 import { get2LetterLangCode } from "../../helpers/locale";
+import { SegmentMedia, useVideoSegments } from "../../api/hooks/segments";
+import {
+  canSkipSegment,
+  nextEpisodePlayerSettings,
+  skipVideoSegment,
+} from "../../utils/videoSegments";
+import { SkipSegmentButton } from "./SkipSegmentButton";
 
 type PlayerSettings = {
   player?: string;
@@ -24,6 +31,7 @@ type WebPlayerProps = {
   playerSettings?: PlayerSettings;
   isStreamsMatch?: boolean;
   originalAudioLang?: string;
+  mediaDetails?: any;
   onVideoProgress?: (
     current: number,
     total: number,
@@ -33,6 +41,9 @@ type WebPlayerProps = {
   setInfoModalOpen?: (open: boolean) => void;
   onChangeSource?: (currentTime: number) => void;
   onViewEpisodes?: () => void;
+  segmentMedia?: SegmentMedia;
+  onNextEpisode?: (settings: PlayerSettings) => Promise<void>;
+  isOverlayOpen?: boolean;
 };
 
 export function WebPlayer({
@@ -41,11 +52,15 @@ export function WebPlayer({
   playerSettings,
   isStreamsMatch,
   originalAudioLang,
+  mediaDetails,
   onVideoProgress,
   handleClose,
   setInfoModalOpen,
   onChangeSource,
   onViewEpisodes,
+  segmentMedia,
+  onNextEpisode,
+  isOverlayOpen,
 }: WebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<MoviElement>(null);
@@ -53,14 +68,25 @@ export function WebPlayer({
   const controlsHoveredRef = useRef(false);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const lastReportTimeRef = useRef(0);
+  const skipSegment = useVideoSegments(
+    segmentMedia,
+    src,
+    duration,
+    currentTime,
+    !!onNextEpisode,
+  );
   const latestRef = useRef({
+    startTime,
     playerSettings,
     isStreamsMatch,
     originalAudioLang,
     onVideoProgress,
   });
   latestRef.current = {
+    startTime,
     playerSettings,
     isStreamsMatch,
     originalAudioLang,
@@ -214,10 +240,37 @@ export function WebPlayer({
     };
   }, [src]);
 
+  // handle initial seek, not using the players startat prop because that
+  // is somehow much slower than this solution, by my testing
+  useEffect(() => {
+    const element = playerRef.current;
+    if (!element) return;
+    const restorePosition = () => {
+      const time = latestRef.current.startTime;
+      if (Number.isFinite(time) && time > 0) {
+        element.currentTime = time;
+      }
+    };
+    if (element.playing) {
+      restorePosition();
+    } else {
+      element.addEventListener("play", restorePosition, { once: true });
+    }
+    return () => element.removeEventListener("play", restorePosition);
+  }, [src]);
+
   const handleTimeUpdate = useCallback((current: number) => {
     const element = playerRef.current;
     const player = element?.player;
     const duration = element?.duration;
+    if (Number.isFinite(current)) setCurrentTime(Math.floor(current));
+    if (
+      typeof duration === "number" &&
+      Number.isFinite(duration) &&
+      duration > 0
+    ) {
+      setDuration(duration);
+    }
     if (
       !player ||
       typeof duration !== "number" ||
@@ -257,6 +310,38 @@ export function WebPlayer({
     });
   }, []);
 
+  const handleSkip = async () => {
+    if (!canSkipSegment(skipSegment, duration <= 0, isOverlayOpen)) return;
+    const element = playerRef.current;
+    if (!element) return;
+    try {
+      await skipVideoSegment(
+        skipSegment,
+        (time) => {
+          element.currentTime = time;
+        },
+        () => {
+          const player = element.player;
+          const fit = element.objectFit;
+          return onNextEpisode?.(
+            nextEpisodePlayerSettings(
+              "web",
+              fit,
+              get2LetterLangCode(
+                player?.trackManager.getActiveAudioTrack()?.language,
+              ),
+              get2LetterLangCode(
+                player?.trackManager.getActiveSubtitleTrack()?.language,
+              ),
+            ),
+          );
+        },
+      );
+    } catch (error) {
+      console.error("Movi skip error:", error);
+    }
+  };
+
   const pausePlayer = () => {
     void playerRef.current?.pause();
   };
@@ -284,11 +369,15 @@ export function WebPlayer({
       <MoviPlayer
         ref={playerRef}
         persist=""
-        startat={startTime}
+        thumb
         objectfit={objectFit}
         src={src}
         controls
+        fastseek
         autoplay
+        poster={mediaDetails?.backdrop_uri}
+        subtitleedge="shadow"
+        posterfit="cover"
         onTimeUpdate={handleTimeUpdate}
         style={{ display: "block", width: "100%", height: "100%" }}
       />
@@ -360,6 +449,14 @@ export function WebPlayer({
           </IconButton>
         )}
       </div>
+      {canSkipSegment(skipSegment, duration <= 0, isOverlayOpen) && (
+        <SkipSegmentButton
+          segment={skipSegment}
+          onSkip={handleSkip}
+          bottom={controlsVisible ? 112 : 24}
+          controlsVisible={controlsVisible}
+        />
+      )}
     </div>
   );
 }
