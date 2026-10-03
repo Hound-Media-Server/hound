@@ -7,8 +7,10 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
+  Button,
 } from "@mui/material";
 import "./ElectronVideoControls.css";
+import { SegmentAction } from "../../utils/videoSegments";
 import {
   Pause,
   PlayArrow,
@@ -62,6 +64,10 @@ interface IVideoControlsProps {
   selectedAudioIdx: number | undefined;
   selectedSubIdx: number | undefined;
   streamType: "vod" | "live";
+  skipSegment?: SegmentAction | null;
+  handleSkip?: () => void;
+  skipBlocked?: boolean;
+  isOverlayOpen?: boolean;
 }
 
 export default function ElectronVideoControls({
@@ -86,6 +92,10 @@ export default function ElectronVideoControls({
   selectedAudioIdx,
   selectedSubIdx,
   streamType,
+  skipSegment,
+  handleSkip,
+  skipBlocked,
+  isOverlayOpen,
 }: IVideoControlsProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
@@ -115,6 +125,25 @@ export default function ElectronVideoControls({
   const [subMuiMenuAnchor, setSubMuiMenuAnchor] = useState<null | HTMLElement>(
     null,
   );
+  const showSkip =
+    streamType === "vod" &&
+    !!skipSegment &&
+    !skipBlocked &&
+    !isDragging &&
+    !audioMenuAnchor &&
+    !subMuiMenuAnchor &&
+    !isOverlayOpen;
+  useEffect(() => {
+    if (!showSkip || controlsVisible) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (!event.repeat) handleSkip?.();
+    };
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [showSkip, controlsVisible, handleSkip]);
 
   const activeAudioTrack = audioTracks.find((t) => t.id === selectedAudioIdx);
   const audioLang =
@@ -494,6 +523,16 @@ export default function ElectronVideoControls({
           </div>
         </div>
       </div>
+      {showSkip && skipSegment && (
+        <Button
+          className="controls-skip-button"
+          onClick={handleSkip}
+          style={{ bottom: controlsVisible ? 112 : 24 }}
+          disableRipple
+        >
+          {skipSegment.label}
+        </Button>
+      )}
     </>
   );
 }
