@@ -1,14 +1,10 @@
 import {
-  Button,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  IconButton,
 } from "@mui/material";
 import "./StreamModal.css";
-import { ArrowBack, InfoOutlined, Pause } from "@mui/icons-material";
 import "video.js/dist/video-js.css";
 import { getBaseUrl } from "./../../config/axios_config";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -84,34 +80,33 @@ function StreamModal(props: any) {
   }, [open]);
 
   useEffect(() => {
-    if (!open) {
-      setVideoURL("");
-      return;
-    }
+    setVideoURL("");
+    if (!open || !streamDetails?.encoded_data) return;
+
+    const streamURL = `${getBaseUrl()}/api/v1/stream/${streamDetails.encoded_data}`;
+    let active = true;
     setLoading(true);
-    if (streamDetails) {
-      if (streamDetails.stream_protocol === "p2p") {
-        const fetchToast = toast.loading("Fetching torrent...");
-        axios
-          .post("/api/v1/torrent/" + streamDetails.encoded_data)
-          .then(() => {
-            toast.dismiss(fetchToast);
-            setVideoURL(
-              getBaseUrl() + "/api/v1/stream/" + streamDetails.encoded_data,
-            );
-            setLoading(false);
-          })
-          .catch((err) => {
-            toast.error("Failed to add torrent " + err, { id: fetchToast });
-          });
-      } else {
-        setVideoURL(
-          getBaseUrl() + "/api/v1/stream/" + streamDetails.encoded_data,
-        );
-        setLoading(false);
-      }
+    if (streamDetails?.stream_protocol === "p2p") {
+      const fetchToast = toast.loading("Fetching torrent...");
+      axios
+        .post("/api/v1/torrent/" + streamDetails.encoded_data)
+        .then(() => {
+          if (!active) return;
+          toast.dismiss(fetchToast);
+          setVideoURL(streamURL);
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (active) toast.error("Failed to add torrent " + err, { id: fetchToast });
+        });
+      return () => {
+        active = false;
+        toast.dismiss(fetchToast);
+      };
     }
-  }, [streamDetails, streams, open, startTime]);
+    setVideoURL(streamURL);
+    setLoading(false);
+  }, [streamDetails?.encoded_data, streamDetails?.stream_protocol, open]);
 
   const videoJsOptions = useMemo(
     () => ({
@@ -144,7 +139,7 @@ function StreamModal(props: any) {
             }
           : {}),
       };
-      if (isPlatformElectron && playerSettings) {
+      if (playerSettings) {
         payload.player_settings = playerSettings;
       }
       axios
@@ -163,10 +158,11 @@ function StreamModal(props: any) {
     },
     [streamDetails, streams],
   );
+  const readyToPlay = open && !loading && !!videoURL;
   return (
     <Dialog
       onClose={handleClose}
-      open={open && !loading}
+      open={readyToPlay}
       disableScrollLock={false}
       fullScreen
       disableEscapeKeyDown
@@ -179,33 +175,37 @@ function StreamModal(props: any) {
         },
       }}
     >
-      {isPlatformElectron ? (
-        <MPVElectronPlayer
-          key={streamDetails?.encoded_data}
-          options={videoJsOptions}
-          onVideoProgress={handleVideoProgress}
-          setLoading={setLoading}
-          handleClose={handleClose}
-          setInfoModalOpen={setInfoModalOpen}
-          externalSubtitles={externalSubtitles}
-          playerSettings={watchProgress?.player_settings}
-          isStreamsMatch={isStreamsMatch}
-          originalAudioLang={originalAudioLang}
-          onChangeSource={onChangeSource}
-          onViewEpisodes={onViewEpisodes}
-        />
-      ) : (
-        <>
-          <WebPlayer key={streamDetails?.encoded_data} src={videoURL} />
-          <IconButton
-            aria-label="Close player"
-            onClick={handleClose}
-            sx={{ position: "absolute", top: 16, left: 16, zIndex: 1, color: "white" }}
-          >
-            <ArrowBack />
-          </IconButton>
-        </>
-      )}
+      {readyToPlay &&
+        (isPlatformElectron ? (
+          <MPVElectronPlayer
+            key={streamDetails?.encoded_data}
+            options={videoJsOptions}
+            onVideoProgress={handleVideoProgress}
+            setLoading={setLoading}
+            handleClose={handleClose}
+            setInfoModalOpen={setInfoModalOpen}
+            externalSubtitles={externalSubtitles}
+            playerSettings={watchProgress?.player_settings}
+            isStreamsMatch={isStreamsMatch}
+            originalAudioLang={originalAudioLang}
+            onChangeSource={onChangeSource}
+            onViewEpisodes={onViewEpisodes}
+          />
+        ) : (
+          <WebPlayer
+            key={streamDetails?.encoded_data}
+            src={videoURL}
+            startTime={startTime}
+            onVideoProgress={handleVideoProgress}
+            playerSettings={watchProgress?.player_settings}
+            isStreamsMatch={isStreamsMatch}
+            originalAudioLang={originalAudioLang}
+            handleClose={handleClose}
+            setInfoModalOpen={setInfoModalOpen}
+            onChangeSource={onChangeSource}
+            onViewEpisodes={onViewEpisodes}
+          />
+        ))}
       <InfoModal
         open={infoModalOpen}
         setOpen={setInfoModalOpen}

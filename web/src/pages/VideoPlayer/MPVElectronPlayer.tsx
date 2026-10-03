@@ -390,9 +390,14 @@ const MPVElectronPlayer = React.memo(
               Number(t.id) === Number(currentSub),
           );
 
+          const savedFit = playerSettingsRef.current?.resize_mode;
+          const resizeMode =
+            savedFit === "cover" || savedFit === "fill" || savedFit === "zoom"
+              ? "cover"
+              : "contain";
           const playerSettingsPayload = {
             player: "desktop",
-            resize_mode: "contain",
+            resize_mode: resizeMode,
             audio_idx: Number(currentAudio),
             audio_lang: get2LetterLangCode(currentAudioTrack?.lang),
             subtitle_idx: Number(currentSub),
