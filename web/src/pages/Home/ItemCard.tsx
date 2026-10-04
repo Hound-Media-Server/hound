@@ -288,8 +288,16 @@ function ItemCard(props: {
     return <CommentCard item={props.item} />;
   }
   function itemTypeWatchTile() {
+    const watchMetadata =
+      props.item.watch_progress ?? props.item.next_episode;
     return (
-      <WatchTile item={props.item} loaded={loaded} setLoaded={setLoaded} />
+      <MediaPreview
+        item={{ ...props.item, ...watchMetadata }}
+        secondaryAction="open"
+        initialWatchAction={props.item}
+      >
+        <WatchTile item={props.item} loaded={loaded} setLoaded={setLoaded} />
+      </MediaPreview>
     );
   }
   var mediaType = props.item.media_type;
