@@ -2,6 +2,7 @@ import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import HistoryIcon from "@mui/icons-material/History";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import {
   Chip,
   IconButton,
@@ -310,16 +311,10 @@ function MediaPageMovie(props: any) {
             <div className="media-page-tv-header-info">
               {mediaFiles?.providers[0]?.streams?.length > 0 && (
                 <Chip
-                  label={"In Hound"}
-                  size="medium"
-                  color="primary"
-                  sx={{
-                    backgroundColor: "#015376ff",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    fontFamily: '"Cabin", sans-serif',
-                  }}
+                  icon={<DoneAllIcon />}
+                  label="In Hound"
+                  size="small"
+                  className="in-hound-chip"
                 />
               )}
               <div className="media-page-tv-header-title">

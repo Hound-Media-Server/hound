@@ -2,6 +2,7 @@ import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
 import CachedIcon from "@mui/icons-material/Cached";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import {
   Chip,
   IconButton,
@@ -90,10 +91,8 @@ function MediaPageTV(props: any) {
   const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
   const directStreamRequestId = useRef(0);
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
-  const {
-    data: continueWatchingData,
-    refetch: refetchWatchAction,
-  } = useWatchAction("tv", props.data.media_source, props.data.source_id);
+  const { data: continueWatchingData, refetch: refetchWatchAction } =
+    useWatchAction("tv", props.data.media_source, props.data.source_id);
 
   const openTVStream = (
     stream: any,
@@ -424,16 +423,10 @@ function MediaPageTV(props: any) {
             <div className="media-page-tv-header-info">
               {mediaFiles?.providers[0]?.streams?.length > 0 && (
                 <Chip
-                  label={"In Hound"}
+                  icon={<DoneAllIcon />}
+                  label="In Hound"
                   size="medium"
-                  color="primary"
-                  sx={{
-                    backgroundColor: "#015376ff",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    fontFamily: '"Cabin", sans-serif',
-                  }}
+                  className="in-hound-chip"
                 />
               )}
               <div className="media-page-tv-header-title">

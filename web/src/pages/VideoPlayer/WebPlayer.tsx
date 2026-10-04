@@ -376,7 +376,7 @@ export function WebPlayer({
         fastseek
         autoplay
         poster={mediaDetails?.backdrop_uri}
-        subtitleedge="shadow"
+        subtitleedge="raised"
         posterfit="cover"
         onTimeUpdate={handleTimeUpdate}
         style={{ display: "block", width: "100%", height: "100%" }}

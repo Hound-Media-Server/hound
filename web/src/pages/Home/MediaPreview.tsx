@@ -1,5 +1,5 @@
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import EastIcon from "@mui/icons-material/East";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { Button, Chip, Fade, Paper, Popper, Skeleton } from "@mui/material";
@@ -318,10 +318,12 @@ function MediaPreview({
                     <Button
                       className="media-preview-secondary-button"
                       variant="contained"
-                      startIcon={<ArrowForwardRoundedIcon />}
+                      startIcon={<EastIcon />}
                       onClick={() => {
                         setOpen(false);
-                        navigate(`/${mediaType}/${item.media_source}-${sourceID}`);
+                        navigate(
+                          `/${mediaType}/${item.media_source}-${sourceID}`,
+                        );
                       }}
                     >
                       Open {mediaType === "movie" ? "Movie" : "Show"}
