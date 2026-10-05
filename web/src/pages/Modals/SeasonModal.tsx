@@ -472,6 +472,7 @@ function EpisodeCard(
         >
           <Dropdown.Toggle
             as={Button}
+            disableRipple
             variant="light"
             id="season-episode-card-dropdown"
             className="border-0 p-0"
