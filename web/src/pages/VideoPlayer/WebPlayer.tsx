@@ -44,6 +44,7 @@ type WebPlayerProps = {
   segmentMedia?: SegmentMedia;
   onNextEpisode?: (settings: PlayerSettings) => Promise<void>;
   isOverlayOpen?: boolean;
+  onStartupSettled?: () => void;
 };
 
 export function WebPlayer({
@@ -61,6 +62,7 @@ export function WebPlayer({
   segmentMedia,
   onNextEpisode,
   isOverlayOpen,
+  onStartupSettled,
 }: WebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<MoviElement>(null);
@@ -70,6 +72,9 @@ export function WebPlayer({
   const [controlsVisible, setControlsVisible] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const onStartupSettledRef = useRef(onStartupSettled);
+  onStartupSettledRef.current = onStartupSettled;
   const lastReportTimeRef = useRef(0);
   const skipSegment = useVideoSegments(
     segmentMedia,
@@ -117,6 +122,28 @@ export function WebPlayer({
       }
     };
   }, [showControls]);
+
+  useEffect(() => {
+    const element = playerRef.current;
+    if (!element) return;
+    setIsVideoLoading(true);
+    const finishLoading = () => {
+      clearTimeout(loadingTimeout);
+      setIsVideoLoading(false);
+      onStartupSettledRef.current?.();
+    };
+    const loadingTimeout = setTimeout(finishLoading, 20000);
+    element.addEventListener("playing", finishLoading);
+    element.addEventListener("error", finishLoading);
+    element.addEventListener("errordisplay", finishLoading);
+    if (element.playing || element.errorTitle) finishLoading();
+    return () => {
+      clearTimeout(loadingTimeout);
+      element.removeEventListener("playing", finishLoading);
+      element.removeEventListener("error", finishLoading);
+      element.removeEventListener("errordisplay", finishLoading);
+    };
+  }, [src]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -400,8 +427,8 @@ export function WebPlayer({
           display: "flex",
           background: "rgba(0, 0, 0, 0.45)",
           borderRadius: 8,
-          opacity: controlsVisible ? 1 : 0,
-          pointerEvents: controlsVisible ? "auto" : "none",
+          opacity: controlsVisible && !isVideoLoading ? 1 : 0,
+          pointerEvents: controlsVisible && !isVideoLoading ? "auto" : "none",
           transition: "opacity 0.25s ease",
         }}
       >
@@ -449,7 +476,11 @@ export function WebPlayer({
           </IconButton>
         )}
       </div>
-      {canSkipSegment(skipSegment, duration <= 0, isOverlayOpen) && (
+      {canSkipSegment(
+        skipSegment,
+        duration <= 0,
+        isOverlayOpen || isVideoLoading,
+      ) && (
         <SkipSegmentButton
           segment={skipSegment}
           onSkip={handleSkip}

@@ -3,19 +3,21 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Button,
 } from "@mui/material";
 import "./StreamModal.css";
 import "video.js/dist/video-js.css";
 import { getBaseUrl } from "./../../config/axios_config";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
-import toast from "react-hot-toast";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
 import { isPlatformElectron } from "../../utils/platform";
 import { get2LetterLangCode } from "../../helpers/locale";
 import { WebPlayer } from "../VideoPlayer/WebPlayer";
 import { shouldPrefetchNextEpisode } from "../../utils/videoSegments";
+import { PlayerLoadingOverlay } from "../VideoPlayer/PlayerLoadingOverlay";
+import { ArrowBack } from "@mui/icons-material";
 
 function StreamModal(props: any) {
   const {
@@ -31,10 +33,13 @@ function StreamModal(props: any) {
     onNextEpisode,
     onPrefetchNextEpisode,
     isOverlayOpen,
+    streamError,
   } = props;
   const startTime = watchProgress?.current_progress_seconds ?? 0;
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const [playerSettledKey, setPlayerSettledKey] = useState<string | null>(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
 
   const isStreamsMatch = useMemo(
@@ -69,6 +74,7 @@ function StreamModal(props: any) {
   }, [subtitles]);
   const handleClose = () => {
     setLoading(false);
+    setPlayerSettledKey(null);
     setOpen(false);
   };
 
@@ -86,28 +92,28 @@ function StreamModal(props: any) {
 
   useEffect(() => {
     setVideoURL("");
+    setPlaybackError(null);
     if (!open || !streamDetails?.encoded_data) return;
 
     const streamURL = `${getBaseUrl()}/api/v1/stream/${streamDetails.encoded_data}`;
     let active = true;
     setLoading(true);
     if (streamDetails?.stream_protocol === "p2p") {
-      const fetchToast = toast.loading("Fetching torrent...");
       axios
         .post("/api/v1/torrent/" + streamDetails.encoded_data)
         .then(() => {
           if (!active) return;
-          toast.dismiss(fetchToast);
           setVideoURL(streamURL);
           setLoading(false);
         })
         .catch((err) => {
-          if (active)
-            toast.error("Failed to add torrent " + err, { id: fetchToast });
+          if (active) {
+            setLoading(false);
+            setPlaybackError("Could not initialize this stream");
+          }
         });
       return () => {
         active = false;
-        toast.dismiss(fetchToast);
       };
     }
     setVideoURL(streamURL);
@@ -167,11 +173,17 @@ function StreamModal(props: any) {
     },
     [streamDetails, streams, onPrefetchNextEpisode],
   );
-  const readyToPlay = open && !loading && !!videoURL;
+  const readyToPlay =
+    open &&
+    !loading &&
+    !!streamDetails?.encoded_data &&
+    videoURL === `${getBaseUrl()}/api/v1/stream/${streamDetails.encoded_data}`;
+  const overlayVisible =
+    !readyToPlay || playerSettledKey !== streamDetails?.encoded_data;
   return (
     <Dialog
       onClose={handleClose}
-      open={readyToPlay}
+      open={open}
       disableScrollLock={false}
       fullScreen
       disableEscapeKeyDown
@@ -184,45 +196,65 @@ function StreamModal(props: any) {
         },
       }}
     >
-      {readyToPlay &&
-        (isPlatformElectron ? (
-          <MPVElectronPlayer
-            key={streamDetails?.encoded_data}
-            options={videoJsOptions}
-            onVideoProgress={handleVideoProgress}
-            setLoading={setLoading}
-            handleClose={handleClose}
-            setInfoModalOpen={setInfoModalOpen}
-            externalSubtitles={externalSubtitles}
-            playerSettings={watchProgress?.player_settings}
-            isStreamsMatch={isStreamsMatch}
-            originalAudioLang={originalAudioLang}
-            mediaDetails={mediaDetails}
-            segmentMedia={streams}
-            onNextEpisode={onNextEpisode}
-            isOverlayOpen={infoModalOpen || isOverlayOpen}
-            onChangeSource={onChangeSource}
-            onViewEpisodes={onViewEpisodes}
-          />
-        ) : (
-          <WebPlayer
-            key={streamDetails?.encoded_data}
-            src={videoURL}
-            startTime={startTime}
-            onVideoProgress={handleVideoProgress}
-            playerSettings={watchProgress?.player_settings}
-            isStreamsMatch={isStreamsMatch}
-            originalAudioLang={originalAudioLang}
-            mediaDetails={mediaDetails}
-            handleClose={handleClose}
-            setInfoModalOpen={setInfoModalOpen}
-            onChangeSource={onChangeSource}
-            onViewEpisodes={onViewEpisodes}
-            segmentMedia={streams}
-            onNextEpisode={onNextEpisode}
-            isOverlayOpen={infoModalOpen || isOverlayOpen}
-          />
-        ))}
+      <div className="stream-modal-loading-stage">
+        {readyToPlay &&
+          (isPlatformElectron ? (
+            <MPVElectronPlayer
+              key={streamDetails?.encoded_data}
+              options={videoJsOptions}
+              onVideoProgress={handleVideoProgress}
+              handleClose={handleClose}
+              setInfoModalOpen={setInfoModalOpen}
+              externalSubtitles={externalSubtitles}
+              playerSettings={watchProgress?.player_settings}
+              isStreamsMatch={isStreamsMatch}
+              originalAudioLang={originalAudioLang}
+              segmentMedia={streams}
+              onNextEpisode={onNextEpisode}
+              isOverlayOpen={infoModalOpen || isOverlayOpen}
+              onChangeSource={onChangeSource}
+              onViewEpisodes={onViewEpisodes}
+              onStartupSettled={() => setPlayerSettledKey(streamDetails.encoded_data)}
+            />
+          ) : (
+            <WebPlayer
+              key={streamDetails?.encoded_data}
+              src={videoURL}
+              startTime={startTime}
+              onVideoProgress={handleVideoProgress}
+              playerSettings={watchProgress?.player_settings}
+              isStreamsMatch={isStreamsMatch}
+              originalAudioLang={originalAudioLang}
+              mediaDetails={mediaDetails}
+              handleClose={handleClose}
+              setInfoModalOpen={setInfoModalOpen}
+              onChangeSource={onChangeSource}
+              onViewEpisodes={onViewEpisodes}
+              segmentMedia={streams}
+              onNextEpisode={onNextEpisode}
+              isOverlayOpen={infoModalOpen || isOverlayOpen}
+              onStartupSettled={() => setPlayerSettledKey(streamDetails.encoded_data)}
+            />
+          ))}
+        <PlayerLoadingOverlay
+          visible={overlayVisible}
+          mediaDetails={mediaDetails}
+          onClose={handleClose}
+        >
+          {(streamError || playbackError) && (
+            <>
+              <p>{streamError || playbackError}</p>
+              <Button
+                variant="contained"
+                startIcon={<ArrowBack />}
+                onClick={handleClose}
+              >
+                Back
+              </Button>
+            </>
+          )}
+        </PlayerLoadingOverlay>
+      </div>
       <InfoModal
         open={infoModalOpen}
         setOpen={setInfoModalOpen}

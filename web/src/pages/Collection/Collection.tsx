@@ -152,9 +152,11 @@ function Collection(props: any) {
         }
       });
   }, [collectionID, page]);
-  if (isCollectionDataLoaded) {
-    document.title = collectionData.collection.collection_title + " - Hound";
-  }
+  useEffect(() => {
+    if (isCollectionDataLoaded) {
+      document.title = `${collectionData.collection.collection_title} - Hound`;
+    }
+  }, [isCollectionDataLoaded, collectionData.collection.collection_title]);
   return (
     <>
       {isCollectionDataLoaded ? (

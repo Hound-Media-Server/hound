@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import ElectronVideoControls from "./ElectronVideoControls";
 import { get2LetterLangCode } from "../../helpers/locale";
-import { IconButton } from "@mui/material";
-import { ArrowBack } from "@mui/icons-material";
 import { SegmentMedia, useVideoSegments } from "../../api/hooks/segments";
 import {
   canSkipSegment,
@@ -17,14 +15,13 @@ interface IVideoPlayerProps {
     total: number,
     playerSettings?: any,
   ) => void;
-  setLoading?: (loading: boolean) => void;
   externalSubtitles?: any[];
   handleClose?: () => void;
   setInfoModalOpen?: (open: boolean) => void;
   playerSettings?: any;
   isStreamsMatch?: boolean;
   originalAudioLang?: string;
-  mediaDetails?: any;
+  onStartupSettled?: () => void;
   onChangeSource?: (currentTime: number) => void;
   onViewEpisodes?: () => void;
   segmentMedia?: SegmentMedia;
@@ -42,7 +39,7 @@ const MPVElectronPlayer = React.memo(
     playerSettings,
     isStreamsMatch,
     originalAudioLang,
-    mediaDetails,
+    onStartupSettled,
     onChangeSource,
     onViewEpisodes,
     segmentMedia,
@@ -73,12 +70,13 @@ const MPVElectronPlayer = React.memo(
     originalAudioLangRef.current = originalAudioLang;
     const onVideoProgressRef = useRef(onVideoProgress);
     onVideoProgressRef.current = onVideoProgress;
+    const onStartupSettledRef = useRef(onStartupSettled);
+    onStartupSettledRef.current = onStartupSettled;
 
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
     const [isVideoLoading, setIsVideoLoading] = useState(true);
-    const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
     const skipSegment = useVideoSegments(
@@ -89,21 +87,6 @@ const MPVElectronPlayer = React.memo(
       !!onNextEpisode,
     );
 
-    var releaseYear =
-      mediaDetails?.release_date.length > 4
-        ? mediaDetails?.release_date.slice(0, 4)
-        : "";
-
-    useEffect(() => {
-      setIsBackdropLoaded(false);
-      const backdropURI = mediaDetails?.backdrop_uri;
-      if (!backdropURI) return;
-
-      const backdrop = new Image();
-      backdrop.onload = () => setIsBackdropLoaded(true);
-      backdrop.onerror = () => setIsBackdropLoaded(true);
-      backdrop.src = backdropURI;
-    }, [mediaDetails?.backdrop_uri]);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -342,6 +325,7 @@ const MPVElectronPlayer = React.memo(
       if (!source) {
         console.warn("MPV: no source specified");
         setIsVideoLoading(false);
+        onStartupSettledRef.current?.();
         return;
       }
       const startTime = options?.startTime;
@@ -352,9 +336,13 @@ const MPVElectronPlayer = React.memo(
       setIsVideoLoading(true);
 
       // fallback, if failed, still show video
+      let settled = false;
       const finishLoading = () => {
+        if (destroyed || settled) return;
+        settled = true;
         setIsVideoLoading(false);
         if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
+        onStartupSettledRef.current?.();
       };
       loadingFallbackTimer = setTimeout(finishLoading, 20000);
 
@@ -578,42 +566,6 @@ const MPVElectronPlayer = React.memo(
           skipBlocked={isVideoLoading || !seekDoneRef.current}
           isOverlayOpen={isOverlayOpen}
         />
-        <div
-          className={`mpv-loading-overlay${isVideoLoading ? "" : " mpv-loading-overlay-hidden"}`}
-        >
-          <IconButton
-            onClick={handleClose}
-            sx={{
-              position: "absolute",
-              top: 16,
-              left: 16,
-              color: "white",
-              zIndex: 10,
-            }}
-          >
-            <ArrowBack />
-          </IconButton>
-          {mediaDetails?.backdrop_uri && (
-            <div
-              className={`mpv-loading-backdrop${isBackdropLoaded ? " mpv-loading-backdrop-visible" : ""}`}
-              style={{ backgroundImage: `url(${mediaDetails?.backdrop_uri})` }}
-            />
-          )}
-          <div className="mpv-loading-shade" />
-          {mediaDetails?.logo_uri && (
-            <img
-              className="mpv-loading-logo"
-              src={mediaDetails?.logo_uri}
-              alt=""
-            />
-          )}
-          {!mediaDetails?.logo_uri && (
-            <div className="mpv-loading-title">
-              {mediaDetails?.media_title}{" "}
-              {releaseYear ? `(${releaseYear})` : ""}
-            </div>
-          )}
-        </div>
       </div>
     );
   },

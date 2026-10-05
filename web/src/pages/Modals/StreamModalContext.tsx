@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
 } from "react";
-import toast from "react-hot-toast";
 import { useMediaDetails } from "../../api/hooks/media";
 import { useDirectStreamMutation } from "../../api/hooks/providers";
 import StreamModal from "./StreamModal";
@@ -24,6 +23,8 @@ export type StreamPlaybackRequest = {
   encodedData?: string;
   watchProgress?: any;
   originalAudioLang?: string;
+  mediaDetails?: any;
+  getWatchProgress?: () => Promise<any>;
 };
 
 type StreamModalContextValue = {
@@ -33,15 +34,20 @@ type StreamModalContextValue = {
 };
 
 const StreamModalContext = createContext<StreamModalContextValue | null>(null);
-const streamKey = (request: StreamPlaybackRequest) => JSON.stringify([
-  request.mediaType, request.mediaSource, request.sourceId,
-  request.season, request.episode,
-]);
+const streamKey = (request: StreamPlaybackRequest) =>
+  JSON.stringify([
+    request.mediaType,
+    request.mediaSource,
+    request.sourceId,
+    request.season,
+    request.episode,
+  ]);
 
 export function StreamModalProvider({ children }: { children: ReactNode }) {
   const { mutateAsync: resolveStream } = useDirectStreamMutation();
   const prefetchedEpisode = useRef<string | null>(null);
   const [request, setRequest] = useState<StreamPlaybackRequest | null>(null);
+  const [streamError, setStreamError] = useState<string | null>(null);
   const [isSourceSelectOpen, setIsSourceSelectOpen] = useState(false);
   const [isEpisodeSelectOpen, setIsEpisodeSelectOpen] = useState(false);
   const [switchProgress, setSwitchProgress] = useState<any>(null);
@@ -63,31 +69,52 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
     setSwitchProgress(null);
     setSourceSelectTarget(null);
     setRequest(null);
+    setStreamError(null);
   }, []);
 
-  const openStream = useCallback(async (next: StreamPlaybackRequest) => {
-    const currentRequestId = ++requestId.current;
-    if (next.stream || next.encodedData) {
+  const openStream = useCallback(
+    async (next: StreamPlaybackRequest) => {
+      const currentRequestId = ++requestId.current;
+      setStreamError(null);
       setRequest(next);
-      return;
-    }
-
-    const loadingToast = toast.loading("Searching streams...");
-    try {
-      const { selectedStream: stream } = await resolveStream(next);
-      if (!stream) throw new Error("No streams found");
-      if (currentRequestId === requestId.current) {
-        setRequest({ ...next, stream });
+      if (next.stream || next.encodedData) {
+        return;
       }
-      toast.dismiss(loadingToast);
-    } catch {
-      if (currentRequestId === requestId.current) {
-        toast.error("No streams found", { id: loadingToast });
-      } else {
-        toast.dismiss(loadingToast);
+      try {
+        const progress = next.getWatchProgress
+          ? await next.getWatchProgress()
+          : next.watchProgress;
+        if (currentRequestId !== requestId.current) return;
+        const { selectedStream: stream, startedImmediately } =
+          await resolveStream({
+            ...next,
+            encodedData: progress?.encoded_data,
+            onImmediateStream: (immediateStream: any) => {
+              if (currentRequestId === requestId.current) {
+                setRequest({
+                  ...next,
+                  watchProgress: progress,
+                  stream: immediateStream,
+                });
+              }
+            },
+          });
+        if (currentRequestId === requestId.current) {
+          if (stream) {
+            if (!startedImmediately)
+              setRequest({ ...next, watchProgress: progress, stream });
+          } else {
+            setStreamError("No streams found.");
+          }
+        }
+      } catch {
+        if (currentRequestId === requestId.current) {
+          setStreamError("Could not search for streams.");
+        }
       }
-    }
-  }, [resolveStream]);
+    },
+    [resolveStream],
+  );
 
   const value = useMemo(
     () => ({ isOpen: request !== null, openStream, closeStream }),
@@ -113,17 +140,23 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
     : null;
   const nextEpisode = useMemo(() => {
     if (
-      request?.mediaType !== "tv" || request.season === undefined ||
+      request?.mediaType !== "tv" ||
+      request.season === undefined ||
       request.episode === undefined
-    ) return null;
+    )
+      return null;
     const seasons = mediaDetails?.seasons || [];
-    const current = seasons.find((s: any) => s.season_number === request.season);
+    const current = seasons.find(
+      (s: any) => s.season_number === request.season,
+    );
     if (!current) return null;
     if (request.episode < current.episode_count) {
       return { season: request.season, episode: request.episode + 1 };
     }
     const next = [...seasons]
-      .filter((s: any) => s.season_number > request.season! && s.episode_count > 0)
+      .filter(
+        (s: any) => s.season_number > request.season! && s.episode_count > 0,
+      )
       .sort((a: any, b: any) => a.season_number - b.season_number)[0];
     return next ? { season: next.season_number, episode: 1 } : null;
   }, [request, mediaDetails]);
@@ -138,34 +171,45 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
         streams={streamContext}
         watchProgress={request?.watchProgress}
         originalAudioLang={request?.originalAudioLang}
-        mediaDetails={mediaDetails}
+        mediaDetails={request?.mediaDetails ?? mediaDetails}
+        streamError={streamError}
         isOverlayOpen={isSourceSelectOpen || isEpisodeSelectOpen}
-        onPrefetchNextEpisode={nextEpisode && request ? () => {
-          const target = { ...request, ...nextEpisode, encodedData: undefined };
-          const key = streamKey(target);
-          if (prefetchedEpisode.current === key) return;
-          prefetchedEpisode.current = key;
-          void resolveStream(target).catch(() => null);
-        } : undefined}
+        onPrefetchNextEpisode={
+          nextEpisode && request
+            ? () => {
+                const target = {
+                  ...request,
+                  ...nextEpisode,
+                  encodedData: undefined,
+                };
+                const key = streamKey(target);
+                if (prefetchedEpisode.current === key) return;
+                prefetchedEpisode.current = key;
+                void resolveStream(target).catch(() => null);
+              }
+            : undefined
+        }
         onNextEpisode={
-          nextEpisode && request ? async (playerSettings: any) => {
-            if (nextEpisodePending.current) return;
-            nextEpisodePending.current = true;
-            try {
-              await openStream({
-                ...request,
-                ...nextEpisode,
-                stream: undefined,
-                encodedData: undefined,
-                watchProgress: {
-                  current_progress_seconds: 0,
-                  player_settings: playerSettings,
-                },
-              });
-            } finally {
-              nextEpisodePending.current = false;
-            }
-          } : undefined
+          nextEpisode && request
+            ? async (playerSettings: any) => {
+                if (nextEpisodePending.current) return;
+                nextEpisodePending.current = true;
+                try {
+                  await openStream({
+                    ...request,
+                    ...nextEpisode,
+                    stream: undefined,
+                    encodedData: undefined,
+                    watchProgress: {
+                      current_progress_seconds: 0,
+                      player_settings: playerSettings,
+                    },
+                  });
+                } finally {
+                  nextEpisodePending.current = false;
+                }
+              }
+            : undefined
         }
         onChangeSource={(currentTime: number) => {
           requestId.current++;
