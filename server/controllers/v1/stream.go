@@ -50,7 +50,7 @@ func StreamHandler(c *gin.Context) {
 	// 	return
 	// }
 	// Direct stream case, just proxy url
-	handleProxyStream(c, streamDetails.URI)
+	handleProxyStream(c, streamDetails)
 }
 
 func handleFileStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
@@ -155,7 +155,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 		c.Status(http.StatusOK)
 		return
 	}
-	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", url, nil)
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", videoURL, nil)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("error creating URL: %w", err))
 		return
