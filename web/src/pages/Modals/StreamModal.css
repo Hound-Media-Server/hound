@@ -6,3 +6,31 @@
 .videojs-container {
   background-color: black;
 }
+
+.stream-info-modal .MuiBackdrop-root {
+  background-color: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.stream-info-modal .MuiDialog-paper {
+  min-width: min(420px, calc(100vw - 32px));
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(var(--hound-dark), 0.97);
+  border: 1px solid rgba(var(--hound-secondary), 0.22);
+  border-radius: 10px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.65);
+}
+
+.stream-info-modal .MuiDialogTitle-root {
+  color: white;
+  font-family: "Cabin Condensed", "Cabin", sans-serif;
+}
+
+.stream-info-modal .MuiDialogContentText-root {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.stream-info-modal hr {
+  border-color: rgba(var(--hound-secondary), 0.22);
+  opacity: 1;
+}

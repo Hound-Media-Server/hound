@@ -1,14 +1,15 @@
 package providers
 
 import (
-	"github.com/mcay23/hound/database"
-	"github.com/mcay23/hound/sources"
 	"log/slog"
 	"os"
 	"strconv"
+
+	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/sources"
 )
 
-func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
+func GetLocalStreamsForMovie(sourceID int, checkFile bool) ([]*StreamObjectFull, error) {
 	// set title, but if error should not block response
 	// we want to be able to serve files without a connection
 	// need to check if latency is high in this case
@@ -25,20 +26,29 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 		return nil, err
 	}
 	if !has {
-		return []*StreamObject{}, nil
+		return []*StreamObjectFull{}, nil
 	}
 	mediaFiles, err := database.GetMediaFileByRecordID(int(record.RecordID))
 	if err != nil {
 		return nil, err
 	}
-	streamObjects := []*StreamObject{}
+	streamObjects := []*StreamObjectFull{}
 	for _, file := range mediaFiles {
-		if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
-			slog.Debug("File not found", "filepath", file.Filepath)
-			continue
+		// for providers, do a final check on whether the file exists
+		// if we're just listing the files, we want to list stale + existing files
+		if checkFile {
+			if _, err := os.Stat(file.Filepath); err != nil {
+				if os.IsNotExist(err) {
+					slog.Debug("File not found", "filepath", file.Filepath)
+				} else {
+					slog.Error("Error statting file", "filepath", file.Filepath, "error", err)
+				}
+				continue
+			}
 		}
 		streamObj, err := mapMediaFileToStreamObject(strconv.Itoa(sourceID), file, record, title)
 		if err != nil {
+			slog.Error("Error mapping media file to stream object", "filepath", file.Filepath, "error", err)
 			continue
 		}
 		streamObjects = append(streamObjects, streamObj)
@@ -46,7 +56,7 @@ func GetLocalStreamsForMovie(sourceID int) ([]*StreamObject, error) {
 	return streamObjects, nil
 }
 
-func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int) ([]*StreamObject, error) {
+func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int, checkFile bool) ([]*StreamObjectFull, error) {
 	// check notes on GetLocalStreamsForMovie
 	title := ""
 	showDetails, err := sources.GetTVShowFromIDTMDB(showID)
@@ -61,17 +71,22 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 	if err != nil {
 		return nil, err
 	}
-	streamObjects := []*StreamObject{}
+	streamObjects := []*StreamObjectFull{}
 	for _, episodeRecordTemp := range episodeRecords {
 		episodeRecord := episodeRecordTemp
 		mediaFiles, err := database.GetMediaFileByRecordID(int(episodeRecord.RecordID))
 		if err != nil {
 			continue
 		}
+		// TODO os.Stat() is really slow on network mounted drives if the file doesn't exist
+		// for providers, do a final check on whether the file exists
+		// if we're just listing the files, we want to list stale + existing files
 		for _, file := range mediaFiles {
-			if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
-				slog.Debug("File not found", "filepath", file.Filepath)
-				continue
+			if checkFile {
+				if _, err := os.Stat(file.Filepath); os.IsNotExist(err) {
+					slog.Debug("File not found", "filepath", file.Filepath)
+					continue
+				}
 			}
 			epTitle := title
 			if seasonNumber == nil || episodeNumber == nil {
@@ -91,19 +106,20 @@ func GetLocalStreamsForTVShow(showID int, seasonNumber *int, episodeNumber *int)
 
 // we don't need to include everything in the encode, since uri is usually enough
 // re-add metadata for the json response
-func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, record *database.MediaRecord, title string) (*StreamObject, error) {
+func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, record *database.MediaRecord, title string) (*StreamObjectFull, error) {
 	fileSize := int(file.Filesize)
 	if title == "" {
 		title = file.VideoMetadata.Filename
 	}
 	streamObj := &StreamObject{
-		Provider:       "Hound",
-		StreamProtocol: database.ProtocolFileHTTP,
-		URI:            file.Filepath,
-		Title:          title,
-		Description:    "Local file: " + file.Filepath,
-		FileSize:       &fileSize,
-		VideoMetadata:  nil,
+		ProviderProfileName: "Hound",
+		StreamProtocol:      database.ProtocolFileHTTP,
+		URI:                 file.Filepath,
+		Title:               title,
+		Description:         "Local file: " + file.Filepath,
+		FileSize:            &fileSize,
+		FileID:              &file.FileID,
+		FileOrigin:          &file.FileOrigin,
 	}
 	details := StreamMediaDetails{
 		MediaType:   record.RecordType,
@@ -115,8 +131,8 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 		details.SeasonNumber = record.SeasonNumber
 		details.EpisodeNumber = record.EpisodeNumber
 		details.EpisodeSourceID = &record.SourceID
-		epID := strconv.Itoa(int(record.RecordID))
-		details.EpisodeSourceID = &epID
+		// epID := strconv.Itoa(int(record.RecordID))
+		// details.EpisodeSourceID = &epID
 	}
 	streamObjectFull := StreamObjectFull{
 		StreamObject:       *streamObj,
@@ -126,7 +142,7 @@ func mapMediaFileToStreamObject(sourceID string, file *database.MediaFile, recor
 	if err != nil {
 		return nil, err
 	}
-	streamObj.EncodedData = encodedData
-	streamObj.VideoMetadata = &file.VideoMetadata
-	return streamObj, nil
+	streamObjectFull.EncodedData = encodedData
+	streamObjectFull.VideoMetadata = &file.VideoMetadata
+	return &streamObjectFull, nil
 }

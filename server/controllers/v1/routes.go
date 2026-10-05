@@ -51,13 +51,19 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/backdrop", GetMediaBackdrops)
 	privateRoutes.GET("/continue_watching", GetContinueWatchingHandler)
 	privateRoutes.GET("/watch_stats", GetWatchStatsHandler)
-	// public, can also be used as health check
-	publicRoutes.GET("/server_info", GetServerInfoHandler)
+	privateRoutes.GET("/server_info", GetServerInfoHandler)
 
 	/*
-		Catalog Routes
+		Home Row / Catalog Routes
 	*/
+	privateRoutes.GET("/catalogs", GetCatalogDefinitionsHandler)
 	privateRoutes.GET("/catalog/:id", GetCatalogHandler)
+	privateRoutes.GET("/home", GetUserHomeRowsHandler)
+	privateRoutes.GET("/home/default", GetDefaultHomeRowsHandler)
+	privateRoutes.GET("/home/:rowIndex", GetHomeRowIndexHandler)
+	privateRoutes.PUT("/home", UpdateUserHomeRowsHandler)
+	privateRoutes.DELETE("/home", ResetUserHomeRowsHandler)
+	adminRoutes.PUT("/home/default", UpdateDefaultHomeRowsHandler)
 
 	/*
 		Collection Routes
@@ -69,7 +75,9 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.DELETE("/collection/:id/delete", DeleteCollectionHandler) // delete whole collection
 	privateRoutes.DELETE("/collection/:id", DeleteFromCollectionHandler)
 	privateRoutes.GET("/collection/all", GetUserCollectionsHandler)
+	privateRoutes.GET("/collection/public", GetPublicCollectionsHandler)
 	privateRoutes.POST("/collection/new", CreateCollectionHandler) // add new collection
+	privateRoutes.PUT("/collection/:id", UpdateCollectionHandler)
 
 	/*
 		Watch History Routes
@@ -109,8 +117,15 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
-
 	privateRoutes.GET("/movie/:id/continue_watching", GetMovieNextWatchActionHandler)
+
+	/*
+		Live TV Routes
+	*/
+	privateRoutes.GET("/live/:id/categories", GetLiveCategoriesHandler) // only for xtream
+	privateRoutes.GET("/live/:id/channels", GetLiveChannelsHandler)
+	privateRoutes.POST("/live/:id/epg", GetChannelEPGsHandler)
+	// privateRoutes.GET("/live/stream/:encodedString", StreamLiveTVHandler)
 
 	/*
 		Comments
@@ -125,11 +140,13 @@ func SetupRoutes(r *gin.Engine) {
 		Video Streaming, Downloads Routes
 	*/
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
-	// privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
-	// privateRoutes.POST("/download/:encodedString", DownloadHandler)                      // downloads to the server, not the client
-	// privateRoutes.POST("/tv/:id/season/:seasonNumber/download", DownloadTVSeasonHandler) // downloads a whole season
-	// privateRoutes.GET("/ingest", GetIngestTasksHandler)
-	// privateRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
+	publicRoutes.HEAD("/stream/:encodedString", StreamHandler) // required by moviplayer in frontend
+	publicRoutes.GET("/subtitle/:encodedString", SubtitleHandler)
+	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
+	adminRoutes.POST("/download/:encodedString", DownloadHandler)                      // downloads to the server, not the client
+	adminRoutes.POST("/tv/:id/season/:seasonNumber/download", DownloadTVSeasonHandler) // downloads a whole season
+	adminRoutes.GET("/ingest", GetIngestTasksHandler)
+	adminRoutes.POST("/ingest/:taskID/cancel", CancelIngestTaskHandler)
 
 	/*
 		Provider Profiles
@@ -140,12 +157,22 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.PUT("/provider_profiles/:id", UpdateProviderProfileHandler)
 
 	/*
+		IPTV Providers
+	*/
+	adminRoutes.POST("/iptv_providers", AddIPTVProviderHandler)
+	privateRoutes.GET("/iptv_providers", GetIPTVProvidersHandler)
+	adminRoutes.DELETE("/iptv_providers/:id", DeleteIPTVProviderHandler)
+
+	/*
 		Query Providers Routes
 	*/
 	privateRoutes.GET("/movie/:id/providers", SearchProvidersMovieHandler)
 	privateRoutes.GET("/tv/:id/providers", SearchProvidersTVHandler)
 	privateRoutes.GET("/movie/:id/media_files", GetMovieMediaFilesHandler)
 	privateRoutes.GET("/tv/:id/media_files", GetTVShowMediaFilesHandler)
+	privateRoutes.GET("/movie/:id/subtitles", SearchSubtitlesMovieHandler)
+	privateRoutes.GET("/tv/:id/subtitles", SearchSubtitlesTVHandler)
+	privateRoutes.GET("/tv/:id/segments", SearchSegmentsTVHandler)
 
 	/*
 		Genres Routes
@@ -160,10 +187,14 @@ func SetupRoutes(r *gin.Engine) {
 	adminRoutes.DELETE("/media_files/:id", DeleteMediaFileHandler)
 
 	/*
+		Misc.
+	*/
+	privateRoutes.POST("/decode", DecodeStreamHandler) // get decoded stream details
+
+	/*
 		Testing purposes only
 	*/
 	if config.AppEnvironment != "production" {
-		privateRoutes.GET("/decode", DecodeTestHandler)
 		privateRoutes.GET("/clearcache", ClearCacheHandler)
 		privateRoutes.GET("/tv/:id/episodes", GetTVEpisodesHandler)
 		privateRoutes.GET("/media_files/metadata", GetMetadataHandler)

@@ -2,10 +2,12 @@ package v1
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
+	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
 
@@ -151,7 +153,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	records, _, err := database.FindCollection(database.CollectionRecord{OwnerUserID: userID}, -1, -1)
+	records, _, err := database.FindCollection(database.CollectionRecord{OwnerUserID: userID}, -1, 0)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", internal.InternalServerError, err))
 		return
@@ -179,10 +181,65 @@ func GetUserCollectionsHandler(c *gin.Context) {
 	internal.SuccessResponse(c, collectionResponse, 200)
 }
 
+// @Router /v1/collection/public [get]
+// @Summary Get public collections
+// @ID get-public-collections
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} V1SuccessResponse{data=[]view.CollectionObject}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetPublicCollectionsHandler(c *gin.Context) {
+	limit := c.DefaultQuery("limit", "20")
+	parsedLimit, err := strconv.Atoi(limit)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to convert limit to int: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	offset := c.DefaultQuery("offset", "0")
+	parsedOffset, err := strconv.Atoi(offset)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to convert offset to int: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	records, _, err := database.FindCollection(database.CollectionRecord{IsPublic: true}, parsedLimit, parsedOffset)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", internal.InternalServerError, err))
+		return
+	}
+	var collectionResponse = []view.CollectionObject{}
+	for _, record := range records {
+		// cached call, but could get expensive in reality
+		user, err := database.GetUser(record.OwnerUserID)
+		if err != nil {
+			slog.Error("Invalid collection user", "error", err, "user_id", record.OwnerUserID)
+			continue
+		}
+		temp := view.CollectionObject{
+			CollectionID:     record.CollectionID,
+			CollectionTitle:  record.CollectionTitle,
+			Description:      string(record.Description),
+			OwnerUsername:    user.Username,
+			OwnerDisplayName: user.DisplayName,
+			IsPublic:         record.IsPublic,
+			ThumbnailURI:     record.ThumbnailURI,
+			CreatedAt:        record.CreatedAt,
+			UpdatedAt:        record.UpdatedAt,
+		}
+		collectionResponse = append(collectionResponse, temp)
+	}
+	internal.SuccessResponse(c, collectionResponse, 200)
+}
+
 // @Router /v1/collection/new [post]
 // @Summary Create New Collection
 // @ID create-collection
 // @Tags Collection
+// @Param id path int true "Collection ID"
+// @Param body body CreateCollectionRequest true "Create Collection Request"
 // @Accept json
 // @Produce json
 // @Success 200 {object} V1SuccessResponse{data=object}
@@ -212,6 +269,46 @@ func CreateCollectionHandler(c *gin.Context) {
 		return
 	}
 	internal.SuccessResponse(c, gin.H{"collection_id": collectionID}, 200)
+}
+
+// @Router /v1/collection/{id} [put]
+// @Summary Update Collection
+// @ID update-collection
+// @Tags Collection
+// @Param id path int true "Collection ID"
+// @Param body body CreateCollectionRequest true "Update Collection Request"
+// @Accept json
+// @Produce json
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func UpdateCollectionHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	collectionID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to convert collection id to int: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	body := CreateCollectionRequest{}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to bind body: %w: %w", internal.BadRequestError, err))
+		return
+	}
+	record := database.CollectionRecord{
+		CollectionTitle: body.CollectionTitle,
+		Description:     body.Description,
+		IsPublic:        body.IsPublic,
+	}
+	err = database.UpdateCollection(int64(collectionID), userID, &record)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to update collection: %w", err))
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
 }
 
 // @Router /v1/collection/{id} [get]
@@ -253,7 +350,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 	}
 	var viewArray = []view.MediaRecordCatalog{}
 	for _, item := range records {
-		viewObject := createMediaRecordCatalogObject(item)
+		viewObject := model.CreateMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	// note collection owner can be different from calling user (public collections)
@@ -306,7 +403,7 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 	}
 	var viewArray []view.MediaRecordCatalog
 	for _, item := range records {
-		viewObject := createMediaRecordCatalogObject(item)
+		viewObject := model.CreateMediaRecordCatalogObject(item)
 		viewArray = append(viewArray, viewObject)
 	}
 	internal.SuccessResponse(c, viewArray, 200)
@@ -340,27 +437,4 @@ func DeleteCollectionHandler(c *gin.Context) {
 		return
 	}
 	internal.SuccessResponse(c, nil, 200)
-}
-
-func createMediaRecordCatalogObject(record database.MediaRecordGroup) view.MediaRecordCatalog {
-	return view.MediaRecordCatalog{
-		MediaType:        record.RecordType,
-		MediaSource:      record.MediaSource,
-		SourceID:         record.SourceID,
-		MediaTitle:       record.MediaTitle,
-		OriginalTitle:    record.OriginalTitle,
-		Status:           record.Status,
-		Overview:         record.Overview,
-		Duration:         record.Duration,
-		ReleaseDate:      record.ReleaseDate,
-		LastAirDate:      record.LastAirDate,
-		NextAirDate:      record.NextAirDate,
-		SeasonNumber:     record.SeasonNumber,
-		EpisodeNumber:    record.EpisodeNumber,
-		ThumbnailURI:     record.ThumbnailURI,
-		BackdropURI:      record.BackdropURI,
-		Genres:           record.Genres,
-		OriginalLanguage: record.OriginalLanguage,
-		OriginCountry:    record.OriginCountry,
-	}
 }

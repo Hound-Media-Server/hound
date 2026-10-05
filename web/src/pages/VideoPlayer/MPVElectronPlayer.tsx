@@ -1,0 +1,622 @@
+import React, { useEffect, useRef, useCallback, useState } from "react";
+import ElectronVideoControls from "./ElectronVideoControls";
+import { get2LetterLangCode } from "../../helpers/locale";
+import { IconButton } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
+import { SegmentMedia, useVideoSegments } from "../../api/hooks/segments";
+import {
+  canSkipSegment,
+  nextEpisodePlayerSettings,
+  skipVideoSegment,
+} from "../../utils/videoSegments";
+
+interface IVideoPlayerProps {
+  options: any;
+  onVideoProgress?: (
+    current: number,
+    total: number,
+    playerSettings?: any,
+  ) => void;
+  setLoading?: (loading: boolean) => void;
+  externalSubtitles?: any[];
+  handleClose?: () => void;
+  setInfoModalOpen?: (open: boolean) => void;
+  playerSettings?: any;
+  isStreamsMatch?: boolean;
+  originalAudioLang?: string;
+  mediaDetails?: any;
+  onChangeSource?: (currentTime: number) => void;
+  onViewEpisodes?: () => void;
+  segmentMedia?: SegmentMedia;
+  onNextEpisode?: (settings: any) => Promise<void>;
+  isOverlayOpen?: boolean;
+}
+
+const MPVElectronPlayer = React.memo(
+  ({
+    options,
+    onVideoProgress,
+    externalSubtitles,
+    handleClose,
+    setInfoModalOpen,
+    playerSettings,
+    isStreamsMatch,
+    originalAudioLang,
+    mediaDetails,
+    onChangeSource,
+    onViewEpisodes,
+    segmentMedia,
+    onNextEpisode,
+    isOverlayOpen,
+  }: IVideoPlayerProps) => {
+    const videoRef = useRef<any>(null);
+    const lastReportTimeRef = useRef(0);
+
+    const [paused, setPaused] = useState(true);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [tracks, setTracks] = useState<any[]>([]);
+    const [selectedAudioIdx, setSelectedAudioIdx] = useState<
+      number | undefined
+    >(undefined);
+    const [selectedSubIdx, setSelectedSubIdx] = useState<number | undefined>(
+      undefined,
+    );
+    const selectedAudioIdxRef = useRef<number | undefined>(undefined);
+    const selectedSubIdxRef = useRef<number | undefined>(undefined);
+
+    const playerSettingsRef = useRef(playerSettings);
+    playerSettingsRef.current = playerSettings;
+    const isStreamsMatchRef = useRef(isStreamsMatch);
+    isStreamsMatchRef.current = isStreamsMatch;
+    const originalAudioLangRef = useRef(originalAudioLang);
+    originalAudioLangRef.current = originalAudioLang;
+    const onVideoProgressRef = useRef(onVideoProgress);
+    onVideoProgressRef.current = onVideoProgress;
+
+    const [volume, setVolumeState] = useState(100);
+    const [muted, setMuted] = useState(false);
+    const [prevVolume, setPrevVolume] = useState(100);
+    const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
+    const seekDoneRef = useRef(false);
+    const tracksInitializedRef = useRef(false);
+    const skipSegment = useVideoSegments(
+      segmentMedia,
+      options?.sources?.[0]?.src,
+      duration,
+      currentTime,
+      !!onNextEpisode,
+    );
+
+    var releaseYear =
+      mediaDetails?.release_date.length > 4
+        ? mediaDetails?.release_date.slice(0, 4)
+        : "";
+
+    useEffect(() => {
+      setIsBackdropLoaded(false);
+      const backdropURI = mediaDetails?.backdrop_uri;
+      if (!backdropURI) return;
+
+      const backdrop = new Image();
+      backdrop.onload = () => setIsBackdropLoaded(true);
+      backdrop.onerror = () => setIsBackdropLoaded(true);
+      backdrop.src = backdropURI;
+    }, [mediaDetails?.backdrop_uri]);
+
+    const handlePlayPause = async () => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        if (paused) {
+          await video.play();
+        } else {
+          await video.pause();
+        }
+      } catch (error) {
+        console.error("MPV pause error:", error);
+      }
+    };
+
+    const handlePause = useCallback(async () => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.pause();
+      } catch (error) {
+        console.error("MPV pause error:", error);
+      }
+    }, []);
+
+    const handlePlay = useCallback(async () => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.play();
+      } catch (error) {
+        console.error("MPV play error:", error);
+      }
+    }, []);
+
+    const handleSeek = useCallback(async (time: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.seek(time);
+      } catch (error) {
+        console.error("MPV seek error:", error);
+      }
+    }, []);
+
+    const handleSetVolume = useCallback(async (val: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.setVolume(val);
+        setVolumeState(val);
+        if (val > 0) setMuted(false);
+      } catch (error) {
+        console.error("MPV set volume error:", error);
+      }
+    }, []);
+
+    const handleToggleMute = useCallback(async () => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        if (muted) {
+          const restore = prevVolume > 0 ? prevVolume : 80;
+          await video.setVolume(restore);
+          setVolumeState(restore);
+          setMuted(false);
+        } else {
+          setPrevVolume(volume);
+          await video.setVolume(0);
+          setVolumeState(0);
+          setMuted(true);
+        }
+      } catch (error) {
+        console.error("MPV mute error:", error);
+      }
+    }, [muted, volume, prevVolume]);
+
+    const handleSetAudioTrack = useCallback(async (id: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.setAudioTrack(id);
+        setSelectedAudioIdx(id);
+        selectedAudioIdxRef.current = id;
+      } catch (error) {
+        console.error("MPV set audio track error:", error);
+      }
+    }, []);
+
+    const handleSetSubtitleTrack = useCallback(async (id: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      try {
+        await video.setSubtitleTrack(id);
+        setSelectedSubIdx(id);
+        selectedSubIdxRef.current = id;
+      } catch (error) {
+        console.error("MPV set subtitle track error:", error);
+      }
+    }, []);
+
+    const audioTracks = (tracks || []).filter(
+      (t) => t.type === "audio" || t.type === "a",
+    );
+    const subTracks = (tracks || []).filter(
+      (t) => t.type === "sub" || t.type === "s",
+    );
+
+    const handleSkip = async () => {
+      if (!canSkipSegment(
+        skipSegment,
+        isVideoLoading || !seekDoneRef.current,
+        isOverlayOpen,
+      )) return;
+      try {
+        await skipVideoSegment(skipSegment, handleSeek, () =>
+          onNextEpisode?.(
+            nextEpisodePlayerSettings(
+              "desktop",
+              "contain",
+              get2LetterLangCode(
+                audioTracks.find((t) => Number(t.id) === selectedAudioIdx)?.lang,
+              ),
+              get2LetterLangCode(
+                subTracks.find((t) => Number(t.id) === selectedSubIdx)?.lang,
+              ),
+            ),
+          ),
+        );
+      } catch (error) {
+        console.error("MPV skip error:", error);
+      }
+    };
+
+    const initializeTracks = useCallback(async (trackList: any[]) => {
+      const video = videoRef.current;
+      if (!video || tracksInitializedRef.current) return;
+      tracksInitializedRef.current = true;
+
+      const availAudio = trackList.filter(
+        (t) => t.type === "audio" || t.type === "a",
+      );
+      const availSub = trackList.filter(
+        (t) => t.type === "sub" || t.type === "s",
+      );
+
+      const curSettings = playerSettingsRef.current;
+      const isMatch = isStreamsMatchRef.current;
+      const origAudio = originalAudioLangRef.current;
+
+      // Audio Track Restoration
+      let targetAudio: number | undefined = undefined;
+      if (
+        isMatch &&
+        curSettings?.audio_idx !== undefined &&
+        curSettings?.audio_idx !== null
+      ) {
+        const exists = availAudio.find(
+          (t) => Number(t.id) === Number(curSettings.audio_idx),
+        );
+        if (exists) {
+          targetAudio = Number(curSettings.audio_idx);
+        }
+      }
+      if (targetAudio === undefined) {
+        const targetLang =
+          get2LetterLangCode(curSettings?.audio_lang) ||
+          get2LetterLangCode(origAudio);
+        if (targetLang) {
+          const match = availAudio.find(
+            (t) => get2LetterLangCode(t.lang) === targetLang,
+          );
+          if (match) {
+            targetAudio = Number(match.id);
+          }
+        }
+      }
+      if (targetAudio !== undefined) {
+        try {
+          await video.setAudioTrack(targetAudio);
+          setSelectedAudioIdx(targetAudio);
+          selectedAudioIdxRef.current = targetAudio;
+        } catch (e) {
+          console.error("Failed to restore audio track:", e);
+        }
+      }
+
+      // Subtitle Track Restoration
+      let targetSub: number | undefined = undefined;
+      if (
+        isMatch &&
+        curSettings?.subtitle_idx !== undefined &&
+        curSettings?.subtitle_idx !== null
+      ) {
+        const subIdxNum = Number(curSettings.subtitle_idx);
+        if (subIdxNum === 0) {
+          targetSub = 0;
+        } else {
+          const exists = availSub.find((t) => Number(t.id) === subIdxNum);
+          if (exists) {
+            targetSub = subIdxNum;
+          }
+        }
+      }
+      if (targetSub === undefined) {
+        const targetLang =
+          get2LetterLangCode(curSettings?.subtitle_lang) || "en";
+        const match = availSub.find(
+          (t) => get2LetterLangCode(t.lang) === targetLang,
+        );
+        if (match) {
+          targetSub = Number(match.id);
+        }
+      }
+      if (targetSub !== undefined) {
+        try {
+          await video.setSubtitleTrack(targetSub);
+          setSelectedSubIdx(targetSub);
+          selectedSubIdxRef.current = targetSub;
+        } catch (e) {
+          console.error("Failed to restore subtitle track:", e);
+        }
+      }
+    }, []);
+
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) {
+        return;
+      }
+      let destroyed = false;
+      let seekAttempts = 0;
+      let seekTimer: ReturnType<typeof setTimeout> | undefined;
+      let loadingFallbackTimer: ReturnType<typeof setTimeout> | undefined;
+      const source = options?.sources?.[0]?.src;
+      if (!source) {
+        console.warn("MPV: no source specified");
+        setIsVideoLoading(false);
+        return;
+      }
+      const startTime = options?.startTime;
+      seekDoneRef.current = !startTime || startTime <= 0;
+      setDuration(0);
+      setCurrentTime(0);
+      lastReportTimeRef.current = 0;
+      setIsVideoLoading(true);
+
+      // fallback, if failed, still show video
+      const finishLoading = () => {
+        setIsVideoLoading(false);
+        if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
+      };
+      loadingFallbackTimer = setTimeout(finishLoading, 20000);
+
+      const scheduleInitialSeek = () => {
+        if (
+          destroyed ||
+          seekDoneRef.current ||
+          seekTimer ||
+          seekAttempts >= 12
+        ) {
+          return;
+        }
+        seekTimer = setTimeout(
+          async () => {
+            seekTimer = undefined;
+            if (destroyed || seekDoneRef.current) return;
+            seekAttempts++;
+            try {
+              await video.seek(startTime);
+            } catch (error) {
+              console.warn("MPV resume seek not ready; retrying", error);
+            }
+            if (!destroyed && !seekDoneRef.current && seekAttempts >= 12) {
+              console.warn(
+                "MPV could not confirm the restored playback position",
+              );
+              seekDoneRef.current = true;
+              finishLoading();
+            }
+          },
+          seekAttempts === 0 ? 150 : 750,
+        );
+      };
+      const load = async () => {
+        try {
+          await video.open(source);
+          if (destroyed) {
+            return;
+          }
+          await video.play();
+        } catch (error) {
+          console.error("MPV playback error:", error);
+          finishLoading();
+        }
+      };
+
+      load();
+
+      const handleState = (event: Event) => {
+        if (destroyed) return;
+        const detail = (event as CustomEvent).detail;
+        if (!detail) return;
+        const current = detail.time;
+        const dur = detail.duration;
+        if (detail.status === "Paused") {
+          setPaused(true);
+        } else {
+          setPaused(false);
+        }
+
+        if (
+          !seekDoneRef.current &&
+          typeof current === "number" &&
+          Math.abs(current - startTime) <= 2
+        ) {
+          seekDoneRef.current = true;
+          if (seekTimer) clearTimeout(seekTimer);
+          seekTimer = undefined;
+        } else if (
+          !seekDoneRef.current &&
+          detail.status === "Playing" &&
+          typeof dur === "number" &&
+          dur > 0
+        ) {
+          scheduleInitialSeek();
+        }
+        if (
+          seekDoneRef.current &&
+          detail.status === "Playing" &&
+          typeof dur === "number" &&
+          dur > 0
+        ) {
+          finishLoading();
+        }
+        if (typeof current === "number") {
+          setCurrentTime(current);
+        }
+        if (typeof dur === "number" && dur > 0) {
+          setDuration(dur);
+        }
+        if (Array.isArray(detail.trackList)) {
+          setTracks(detail.trackList);
+          if (!tracksInitializedRef.current && detail.trackList.length > 0) {
+            initializeTracks(detail.trackList);
+          }
+        }
+        if (
+          selectedAudioIdxRef.current === undefined &&
+          detail.audioTrack !== undefined
+        ) {
+          const aIdx = Number(detail.audioTrack);
+          setSelectedAudioIdx(aIdx);
+          selectedAudioIdxRef.current = aIdx;
+        }
+        if (
+          selectedSubIdxRef.current === undefined &&
+          detail.subTrack !== undefined
+        ) {
+          const sIdx = Number(detail.subTrack);
+          setSelectedSubIdx(sIdx);
+          selectedSubIdxRef.current = sIdx;
+        }
+        if (
+          typeof current === "number" &&
+          typeof dur === "number" &&
+          seekDoneRef.current &&
+          Math.abs(current - lastReportTimeRef.current) >= 5
+        ) {
+          lastReportTimeRef.current = current;
+          const currentAudio =
+            detail.audioTrack ?? selectedAudioIdxRef.current ?? 0;
+          const currentSub = detail.subTrack ?? selectedSubIdxRef.current ?? 0;
+
+          const currentAudioTrack = (detail.trackList || []).find(
+            (t: any) =>
+              (t.type === "audio" || t.type === "a") &&
+              Number(t.id) === Number(currentAudio),
+          );
+          const currentSubTrack = (detail.trackList || []).find(
+            (t: any) =>
+              (t.type === "sub" || t.type === "s") &&
+              Number(t.id) === Number(currentSub),
+          );
+
+          const savedFit = playerSettingsRef.current?.resize_mode;
+          const resizeMode =
+            savedFit === "cover" || savedFit === "fill" || savedFit === "zoom"
+              ? "cover"
+              : "contain";
+          const playerSettingsPayload = {
+            player: "desktop",
+            resize_mode: resizeMode,
+            audio_idx: Number(currentAudio),
+            audio_lang: get2LetterLangCode(currentAudioTrack?.lang),
+            subtitle_idx: Number(currentSub),
+            subtitle_lang: get2LetterLangCode(currentSubTrack?.lang),
+          };
+          onVideoProgressRef.current?.(current, dur, playerSettingsPayload);
+        }
+      };
+
+      video.addEventListener("mpv-state", handleState);
+      return () => {
+        destroyed = true;
+        if (seekTimer) clearTimeout(seekTimer);
+        if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
+        video.removeEventListener("mpv-state", handleState);
+      };
+    }, [options?.sources?.[0]?.src, options?.startTime, initializeTracks]);
+
+    const handleFullscreen = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.error(
+            `Error attempting to enable fullscreen: ${err.message}`,
+          );
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    return (
+      <div className="video-container">
+        <mpv-video
+          ref={videoRef}
+          render-mode="shared-texture"
+          volume="100"
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "block",
+          }}
+        />
+        <ElectronVideoControls
+          handlePause={handlePause}
+          handlePlay={handlePlay}
+          handlePlayPause={handlePlayPause}
+          handleSeek={handleSeek}
+          handleSetAudioTrack={handleSetAudioTrack}
+          handleSetSubtitleTrack={handleSetSubtitleTrack}
+          handleSetVolume={handleSetVolume}
+          handleToggleMute={handleToggleMute}
+          handleFullscreen={handleFullscreen}
+          handleClose={handleClose}
+          setInfoModalOpen={setInfoModalOpen}
+          handleChangeSource={() => {
+            void handlePause();
+            onChangeSource?.(currentTime);
+          }}
+          handleViewEpisodes={
+            onViewEpisodes
+              ? () => {
+                  void handlePause();
+                  onViewEpisodes();
+                }
+              : undefined
+          }
+          paused={paused}
+          currentTime={currentTime}
+          duration={duration}
+          volume={volume}
+          muted={muted}
+          audioTracks={audioTracks}
+          subTracks={subTracks}
+          selectedAudioIdx={selectedAudioIdx}
+          selectedSubIdx={selectedSubIdx}
+          streamType="vod"
+          skipSegment={skipSegment}
+          handleSkip={handleSkip}
+          skipBlocked={isVideoLoading || !seekDoneRef.current}
+          isOverlayOpen={isOverlayOpen}
+        />
+        <div
+          className={`mpv-loading-overlay${isVideoLoading ? "" : " mpv-loading-overlay-hidden"}`}
+        >
+          <IconButton
+            onClick={handleClose}
+            sx={{
+              position: "absolute",
+              top: 16,
+              left: 16,
+              color: "white",
+              zIndex: 10,
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          {mediaDetails?.backdrop_uri && (
+            <div
+              className={`mpv-loading-backdrop${isBackdropLoaded ? " mpv-loading-backdrop-visible" : ""}`}
+              style={{ backgroundImage: `url(${mediaDetails?.backdrop_uri})` }}
+            />
+          )}
+          <div className="mpv-loading-shade" />
+          {mediaDetails?.logo_uri && (
+            <img
+              className="mpv-loading-logo"
+              src={mediaDetails?.logo_uri}
+              alt=""
+            />
+          )}
+          {!mediaDetails?.logo_uri && (
+            <div className="mpv-loading-title">
+              {mediaDetails?.media_title}{" "}
+              {releaseYear ? `(${releaseYear})` : ""}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+);
+
+export default MPVElectronPlayer;

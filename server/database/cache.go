@@ -1,6 +1,7 @@
 package database
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -42,13 +43,41 @@ func InitializeCache() {
 	slog.Info("Cache Initialized")
 }
 
+// Only for development purposes
+// this skips watch progress and auth keys
 func ClearCache() {
-	db.RunValueLogGC(0.5)
-	db.DropAll()
+	// db.RunValueLogGC(0.5)
+	// db.DropAll()
+	wb := db.NewWriteBatch()
+	defer wb.Cancel()
+	err := db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			key := it.Item().Key()
+			if bytes.HasPrefix(key, []byte("watch_progress|")) || bytes.HasPrefix(key, []byte("auth_session|")) {
+				continue
+			}
+			k := append([]byte(nil), key...)
+			if err := wb.Delete(k); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	if err := wb.Flush(); err != nil {
+		panic(err)
+	}
 }
 
 // Stores a key-value pair with TTL, update if key exists
 // returns whether the key exists in bool
+// set ttl = -1 for no expiry
 func SetCache(key string, value interface{}, ttl time.Duration) (bool, error) {
 	if db == nil {
 		return false, fmt.Errorf("cache not initialized: %w", internal.InternalServerError)

@@ -2,15 +2,15 @@
 FROM node:22-alpine AS web-builder
 WORKDIR /app/web
 COPY web/package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 COPY web/ .
 RUN npm run build
 
 # Stage 2: Build Server
 FROM golang:1.26.1-alpine AS server-builder
-ARG VERSION=production
-ARG COMMIT
-ARG BUILD_TIME
+ARG VERSION=development
+ARG COMMIT=unknown
+ARG BUILD_TIME=unknown
 RUN apk add --no-cache git
 WORKDIR /app/server
 COPY server/go.mod server/go.sum ./

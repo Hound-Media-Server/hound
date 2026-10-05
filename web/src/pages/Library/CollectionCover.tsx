@@ -1,5 +1,6 @@
 import React from "react";
 import "./CollectionCover.css";
+import { DarkMode } from "@mui/icons-material";
 
 function CollectionCover(props: any) {
   var backdropURI =
@@ -13,13 +14,17 @@ function CollectionCover(props: any) {
       backgroundSize: "cover",
       color: "yellow",
     },
+    dark: {
+      color: "yellow",
+      backgroundColor: "rgba(var(--hound-primary), 1)",
+    },
   };
   return (
     <a className="a-no-style" href={`/collection/${props.data.collection_id}`}>
       <figure className="itemcard-item-figure-container">
         <div
           className={"rounded collection-card-cover"}
-          // style={styles.withBackdrop}
+          style={props.dark ? styles.dark : undefined}
         >
           <div className={"collection-card-cover-inner"}>
             {props.data.collection_title}
@@ -31,7 +36,7 @@ function CollectionCover(props: any) {
               {props.data.collection_title}
             </div>
             <div className="itemcard-item-caption-secondary">
-              {"by " + props.data.owner_display_name}
+              {"by " + props.data.owner_username}
             </div>
           </figcaption>
         ) : (

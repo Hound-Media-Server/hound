@@ -21,9 +21,10 @@ const (
 	PlayerWeb       = "web"
 	PlayerExoplayer = "exoplayer"
 	PlayerMPV       = "mpv"
+	PlayerDesktop   = "desktop" // mpv
 )
 
-var SupportedPlayers = []string{PlayerWeb, PlayerExoplayer, PlayerMPV}
+var SupportedPlayers = []string{PlayerWeb, PlayerExoplayer, PlayerMPV, PlayerDesktop}
 
 /*
 Watch progress is not stored in the db because it's not deemed as critical
@@ -159,7 +160,7 @@ func SetWatchProgress(userID int64, mediaType string, mediaSource string,
 	watchProgress.MediaSource = mediaSource
 	watchProgress.SourceID = sourceID
 	watchProgress.LastWatchedAt = time.Now().Unix()
-	// dyamically fill episodeID
+	// dynamically fill episodeID
 	if mediaType == database.MediaTypeTVShow {
 		if watchProgress.SeasonNumber == nil || watchProgress.EpisodeNumber == nil {
 			return fmt.Errorf("invalid param: season/episode number is nil: %w", internal.BadRequestError)

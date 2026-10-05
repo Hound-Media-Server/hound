@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
@@ -17,9 +18,10 @@ const (
 	ClientPlatformAndroidMobile = "android-mobile"
 	ClientPlatformAndroidTV     = "android-tv"
 	ClientPlatformWeb           = "web"
+	ClientPlatformDesktop       = "electron-desktop"
 )
 
-var SupportedClientPlatforms = []string{"", ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb}
+var SupportedClientPlatforms = []string{"", ClientPlatformIOSMobile, ClientPlatformTVOS, ClientPlatformAndroidMobile, ClientPlatformAndroidTV, ClientPlatformWeb, ClientPlatformDesktop}
 var SupportedClientIDs = []string{"", ClientIDWeb, ClientIDApp}
 
 type RegistrationUser struct {
@@ -40,8 +42,8 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 		return nil, fmt.Errorf("%w: Bcrypt failed to hash password", internal.InternalServerError)
 	}
 	insertUser := database.User{
-		Username:       user.Username,
-		DisplayName:    user.DisplayName,
+		Username:       strings.TrimSpace(strings.ToLower(user.Username)),
+		DisplayName:    strings.TrimSpace(user.DisplayName),
 		IsAdmin:        isAdmin,
 		HashedPassword: string(hashedPassword),
 		UserMeta:       database.UserMeta{},

@@ -57,10 +57,7 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		return
 	}
 	genreArray := database.ConvertGenres(sources.MediaSourceTMDB, database.MediaTypeMovie, movieDetails.Genres)
-	logoURI := ""
-	if len(movieDetails.Images.Logos) > 0 {
-		logoURI = internal.GetTMDBImageURL(movieDetails.Images.Logos[0].FilePath, tmdb.W500)
-	}
+	logoURI := internal.GetPreferredTMDBMovieLogoURL(movieDetails.Images.Logos, tmdb.W500)
 	movieObject := view.MediaRecordCatalog{
 		MediaType:        database.RecordTypeMovie,
 		MediaSource:      sources.MediaSourceTMDB,

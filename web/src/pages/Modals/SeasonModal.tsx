@@ -52,12 +52,14 @@ type WatchProgressItem = {
   current_progress_seconds: number;
   total_duration_seconds: number;
   encoded_data: string;
+  player_settings?: any;
 };
 
 import {
   useAddTVWatchHistoryMutation,
   useTVSeasonHistory,
 } from "../../api/hooks/watchHistory";
+import { useSeasonDetails } from "../../api/hooks/media";
 
 function SeasonModal(props: any) {
   const {
@@ -69,21 +71,14 @@ function SeasonModal(props: any) {
     isStreamModalOpen,
   } = props;
   const handleClose = () => {
-    setIsSeasonDataLoaded(false);
     onClose();
   };
-  const [seasonData, setSeasonData] = useState({
-    media_source: "",
-    source_id: -1,
-    release_date: "",
-    episodes: [],
-    id: -1,
-    media_title: "",
-    thumbnail_uri: "",
-    season_number: -1,
-    overview: "",
-    watch_info: [],
-  });
+  const { data: seasonData } = useSeasonDetails(
+    mediaSource,
+    sourceID,
+    seasonNumber,
+    open,
+  );
 
   const { data: historyData } = useTVSeasonHistory(
     mediaSource,
@@ -96,7 +91,6 @@ function SeasonModal(props: any) {
   const [watchProgress, setWatchProgress] = useState<
     Map<string, WatchProgressItem>
   >(() => new Map());
-  const [isSeasonDataLoaded, setIsSeasonDataLoaded] = useState(false);
   const [isCreateHistoryModalOpen, setIsCreateHistoryModalOpen] =
     useState(false);
   const [isDownloadSeasonModalOpen, setIsDownloadSeasonModalOpen] =
@@ -173,7 +167,7 @@ function SeasonModal(props: any) {
   };
 
   var seasonOverviewPlaceholder = "No description available.";
-  if (isSeasonDataLoaded) {
+  if (seasonData) {
     seasonOverviewPlaceholder = `Season ${seasonData.season_number} of ${props.mediaTitle}`;
     if (seasonData.season_number === 0) {
       seasonOverviewPlaceholder = "Special Episodes";
@@ -188,17 +182,7 @@ function SeasonModal(props: any) {
     if (seasonNumber < 0) return;
 
     // season 0 is used for extras, specials sometimes
-    const loadData = async () => {
-      const seasonRes = await axios
-        .get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}`)
-        .catch((err) => {
-          console.log(err);
-        });
-      if (!seasonRes) return;
-      setSeasonData(seasonRes.data);
-      setIsSeasonDataLoaded(true);
-
-      // get watch progress
+    const loadPlaybackProgress = () => {
       axios
         .get(
           `/api/v1/tv/${mediaSource}-${sourceID}/season/${seasonNumber}/playback`,
@@ -212,6 +196,7 @@ function SeasonModal(props: any) {
                 current_progress_seconds: item.current_progress_seconds,
                 total_duration_seconds: item.total_duration_seconds,
                 encoded_data: item.encoded_data,
+                player_settings: item.player_settings,
               });
             });
             setWatchProgress(progressMap);
@@ -224,12 +209,12 @@ function SeasonModal(props: any) {
           console.log(err);
         });
     };
-    loadData();
+    loadPlaybackProgress();
   }, [seasonNumber, mediaSource, sourceID, open, isStreamModalOpen]);
 
   return (
     <>
-      {isSeasonDataLoaded ? (
+      {seasonData ? (
         <Dialog
           onClose={handleClose}
           open={open}
@@ -303,24 +288,26 @@ function SeasonModal(props: any) {
                         <VisibilityIcon />
                       </IconButton>
                     </BootstrapTooltip>
-                    <BootstrapTooltip
-                      title={
-                        <span className="media-page-tv-header-button-tooltip-title">
-                          Download Season
-                        </span>
-                      }
-                      PopperProps={offsetFix}
-                    >
-                      <IconButton
-                        onClick={() => {
-                          if (isSeasonDataLoaded) {
-                            setIsDownloadSeasonModalOpen(true);
-                          }
-                        }}
+                    {localStorage.getItem("role") === "admin" && (
+                      <BootstrapTooltip
+                        title={
+                          <span className="media-page-tv-header-button-tooltip-title">
+                            Download Season
+                          </span>
+                        }
+                        PopperProps={offsetFix}
                       >
-                        <DownloadIcon />
-                      </IconButton>
-                    </BootstrapTooltip>
+                        <IconButton
+                          onClick={() => {
+                            if (seasonData) {
+                              setIsDownloadSeasonModalOpen(true);
+                            }
+                          }}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </BootstrapTooltip>
+                    )}
                   </span>
                   {/* <span className="season-modal-info-button">
                   <BootstrapTooltip
@@ -417,6 +404,8 @@ function EpisodeCard(
             episode.episode_number,
             "direct",
             episode.source_id,
+            watchProgress?.encoded_data,
+            watchProgress,
           );
         }}
       >
@@ -483,6 +472,7 @@ function EpisodeCard(
         >
           <Dropdown.Toggle
             as={Button}
+            disableRipple
             variant="light"
             id="season-episode-card-dropdown"
             className="border-0 p-0"
@@ -498,6 +488,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "direct",
                   episode.source_id,
+                  watchProgress?.encoded_data,
+                  watchProgress,
                 );
               }}
             >
@@ -523,6 +515,8 @@ function EpisodeCard(
                   episode.episode_number,
                   "select",
                   episode.source_id,
+                  watchProgress?.encoded_data,
+                  watchProgress,
                 );
               }}
             >

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/mcay23/hound/database"
@@ -26,7 +27,7 @@ Proxies links through the server
 // @Description A streamable link for a video defined by the encodedString
 // @Tags Stream
 // @Accept json
-// @Produce json
+// @Produce plain
 // @Param encodedString path string true "Encoded Stream Details"
 // @Success 200 {object} V1SuccessResponse{data=object}
 // @Failure 400 {object} V1ErrorResponse
@@ -49,7 +50,7 @@ func StreamHandler(c *gin.Context) {
 	// 	return
 	// }
 	// Direct stream case, just proxy url
-	handleProxyStream(c, streamDetails)
+	handleProxyStream(c, streamDetails.URI)
 }
 
 func handleFileStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
@@ -93,15 +94,21 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 		return
 	}
 	c.Writer.Header().Set("Content-Type", model.GetMimeType(file.DisplayPath()))
+	if c.Request.Method == http.MethodHead {
+		c.Header("Content-Length", strconv.FormatInt(file.Length(), 10))
+		c.Header("Accept-Ranges", "bytes")
+		c.Status(http.StatusOK)
+		return
+	}
 	// if file already exists, serve that instead
 	// this is an edge case, completed files
 	// aren't served properly by the reader if the torrent session is restarted
 	// and files are still in the download path
 	// ideally, dropped torrents should delete its download folder immediately/
 	// but on restarts, this would be an issue since we want to resume downloads
-	stat, err := os.Stat(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+	stat, err := os.Stat(filepath.Join(internal.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
 	if err == nil {
-		f, err := os.Open(filepath.Join(model.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
+		f, err := os.Open(filepath.Join(internal.HoundP2PDownloadsPath, streamDetails.InfoHash, file.Path()))
 		if err != nil {
 			internal.ErrorResponse(c, fmt.Errorf("failed to open file: %w", err))
 			return
@@ -143,7 +150,12 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return
 	}
-	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", videoURL, nil)
+	if c.Request.Method == http.MethodHead {
+		// HttpSource will determine the size with its own ranged GET.
+		c.Status(http.StatusOK)
+		return
+	}
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", url, nil)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("error creating URL: %w", err))
 		return
@@ -151,16 +163,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 	if rangeHeader := c.GetHeader("Range"); rangeHeader != "" {
 		req.Header.Set("Range", rangeHeader)
 	}
-	// mock browser
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("Sec-Fetch-Dest", "document")
-	req.Header.Set("Sec-Fetch-Mode", "navigate")
-	req.Header.Set("Sec-Fetch-Site", "none")
-	req.Header.Set("Sec-Fetch-User", "?1")
+	internal.SetMockBrowserHeaders(req)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -177,6 +180,7 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 	}
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Accept-Ranges", "bytes")
+	c.Writer.Header().Add("Access-Control-Expose-Headers", "Content-Range")
 	//c.Writer.Header().Set("Cache-Control", "no-store")
 	c.Status(resp.StatusCode)
 
@@ -185,6 +189,44 @@ func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull
 		internal.ErrorResponse(c, fmt.Errorf("io copy error: %w", err))
 		return
 	}
+}
+
+/*
+Stream subtitle files through the server
+Converts .srt to .vtt if requested
+*/
+// @Router /api/v1/subtitle/{encodedString} [get]
+// @Summary Get Subtitle File
+// @ID get-subtitle-file
+// @Description A link for a subtitle file defined by the encodedString
+// @Tags Stream
+// @Accept json
+// @Produce plain
+// @Param encodedString path string true "Encoded Subtitle String"
+// @Param convert query string false "Convert to VTT"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func SubtitleHandler(c *gin.Context) {
+	uri, err := providers.DecodeURIAES(c.Param("encodedString"))
+	if err != nil {
+		slog.Error("failed to decode aes stream", "encodedString", c.Param("encodedString"), "error", err)
+		internal.ErrorResponse(c, fmt.Errorf("failed to decode aes stream: %w", err))
+		return
+	}
+	valid := internal.IsValidURL(uri)
+	if !valid {
+		internal.ErrorResponse(c, fmt.Errorf("invalid url: %w", internal.BadRequestError))
+		return
+	}
+	convert := c.Query("convert")
+	if convert == "vtt" {
+		convert = model.SubtitleTypeVTT
+	}
+	content, mimeType := model.GetSubtitle(uri, convert)
+	c.Header("Content-Type", mimeType)
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.String(http.StatusOK, content)
 }
 
 // @Router /api/v1/torrent/{encodedString} [post]

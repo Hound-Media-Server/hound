@@ -33,17 +33,17 @@ export default function ProviderProfiles() {
       <div>
         <h2>Provider Profiles</h2>
         <hr />
-        <p className="provider-profile-text">
+        <p className="iptv-provider-text">
           Add a provider to start streaming and downloading. Multiple profiles
           are useful if you want different presets for streaming and downloading
           (eg. prioritize speed/compatibility for streaming, and quality for
           downloads).
         </p>
-        <p className="provider-profile-text">
+        <p className="iptv-provider-text">
           You can also set the global default profile for all users for
           streaming/downloading.
         </p>
-        <p className="provider-profile-text">
+        <p className="iptv-provider-text">
           For help setting up a provider, visit the docs.
         </p>
         {providerProfiles?.length === 0 && (
@@ -131,9 +131,10 @@ function ProviderProfile({
     <Card
       variant="outlined"
       key={profile.provider_profile_id}
-      className="mt-3 provider-profile-card"
+      sx={{ boxShadow: 1 }}
+      className="mt-3"
     >
-      <CardContent className="provider-profile-card-content">
+      <CardContent>
         <h5>{profile.name}</h5>
         <div className="text-muted">{profile.manifest_url}</div>
         <div className="d-flex flex-row">
@@ -217,7 +218,7 @@ function AddProviderModal({
   return (
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>Add Provider</DialogTitle>
-      <DialogContent className="provider-profile-container">
+      <DialogContent className="iptv-provider-container">
         <hr />
         <TextField
           label="Profile Name"

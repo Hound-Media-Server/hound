@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { fetchProviders } from "../services/providers";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { decodeStream, fetchProviders, fetchSubtitles } from "../services/providers";
 import { fetchMediaFiles } from "../services/media";
 
 export const useProviders = (
@@ -75,5 +75,108 @@ export const useUnifiedStreamsMutation = () => {
         streams: allStreams,
       };
     },
+  });
+};
+
+const getProviderStreams = (data: any) => {
+  return data?.providers?.flatMap((p: any) => p.streams || []) ?? [];
+};
+
+const getMatchingStream = (streams: any[], encodedData?: string) => {
+  if (!encodedData) return undefined;
+  return streams.find((stream: any) => stream.encoded_data === encodedData);
+};
+
+export const useDirectStreamMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      mediaType,
+      mediaSource,
+      sourceId,
+      season,
+      episode,
+      providerProfileId,
+      encodedData,
+      onImmediateStream,
+    }: {
+      mediaType: string;
+      mediaSource: string;
+      sourceId: string;
+      season?: number;
+      episode?: number;
+      providerProfileId?: number;
+      encodedData?: string;
+      onImmediateStream?: (stream: any) => void;
+    }) => {
+      const mediaFilesPromise = queryClient.fetchQuery({
+        queryKey: ["direct-stream-files", mediaType, mediaSource, sourceId, season, episode],
+        queryFn: () => fetchMediaFiles(mediaType, mediaSource, sourceId, season, episode),
+        staleTime: (query) => getProviderStreams(query.state.data).length ? 15 * 60 * 1000 : 0,
+        gcTime: 15 * 60 * 1000,
+        retry: false,
+      }).catch(() => null);
+      const providersPromise = queryClient.fetchQuery({
+        queryKey: ["direct-stream-providers", mediaType, mediaSource, sourceId, season, episode, providerProfileId],
+        queryFn: () => fetchProviders(mediaType, mediaSource, sourceId, season, episode, providerProfileId),
+        staleTime: (query) => getProviderStreams(query.state.data).length ? 15 * 60 * 1000 : 0,
+        gcTime: 15 * 60 * 1000,
+        retry: false,
+      }).catch(() => null);
+
+      let startedImmediately = false;
+      const mediaFilesData = await mediaFilesPromise;
+      const mediaFilesStreams = getProviderStreams(mediaFilesData);
+      const matchingMediaFileStream = getMatchingStream(
+        mediaFilesStreams,
+        encodedData,
+      );
+
+      if (mediaFilesStreams.length > 0 && (!encodedData || matchingMediaFileStream)) {
+        startedImmediately = true;
+        onImmediateStream?.(matchingMediaFileStream ?? mediaFilesStreams[0]);
+      }
+
+      const providersData = await providersPromise;
+      const externalStreams = getProviderStreams(providersData);
+      const allStreams = [...mediaFilesStreams, ...externalStreams];
+      const selectedStream =
+        getMatchingStream(allStreams, encodedData) ?? allStreams[0];
+
+      return {
+        ...providersData,
+        ...mediaFilesData,
+        providers: null,
+        streams: allStreams,
+        selectedStream,
+        startedImmediately,
+      };
+    },
+  });
+};
+
+export const useSubtitles = (
+  mediaType: string,
+  mediaSource: string,
+  sourceId: string,
+  season?: number,
+  episode?: number,
+  enabled: boolean = true
+) => {
+  return useQuery({
+    queryKey: ["subtitles", mediaType, mediaSource, sourceId, season, episode],
+    queryFn: () =>
+      fetchSubtitles(mediaType, mediaSource, sourceId, season, episode),
+    enabled,
+  });
+};
+
+export const useDecodeStream = (
+  encodedData: string
+) => {
+  return useQuery({
+    queryKey: ["decode-stream", encodedData],
+    queryFn: () => decodeStream(encodedData),
+    enabled: !!encodedData && encodedData !== "",
   });
 };

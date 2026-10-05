@@ -18,6 +18,7 @@ func InitializeWorkers() {
 	// external library workers has some dependencies on ingest workers, start
 	// it after ingest workers are initialized
 	InitializeExternalLibraryWorkers()
+	InitializeIPTVWorkers()
 	go cleanUpDownloads()
 }
 
@@ -28,7 +29,7 @@ func cleanUpDownloads() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		entries, err := os.ReadDir(model.HoundP2PDownloadsPath)
+		entries, err := os.ReadDir(internal.HoundP2PDownloadsPath)
 		if err != nil {
 			slog.Error("Failed to read p2p downloads directory", "error", err)
 			return
@@ -61,7 +62,7 @@ func cleanUpDownloads() {
 // Having issues with this on windows, directory is removed on next startup
 func removeP2PFiles(infoHash string) {
 	slog.Info("Removing unused torrent files", "infohash", infoHash)
-	targetDir := filepath.Join(model.HoundP2PDownloadsPath, infoHash)
+	targetDir := filepath.Join(internal.HoundP2PDownloadsPath, infoHash)
 	// err := os.Chmod(targetDir, 0666)
 	// if err != nil {
 	// 	slog.Error("Failed to chmod dir", "dir", targetDir, "error", err)

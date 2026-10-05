@@ -13,68 +13,58 @@ import (
 	"github.com/mcay23/hound/services"
 )
 
-const (
-	// all hound data should live in this folder
-	// downloads and media are subdirectories of this folder, so move
-	// between downloads and media should be fast
-	dataDir      = "Hound Data"
-	mediaDir     = "Media"
-	downloadsDir = "Downloads"
-)
-
-var (
-	HoundMoviesPath        = filepath.Join(dataDir, mediaDir, "Movies")
-	HoundTVShowsPath       = filepath.Join(dataDir, mediaDir, "TV Shows")
-	HoundP2PDownloadsPath  = filepath.Join(dataDir, downloadsDir, "p2p")
-	HoundHttpDownloadsPath = filepath.Join(dataDir, downloadsDir, "http")
-	ExternalLibraryPath    = filepath.Join("External Library")
-)
-
 /*
 media deals with file ingestion pipeline download->create files->process metadata...etc.
 */
 func InitializeMedia() {
 	// create media directories
-	err := os.MkdirAll(HoundMoviesPath, 0755)
+	err := os.MkdirAll(internal.HoundMoviesPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
-	err = os.MkdirAll(HoundTVShowsPath, 0755)
+	err = os.MkdirAll(internal.HoundTVShowsPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create media directory")
 		panic(fmt.Errorf("fatal error creating media directory %w", err))
 	}
-	err = os.MkdirAll(HoundP2PDownloadsPath, 0755)
+	err = os.MkdirAll(internal.HoundP2PDownloadsPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create p2p downloads directory")
 		panic(fmt.Errorf("fatal error creating p2p downloads directory %w", err))
 	}
-	err = os.MkdirAll(HoundHttpDownloadsPath, 0755)
+	err = os.MkdirAll(internal.HoundHttpDownloadsPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create http downloads directory")
 		panic(fmt.Errorf("fatal error creating http downloads directory %w", err))
 	}
-	err = os.MkdirAll(ExternalLibraryPath, 0755)
+	err = os.MkdirAll(internal.HoundExternalLibraryPath, 0755)
 	if err != nil {
 		_ = internal.LogErrorWithMessage(err, "Failed to create external library directory")
 		panic(fmt.Errorf("fatal error creating external library directory %w", err))
 	}
 }
 
+// Files managed by hound are deleted, but external files will be kept
+// Media file records will be deleted in both cases, but will be regenerated on next
+// rescan if the file still exists
 func DeleteMediaFile(fileID int) error {
 	// delete file first
 	file, err := database.GetMediaFile(fileID)
 	if err != nil {
 		return err
 	}
-	err = os.Remove(file.Filepath)
-	if err != nil {
-		// if file doesn't exist, continue to delete mediafile record
-		if !os.IsNotExist(err) {
-			return err
-		} else {
-			slog.Info("File doesn't exist in dir, deleting media_file db record", "filepath", file.Filepath)
+	// only delete if managed by hound, we don't want to touch
+	// external library files
+	if file.FileOrigin == database.FileOriginHoundManaged {
+		err = os.Remove(file.Filepath)
+		if err != nil {
+			// if file doesn't exist, continue to delete mediafile record
+			if !os.IsNotExist(err) {
+				return err
+			} else {
+				slog.Info("File doesn't exist in dir, deleting media_file db record", "filepath", file.Filepath)
+			}
 		}
 	}
 	err = database.DeleteMediaFileRecord(fileID)

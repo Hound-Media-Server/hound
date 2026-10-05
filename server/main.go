@@ -8,6 +8,7 @@ import (
 	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/controllers"
 	"github.com/mcay23/hound/database"
+	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/loggers"
 	"github.com/mcay23/hound/model"
 	"github.com/mcay23/hound/services"
@@ -32,11 +33,12 @@ func main() {
 	}
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
 	slog.SetDefault(slog.New(handler))
-
 	loggers.InitializeLoggers()
+	internal.InitializeCrypto()
 	database.InitializeCache()
 	database.InstantiateDB()
 	sources.InitializeSources()
+	model.InitializeIPTV()
 	model.InitializeP2P()
 	model.InitializeMedia()
 	services.InitializeFFMPEG()
@@ -44,5 +46,4 @@ func main() {
 	// workers should run after db, since some row cleanups are done during startup
 	workers.InitializeWorkers()
 	controllers.SetupRoutes()
-
 }

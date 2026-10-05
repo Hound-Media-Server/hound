@@ -160,45 +160,69 @@ func GetRewatchesFromSourceID(recordType string, mediaSource string, sourceID st
 
 // useful to answer, what's the 10 most recent unique movies/shows the user has watched
 // we want to get the parent of the media record, so that we can group by show or movie
-func GetUniqueWatchParents(userID int64, limit int, offset int, after time.Time) ([]*WatchEventMediaRecord, error) {
+// Note that this is bound to the last 3 months for efficiency, this means watches older than 3 months will not be returned
+func GetUniqueWatchedParents(
+	userID int64,
+	limit int,
+	offset int,
+	after time.Time,
+) ([]*WatchEventMediaRecord, error) {
 	var records []*WatchEventMediaRecord
+
 	err := databaseEngine.
-		Table("watch_events we").
-		Join("INNER", "rewatches r", "r.rewatch_id = we.rewatch_id").
-		Join("INNER", "media_records mr", "mr.record_id = we.record_id").
-		Join("LEFT", "media_records show",
-			"show.record_id = mr.ancestor_id AND mr.record_type = 'episode'").
-		Where("r.user_id = ?", userID).
-		Where("we.watched_at > ?", after).
-		Omit("mr.full_data").
-		Select(`
-			DISTINCT ON (
-				COALESCE(show.record_type,  mr.record_type),
-				COALESCE(show.media_source, mr.media_source),
-				COALESCE(show.source_id,    mr.source_id)
-			)
-			we.*,
-			COALESCE(show.record_id,     mr.record_id)      AS record_id,
-			COALESCE(show.record_type,   mr.record_type)    AS record_type,
-			COALESCE(show.media_source,  mr.media_source)   AS media_source,
-			COALESCE(show.source_id,     mr.source_id)      AS source_id,
-			COALESCE(show.media_title,   mr.media_title)    AS media_title,
-			COALESCE(show.overview,      mr.overview)       AS overview,
-			COALESCE(show.thumbnail_uri, mr.thumbnail_uri)  AS thumbnail_uri,
-			COALESCE(show.backdrop_uri,  mr.backdrop_uri)   AS backdrop_uri,
-			COALESCE(show.logo_uri,      mr.logo_uri)       AS logo_uri,
-			COALESCE(show.release_date,  mr.release_date)   AS release_date,
-			mr.season_number,
-			mr.episode_number,
-			mr.duration
-		`).
-		OrderBy(`
-			COALESCE(show.record_type,  mr.record_type),
-			COALESCE(show.media_source, mr.media_source),
-			COALESCE(show.source_id,    mr.source_id),
-			we.watched_at DESC,
-			we.watch_event_id DESC
-		`).Limit(limit, offset).
+		SQL(`
+		SELECT *
+		FROM (
+			SELECT DISTINCT ON (group_record_id)
+				we.*,
+				parent.record_id,
+				parent.record_type,
+				parent.media_source,
+				parent.source_id,
+				parent.media_title,
+				parent.overview,
+				parent.thumbnail_uri,
+				parent.backdrop_uri,
+				parent.logo_uri,
+				parent.release_date,
+				mr.season_number,
+				mr.episode_number,
+				mr.duration,
+
+				CASE
+					WHEN mr.record_type = 'episode'
+						THEN mr.ancestor_id
+					ELSE mr.record_id
+				END AS group_record_id
+
+			FROM watch_events we
+			INNER JOIN rewatches r
+				ON r.rewatch_id = we.rewatch_id
+			INNER JOIN media_records mr
+				ON mr.record_id = we.record_id
+			INNER JOIN media_records parent
+				ON parent.record_id = CASE
+					WHEN mr.record_type = 'episode'
+						THEN mr.ancestor_id
+					ELSE mr.record_id
+				END
+			WHERE r.user_id = ?
+			  AND we.watched_at > ?
+			ORDER BY
+				group_record_id,
+				we.watched_at DESC,
+				we.watch_event_id DESC
+		) t
+		ORDER BY
+			t.watched_at DESC,
+			t.watch_event_id DESC
+		LIMIT ? OFFSET ?
+		`,
+			userID,
+			after,
+			limit,
+			offset,
+		).
 		Find(&records)
 	return records, err
 }

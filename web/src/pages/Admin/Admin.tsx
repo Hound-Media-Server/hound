@@ -13,6 +13,8 @@ import { useState } from "react";
 import ProviderProfiles from "./ProviderProfiles";
 import UserList from "./Users";
 import { useServerInfo } from "../../api/hooks/general";
+import HomeRows from "./HomeRows";
+import IPTVProfiles from "./IPTVProfiles";
 
 export default function Admin(props: any) {
   const [activeTab, setActiveTab] = useState(0);
@@ -40,23 +42,39 @@ export default function Admin(props: any) {
               <h2>Admin Panel</h2>
             </div>
             <List>
-              {["Downloads", "Users", "Provider Profiles"].map(
-                (text, index) => (
-                  <ListItem key={text} disablePadding>
-                    <ListItemButton onClick={() => setActiveTab(index)}>
-                      {/* <ListItemIcon>
+              {[
+                "Downloads",
+                "Users",
+                "Default Home Layout",
+                "Provider Profiles",
+                "IPTV Profiles",
+              ].map((text, index) => (
+                <ListItem key={text} disablePadding>
+                  <ListItemButton onClick={() => setActiveTab(index)}>
+                    {/* <ListItemIcon>
                   {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
                 </ListItemIcon> */}
-                      <ListItemText primary={text} />
-                    </ListItemButton>
-                  </ListItem>
-                ),
-              )}
+                    <ListItemText primary={text} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
             </List>
             <div className="p-2">
               <Card variant="outlined">
                 <div className="p-3">
                   <p>Version: {serverInfo?.version}</p>
+                  {serverInfo?.latest_version && (
+                    <p>
+                      Latest Version:{" "}
+                      <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://github.com/Hound-Media-Server/hound/releases"
+                      >
+                        {serverInfo?.latest_version}
+                      </a>
+                    </p>
+                  )}
                   <p>Server ID: {serverInfo?.server_id}</p>
                 </div>
               </Card>
@@ -65,7 +83,9 @@ export default function Admin(props: any) {
           <div className="d-flex admin-content">
             {activeTab === 0 && <Downloads />}
             {activeTab === 1 && <UserList />}
-            {activeTab === 2 && <ProviderProfiles />}
+            {activeTab === 2 && <HomeRows />}
+            {activeTab === 3 && <ProviderProfiles />}
+            {activeTab === 4 && <IPTVProfiles />}
           </div>
         </div>
       </div>

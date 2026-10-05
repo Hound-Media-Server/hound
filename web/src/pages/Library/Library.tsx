@@ -2,37 +2,40 @@ import "./Library.css";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import CollectionCard from "./CollectionCover";
+import CollectionFormDialog, {
+  CollectionFormData,
+} from "./CollectionFormDialog";
 import HorizontalSection from "../Home/HorizontalSection";
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  FormControl,
-  LinearProgress,
-  TextField,
-} from "@mui/material";
-import Footer from "../Footer";
+import { LinearProgress } from "@mui/material";
 import {
   useCollections,
   useCollectionContents,
   useRecentCollectionItems,
   useCreateCollection,
+  usePublicCollections,
 } from "../../api/hooks/collections";
 import { useNavigate } from "react-router-dom";
+import Footer from "../Footer";
+import { isPlatformElectron } from "../../utils/platform";
+
+const initialCollectionState: CollectionFormData = {
+  collection_title: "",
+  description: "",
+  is_public: true,
+};
 
 function Library(props: any) {
   const { data: collections = [], isLoading: isCollectionsLoading } =
     useCollections();
+  const {
+    data: publicCollections = [],
+    isLoading: isPublicCollectionsLoading,
+  } = usePublicCollections();
   const { data: recentItems = [], isLoading: isRecentLoading } =
     useRecentCollectionItems();
   const createMutation = useCreateCollection();
   const [isCreateCollectionDialogOpen, setIsCreateCollectionDialogOpen] =
     useState(false);
-  const [createCollectionData, setCreateCollectionData] = useState({
-    collection_title: "",
-    description: "",
-    is_public: true,
-  });
   const { data: libraryData = [] } = useCollectionContents(
     "hound-library",
     20,
@@ -40,31 +43,19 @@ function Library(props: any) {
   );
 
   const handleCollectionDialogClose = () => {
-    setCreateCollectionData({
-      collection_title: "",
-      description: "",
-      is_public: true,
-    });
     setIsCreateCollectionDialogOpen(false);
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCreateCollectionData({
-      ...createCollectionData,
-      [event.target.name]: event.target.value,
-    });
-  };
-
-  const handleCreateCollection = () => {
-    if (createCollectionData.collection_title === "") {
+  const handleCreateCollection = (data: CollectionFormData) => {
+    if (data.collection_title === "") {
       toast.error("Title required");
       return;
     }
-    if (createCollectionData.description === "") {
+    if (data.description === "") {
       toast.error("Description required");
       return;
     }
-    createMutation.mutate(createCollectionData, {
+    createMutation.mutate(data, {
       onSuccess: () => {
         handleCollectionDialogClose();
         window.scrollTo(0, 0);
@@ -77,27 +68,26 @@ function Library(props: any) {
   };
 
   document.title = "My Collections - Hound";
-  const isLoaded = !isCollectionsLoading && !isRecentLoading;
+  const isLoaded =
+    !isCollectionsLoading && !isRecentLoading && !isPublicCollectionsLoading;
   const navigate = useNavigate();
 
   return (
-    <>
+    <div className="dark-page">
       {isLoaded ? (
         <div className="library-main-container">
-          <div className="library-top-section-container">
-            <HorizontalSection
-              items={recentItems}
-              header="Recently Added"
-              itemType="poster"
-              itemOnClick={undefined}
-            />
-            {!(recentItems?.length > 0) && (
-              <div className="horizontal-section-header ps-5 pt-5 pb-5">
-                Your collections are empty. Try adding some items!
-              </div>
-            )}
-          </div>
-          <div className="library-top-section-container">
+          {recentItems?.length > 0 && (
+            <div className="library-top-section-container">
+              <HorizontalSection
+                items={recentItems}
+                header="Recently Added"
+                itemType="poster"
+                itemOnClick={undefined}
+              />
+              <div className="home-page-section-divider" />
+            </div>
+          )}
+          <div className="library-top-section-container mt-1">
             <HorizontalSection
               items={libraryData?.records}
               header="In Your Library"
@@ -111,6 +101,7 @@ function Library(props: any) {
               </div>
             )}
           </div>
+          <div className="home-page-section-divider" />
           <div className="library-collections-section">
             <div className="library-collections-header">Your Collections</div>
             <div className="library-collections-container">
@@ -122,7 +113,7 @@ function Library(props: any) {
                 }}
               >
                 <div className={"collection-card-cover-inner"}>
-                  Add New collection
+                  Create Collection
                 </div>
               </div>
               <div
@@ -145,49 +136,40 @@ function Library(props: any) {
               ))}
             </div>
           </div>
+          {publicCollections?.length > 0 && (
+            <>
+              <div className="home-page-section-divider" />
+              <div className="library-public-collections-section">
+                <div className="library-collections-header">
+                  Public Collections
+                </div>
+                <div className="library-collections-container">
+                  {publicCollections?.map((item: any) => (
+                    <CollectionCard
+                      data={item}
+                      key={item["collection_id"]}
+                      showCaption={true}
+                      dark
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <LinearProgress className="progress-margin" />
       )}
-      <Dialog
+      <CollectionFormDialog
         open={isCreateCollectionDialogOpen}
+        title="Create New Collection"
+        submitLabel="Create"
+        initialData={initialCollectionState}
         onClose={handleCollectionDialogClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <div className="reviews-create-dialog-header">
-          Create New Collection
-        </div>
-        <div className="reviews-create-dialog-content">
-          <FormControl fullWidth={true}>
-            <TextField
-              id="outlined-basic"
-              className="mt-3"
-              label="Title"
-              variant="outlined"
-              name="collection_title"
-              value={createCollectionData.collection_title}
-              onChange={handleChange}
-            />
-            <TextField
-              id="outlined-multiline-static"
-              className="mt-3"
-              label="Description"
-              name="description"
-              multiline
-              rows={4}
-              value={createCollectionData.description}
-              onChange={handleChange}
-            />
-          </FormControl>
-        </div>
-        <DialogActions>
-          <Button onClick={handleCollectionDialogClose}>Cancel</Button>
-          <Button onClick={handleCreateCollection}>Create</Button>
-        </DialogActions>
-      </Dialog>
-      <Footer />
-    </>
+        onSubmit={handleCreateCollection}
+      />
+      {!isPlatformElectron && <Footer />}
+    </div>
   );
 }
 

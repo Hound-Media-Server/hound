@@ -36,9 +36,10 @@ function SelectStreamModal(props: {
   fetchParams?: FetchParams;
   setOpen: (open: boolean) => void;
   open: boolean;
-  setMainStream: (stream: any) => void;
+  setMainStream?: (stream: any) => void;
+  onStreamSelected?: (stream: any) => void;
+  currentStreamEncodedData?: string;
   setProviderID?: (providerID: number) => void;
-  setIsStreamModalOpen?: (open: boolean) => void;
 }) {
   const {
     modalType,
@@ -46,8 +47,9 @@ function SelectStreamModal(props: {
     setOpen,
     open,
     setMainStream,
+    onStreamSelected,
+    currentStreamEncodedData,
     setProviderID: setProviderIDSeasonDownloader,
-    setIsStreamModalOpen,
   } = props;
 
   const [streamData, setStreamData] = useState<any[] | null>(null);
@@ -66,8 +68,6 @@ function SelectStreamModal(props: {
     }
   }, [providerProfiles]);
 
-  const providerProfileId = providerID;
-
   useEffect(() => {
     if (!open) return;
     if (
@@ -81,7 +81,7 @@ function SelectStreamModal(props: {
     if (fetchParams && modalType === "select-stream") {
       fetchUnifiedStreams({
         ...fetchParams,
-        providerProfileId: providerProfileId,
+        providerProfileId: providerID,
       })
         .then((data) => {
           setStreamData(data?.streams ?? []);
@@ -93,7 +93,7 @@ function SelectStreamModal(props: {
     } else if (fetchParams && modalType === "download-season") {
       fetchProviders({
         ...fetchParams,
-        providerProfileId: providerProfileId,
+        providerProfileId: providerID,
       })
         .then((data) => {
           const allStreams =
@@ -187,17 +187,30 @@ function SelectStreamModal(props: {
               </div>
             ) : (
               streamData.map((stream: any) => {
+                const isCurrentStream =
+                  modalType === "select-stream" &&
+                  !!currentStreamEncodedData &&
+                  stream.encoded_data === currentStreamEncodedData;
                 return (
                   <div className="stream-info-card" key={stream.infohash}>
                     <div
                       className="stream-info-card-title"
+                      aria-disabled={isCurrentStream}
+                      style={{
+                        cursor: isCurrentStream ? "not-allowed" : "pointer",
+                        opacity: isCurrentStream ? 0.6 : 1,
+                      }}
                       onClick={() => {
+                        if (isCurrentStream) return;
                         if (stream) {
                           // for season pack downloader, sets this stream as the one
                           // to reference the infohash
                           if (modalType === "select-stream") {
-                            setMainStream(stream);
-                            setIsStreamModalOpen?.(true);
+                            if (onStreamSelected) {
+                              onStreamSelected(stream);
+                            } else {
+                              setMainStream?.(stream);
+                            }
                           } else if (modalType === "download-season") {
                             if (!stream.info_hash || stream.info_hash === "") {
                               toast.error(
@@ -205,7 +218,7 @@ function SelectStreamModal(props: {
                               );
                               return;
                             }
-                            setMainStream(stream);
+                            setMainStream?.(stream);
                             setOpen(false);
                           }
                         }
@@ -216,13 +229,23 @@ function SelectStreamModal(props: {
                     <div className="stream-info-card-subtitle">
                       {stream.description}
                     </div>
-                    <div className="stream-info-card-subtitle mb-2">
-                      info hash: {stream.info_hash}
-                    </div>
-                    <Chip label={stream.provider} size="small" />
+                    {stream?.info_hash && (
+                      <div className="stream-info-card-subtitle mb-2">
+                        info hash: {stream.info_hash}
+                      </div>
+                    )}
+                    <Chip label={stream.provider_profile_name} size="small" />
+                    {isCurrentStream && (
+                      <Chip
+                        label="Current source"
+                        size="small"
+                        color="primary"
+                        className="ms-2"
+                      />
+                    )}
                     {modalType === "select-stream" ? (
                       <div className="stream-info-card-footer mt-2">
-                        {stream.provider !== "Hound" && (
+                        {stream.provider_profile_name !== "Hound" && (
                           <Button
                             className="stream-info-card-footer-buttons me-2"
                             variant="light"

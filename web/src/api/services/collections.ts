@@ -5,6 +5,11 @@ export const fetchAllCollections = async () => {
   return data;
 };
 
+export const fetchPublicCollections = async () => {
+  const { data } = await axios.get("/api/v1/collection/public");
+  return data;
+}
+
 export const fetchCollectionContents = async (id: number | string, limit = 20, offset = 0) => {
   const { data } = await axios.get(`/api/v1/collection/${id}?limit=${limit}&offset=${offset}`);
   return data;
@@ -21,5 +26,19 @@ export const createCollection = async (collectionData: {
   is_public: boolean;
 }) => {
   const { data } = await axios.post("/api/v1/collection/new", collectionData);
+  return data;
+};
+
+export const updateCollection = async (collectionData: {
+  collectionID: number;
+  collection_title?: string;
+  description?: string;
+  is_public: boolean;
+}) => {
+  const { data } = await axios.put(`/api/v1/collection/${collectionData.collectionID}`, {
+    collection_title: collectionData.collection_title,
+    description: collectionData.description,
+    is_public: collectionData.is_public,
+  });
   return data;
 };
