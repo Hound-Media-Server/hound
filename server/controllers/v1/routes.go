@@ -142,7 +142,7 @@ func SetupRoutes(r *gin.Engine) {
 	publicRoutes.GET("/stream/:encodedString", StreamHandler)
 	publicRoutes.HEAD("/stream/:encodedString", StreamHandler) // required by moviplayer in frontend
 	publicRoutes.GET("/subtitle/:encodedString", SubtitleHandler)
-	privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
+	// privateRoutes.POST("/torrent/:encodedString", AddTorrentHandler)
 	adminRoutes.POST("/download/:encodedString", DownloadHandler)                      // downloads to the server, not the client
 	adminRoutes.POST("/tv/:id/season/:seasonNumber/download", DownloadTVSeasonHandler) // downloads a whole season
 	adminRoutes.GET("/ingest", GetIngestTasksHandler)
