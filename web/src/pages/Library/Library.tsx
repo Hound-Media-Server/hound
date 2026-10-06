@@ -67,7 +67,6 @@ function Library(props: any) {
     });
   };
 
-  document.title = "My Collections - Hound";
   const isLoaded =
     !isCollectionsLoading && !isRecentLoading && !isPublicCollectionsLoading;
   const navigate = useNavigate();

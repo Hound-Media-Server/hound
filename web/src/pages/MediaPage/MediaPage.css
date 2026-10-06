@@ -142,6 +142,18 @@
     color: white;
 }
 
+.in-hound-chip {
+  color: black !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  font-family: "Cabin", sans-serif !important;
+  padding-left: 5px !important;
+}
+
+.in-hound-chip .MuiChip-icon {
+  color: black !important;
+  font-size: 18px;
+}
+
 .media-page-tv-main .comment-card-container {
     color: white;
     background-color: rgba(var(--hound-primary), 0.58);

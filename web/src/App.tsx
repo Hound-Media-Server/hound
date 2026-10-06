@@ -27,6 +27,7 @@ import LiveTV from "./pages/LiveTV/LiveTV";
 import { isPlatformElectron } from "./utils/platform";
 import { Spinner } from "react-bootstrap";
 import { StreamModalProvider } from "./pages/Modals/StreamModalContext";
+import PageTitle from "./PageTitle";
 const queryClient = new QueryClient();
 
 // axios defaults
@@ -163,6 +164,7 @@ function App() {
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
+            <PageTitle />
             <StreamModalProvider>
               {!!isAuthenticated && <Topnav />}
               <Routes>

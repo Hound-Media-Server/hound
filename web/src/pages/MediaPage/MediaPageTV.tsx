@@ -2,6 +2,7 @@ import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
 import CachedIcon from "@mui/icons-material/Cached";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import {
   Chip,
   IconButton,
@@ -11,7 +12,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -24,10 +25,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
-import {
-  useDirectStreamMutation,
-  useUnifiedStreamsMutation,
-} from "../../api/hooks/providers";
+import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { useStreamModal } from "../Modals/StreamModalContext";
@@ -66,7 +64,7 @@ function MediaPageTV(props: any) {
   const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
-  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
+  const isStreamButtonLoading = false;
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [streams, setStreams] = useState<any>(null);
@@ -87,13 +85,9 @@ function MediaPageTV(props: any) {
     props.data.source_id,
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
-  const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
-  const directStreamRequestId = useRef(0);
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
-  const {
-    data: continueWatchingData,
-    refetch: refetchWatchAction,
-  } = useWatchAction("tv", props.data.media_source, props.data.source_id);
+  const { data: continueWatchingData, refetch: refetchWatchAction } =
+    useWatchAction("tv", props.data.media_source, props.data.source_id);
 
   const openTVStream = (
     stream: any,
@@ -198,24 +192,42 @@ function MediaPageTV(props: any) {
     episode: number,
     mode: string,
     episodeID: number,
-    overrideEncodedData?: string,
+    _overrideEncodedData?: string,
     overrideWatchProgress?: any,
   ) => {
+    if (mode === "direct") {
+      const mediaSource = props.data.media_source;
+      const sourceID = props.data.source_id;
+      void openStream({
+        mediaType: "tv",
+        mediaSource,
+        sourceId: sourceID,
+        season,
+        episode,
+        watchProgress: overrideWatchProgress,
+        originalAudioLang: props.data?.original_language,
+        mediaDetails: props.data,
+        getWatchProgress: overrideWatchProgress !== undefined ? undefined : async () => {
+          if (episodeID === -1) return undefined;
+          const progressRes = await axios.get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`);
+          return progressRes.data?.find(
+            (item: any) => parseInt(item.episode_source_id, 10) === episodeID,
+          );
+        },
+      });
+      return;
+    }
     if (overrideWatchProgress !== undefined) {
       setActiveWatchProgress(overrideWatchProgress);
     } else {
       setActiveWatchProgress(null);
     }
-    if (mode === "direct") {
-      setIsStreamButtonLoading(true);
-    } else if (mode === "select") {
+    if (mode === "select") {
       setIsStreamSelectButtonLoading(true);
     }
     const mediaSource = props.data.media_source;
     const sourceID = props.data.source_id;
-    const searchProvidersToast = toast.loading(
-      mode === "direct" ? "Searching streams..." : "Searching providers...",
-    );
+    const searchProvidersToast = toast.loading("Searching providers...");
     // if we have current watch data, use encodedData to match a stream
     const fetchParams = {
       mediaType: "tv",
@@ -224,69 +236,15 @@ function MediaPageTV(props: any) {
       season,
       episode,
     };
-    const requestProviderStream = (encodedData: string, progress?: any) => {
-      if (mode === "direct") {
-        const requestId = directStreamRequestId.current + 1;
-        directStreamRequestId.current = requestId;
-
-        return searchDirectStream({
-          ...fetchParams,
-          encodedData,
-          onImmediateStream: (stream: any) => {
-            if (directStreamRequestId.current !== requestId) return;
-            toast.dismiss(searchProvidersToast);
-            void openTVStream(stream, season, episode, progress);
-            setIsStreamButtonLoading(false);
-          },
-        })
-          .then((data) => {
-            if (directStreamRequestId.current !== requestId) return;
-            toast.dismiss(searchProvidersToast);
-            setStreams(data);
-            if (data?.streams?.length > 0) {
-              if (!data.startedImmediately) {
-                void openTVStream(
-                  data.selectedStream,
-                  season,
-                  episode,
-                  progress,
-                );
-              }
-            } else {
-              toast.error("No streams found");
-            }
-          })
-          .catch((err) => {
-            if (directStreamRequestId.current !== requestId) return;
-            toast.dismiss(searchProvidersToast);
-            console.error("Failed to fetch streams", err);
-            toast.error("Failed to fetch streams");
-          });
-      }
+    const requestProviderStream = () => {
       return searchProviders(fetchParams)
         .then((data) => {
           toast.dismiss(searchProvidersToast);
           setStreams(data);
           let numStreams = data?.streams?.length;
           if (numStreams > 0) {
-            let selectedStream = data.streams[0];
-            // if we have watch progress, set this as the main stream
-            // note this doesn't handle different hosts/protocols, eg. if
-            // the urls are different even if they are the same file, it won't match
-            if (mode === "direct" && encodedData) {
-              const matchingStream = data.streams.find(
-                (stream: any) => stream.encoded_data === encodedData,
-              );
-              if (matchingStream) {
-                selectedStream = matchingStream;
-              }
-            }
-            if (mode === "direct") {
-              void openTVStream(selectedStream, season, episode, progress);
-            } else {
-              setSelectStreamFetchParams(fetchParams);
-              setIsSelectStreamModalOpen(true);
-            }
+            setSelectStreamFetchParams(fetchParams);
+            setIsSelectStreamModalOpen(true);
           } else {
             toast.error("No streams found");
           }
@@ -298,34 +256,23 @@ function MediaPageTV(props: any) {
         });
     };
     if (overrideWatchProgress !== undefined) {
-      requestProviderStream(
-        overrideEncodedData || "",
-        overrideWatchProgress,
-      ).finally(() => {
-        if (mode === "direct") {
-          setIsStreamButtonLoading(false);
-        } else if (mode === "select") {
-          setIsStreamSelectButtonLoading(false);
-        }
-      });
+      requestProviderStream().finally(() => setIsStreamSelectButtonLoading(false));
       return;
     }
     // no override, get playback progress (season modal case)
     axios
       .get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`)
       .then((progressRes) => {
-        let encodedData = "";
         let episodeProgress;
         if (progressRes.data && episodeID !== -1) {
           episodeProgress = progressRes.data.find(
             (item: any) => parseInt(item.episode_source_id, 10) === episodeID,
           );
           if (episodeProgress) {
-            encodedData = episodeProgress.encoded_data;
             setActiveWatchProgress(episodeProgress);
           }
         }
-        return requestProviderStream(encodedData, episodeProgress);
+        return requestProviderStream();
       })
       .catch((err) => {
         toast.error("Failed to get playback progress " + err, {
@@ -333,11 +280,7 @@ function MediaPageTV(props: any) {
         });
       })
       .finally(() => {
-        if (mode === "direct") {
-          setIsStreamButtonLoading(false);
-        } else if (mode === "select") {
-          setIsStreamSelectButtonLoading(false);
-        }
+        setIsStreamSelectButtonLoading(false);
       });
   };
 
@@ -372,12 +315,11 @@ function MediaPageTV(props: any) {
       handleStreamButtonClick(1, 1, mode, -1);
     }
   };
-  if (props.data.media_title) {
-    var yearString = props.data.first_air_date
-      ? `(${props.data.first_air_date.slice(0, 4)})`
-      : "";
-    document.title = props.data.media_title + " " + yearString + " - Hound";
-  }
+  useEffect(() => {
+    if (!props.data.media_title) return;
+    const year = props.data.first_air_date?.slice(0, 4);
+    document.title = `${props.data.media_title}${year ? ` (${year})` : ""} - Hound`;
+  }, [props.data.media_title, props.data.first_air_date]);
   var continueWatchingText = "▶ Play S1E1";
   if (continueWatchingData) {
     const { watch_action_type, next_episode, watch_progress } =
@@ -424,16 +366,10 @@ function MediaPageTV(props: any) {
             <div className="media-page-tv-header-info">
               {mediaFiles?.providers[0]?.streams?.length > 0 && (
                 <Chip
-                  label={"In Hound"}
+                  icon={<DoneAllIcon />}
+                  label="In Hound"
                   size="medium"
-                  color="primary"
-                  sx={{
-                    backgroundColor: "#015376ff",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    fontFamily: '"Cabin", sans-serif',
-                  }}
+                  className="in-hound-chip"
                 />
               )}
               <div className="media-page-tv-header-title">

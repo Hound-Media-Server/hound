@@ -248,7 +248,7 @@
   background-color: transparent !important;
   background: none !important;
   box-shadow: none !important;
-  color: gray;
+  color: darkslategrey;
 }
 
 #season-episode-card-dropdown-container .dropdown-toggle::after {

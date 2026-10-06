@@ -7,10 +7,10 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  Button,
 } from "@mui/material";
 import "./ElectronVideoControls.css";
-import { SegmentAction } from "../../utils/videoSegments";
+import { canSkipSegment, SegmentAction } from "../../utils/videoSegments";
+import { SkipSegmentButton } from "./SkipSegmentButton";
 import {
   Pause,
   PlayArrow,
@@ -125,26 +125,11 @@ export default function ElectronVideoControls({
   const [subMuiMenuAnchor, setSubMuiMenuAnchor] = useState<null | HTMLElement>(
     null,
   );
-  const showSkip =
-    streamType === "vod" &&
-    !!skipSegment &&
-    !skipBlocked &&
-    !isDragging &&
-    !audioMenuAnchor &&
-    !subMuiMenuAnchor &&
-    !isOverlayOpen;
-  useEffect(() => {
-    if (!showSkip || controlsVisible) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Enter" || event.isComposing) return;
-      event.preventDefault();
-      event.stopPropagation();
-      if (!event.repeat) handleSkip?.();
-    };
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [showSkip, controlsVisible, handleSkip]);
-
+  const showSkip = streamType === "vod" && canSkipSegment(
+    skipSegment,
+    !!skipBlocked || isDragging || !!audioMenuAnchor || !!subMuiMenuAnchor,
+    isOverlayOpen,
+  );
   const activeAudioTrack = audioTracks.find((t) => t.id === selectedAudioIdx);
   const audioLang =
     activeAudioTrack?.lang?.toUpperCase() ||
@@ -523,15 +508,13 @@ export default function ElectronVideoControls({
           </div>
         </div>
       </div>
-      {showSkip && skipSegment && (
-        <Button
-          className="controls-skip-button"
-          onClick={handleSkip}
-          style={{ bottom: controlsVisible ? 112 : 24 }}
-          disableRipple
-        >
-          {skipSegment.label}
-        </Button>
+      {showSkip && skipSegment && handleSkip && (
+        <SkipSegmentButton
+          segment={skipSegment}
+          onSkip={handleSkip}
+          bottom={controlsVisible ? 112 : 24}
+          controlsVisible={controlsVisible}
+        />
       )}
     </>
   );

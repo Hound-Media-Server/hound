@@ -106,3 +106,42 @@ export function getSkipSegment(
 }
 
 export type SegmentAction = NonNullable<ReturnType<typeof getSkipSegment>>;
+
+export function canSkipSegment(
+  segment: SegmentAction | null | undefined,
+  blocked: boolean,
+  isOverlayOpen?: boolean,
+): segment is SegmentAction {
+  return !!segment && !blocked && !isOverlayOpen;
+}
+
+export function shouldPrefetchNextEpisode(current: number, total: number) {
+  return current > 0 && total > 0 &&
+    (total - current < 300 || current / total > 0.8);
+}
+
+export function nextEpisodePlayerSettings(
+  player: "desktop" | "web",
+  resizeMode: string,
+  audioLang?: string,
+  subtitleLang?: string,
+) {
+  return {
+    player,
+    resize_mode: resizeMode,
+    audio_lang: audioLang,
+    subtitle_lang: subtitleLang,
+  };
+}
+
+export async function skipVideoSegment(
+  segment: SegmentAction,
+  seek: (time: number) => void | Promise<void>,
+  nextEpisode?: () => void | Promise<void>,
+) {
+  if (segment.nextEpisode) {
+    await nextEpisode?.();
+  } else {
+    await seek(segment.end);
+  }
+}

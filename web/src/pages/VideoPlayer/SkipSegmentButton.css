@@ -1,0 +1,12 @@
+.controls-skip-button.MuiButton-root,
+.controls-skip-button.MuiButton-root:hover {
+  position: absolute;
+  right: 24px;
+  z-index: 2147483647;
+  padding: 8px 16px;
+  border-radius: 24px;
+  color: black;
+  background: white;
+  text-transform: none;
+  transition: none;
+}

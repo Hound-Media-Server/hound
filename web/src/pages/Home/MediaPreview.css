@@ -151,7 +151,7 @@
   font-weight: 400;
 }
 
-#media-preview-collection-button {
+.media-preview-secondary-button.MuiButton-root {
   background-color: rgba(255, 255, 255, 0.65) !important;
   color: black;
   margin-left: 10px;
@@ -162,7 +162,7 @@
   background-color: rgba(var(--hound-secondary), 0.72) !important;
 }
 
-#media-preview-collection-button:hover {
+.media-preview-secondary-button.MuiButton-root:hover {
   background-color: rgba(255, 255, 255, 0.55) !important;
 }
 

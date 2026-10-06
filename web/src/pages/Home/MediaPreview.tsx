@@ -1,7 +1,9 @@
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import EastIcon from "@mui/icons-material/East";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { Button, Chip, Fade, Paper, Popper, Skeleton } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import {
   FocusEvent,
   PointerEvent,
@@ -49,10 +51,18 @@ function formatDuration(minutes?: number) {
 function MediaPreview({
   item,
   children,
+  secondaryAction = "collection",
+  initialWatchAction,
 }: {
   item: MediaPreviewItem;
   children: ReactNode;
+  secondaryAction?: "collection" | "open";
+  initialWatchAction?: {
+    watch_progress?: any;
+    next_episode?: any;
+  };
 }) {
+  const navigate = useNavigate();
   const anchorRef = useRef<HTMLDivElement>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout>>();
   const closeTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -92,6 +102,7 @@ function MediaPreview({
     open && canPreview,
   );
   const { openStream } = useStreamModal();
+  const currentWatchAction = watchAction ?? initialWatchAction;
   const preview = { ...item, ...details };
 
   const clearTimers = () => {
@@ -126,8 +137,8 @@ function MediaPreview({
   };
 
   const handlePlay = () => {
-    const progress = watchAction?.watch_progress;
-    const nextEpisode = watchAction?.next_episode;
+    const progress = currentWatchAction?.watch_progress;
+    const nextEpisode = currentWatchAction?.next_episode;
     const request = {
       mediaType,
       mediaSource: item.media_source,
@@ -173,8 +184,8 @@ function MediaPreview({
     .filter(Boolean)
     .slice(0, 3)
     .join(", ");
-  const progress = watchAction?.watch_progress;
-  const nextEpisode = watchAction?.next_episode;
+  const progress = currentWatchAction?.watch_progress;
+  const nextEpisode = currentWatchAction?.next_episode;
   const playLabel = progress
     ? mediaType === "tv"
       ? `Resume S${progress.season_number}E${progress.episode_number}`
@@ -303,17 +314,33 @@ function MediaPreview({
                   >
                     {playLabel}
                   </Button>
-                  <Button
-                    id="media-preview-collection-button"
-                    variant="contained"
-                    startIcon={<PlaylistAddIcon />}
-                    onClick={() => {
-                      setOpen(false);
-                      setCollectionOpen(true);
-                    }}
-                  >
-                    Add to Collection
-                  </Button>
+                  {secondaryAction === "open" ? (
+                    <Button
+                      className="media-preview-secondary-button"
+                      variant="contained"
+                      startIcon={<EastIcon />}
+                      onClick={() => {
+                        setOpen(false);
+                        navigate(
+                          `/${mediaType}/${item.media_source}-${sourceID}`,
+                        );
+                      }}
+                    >
+                      Open {mediaType === "movie" ? "Movie" : "Show"}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="media-preview-secondary-button"
+                      variant="contained"
+                      startIcon={<PlaylistAddIcon />}
+                      onClick={() => {
+                        setOpen(false);
+                        setCollectionOpen(true);
+                      }}
+                    >
+                      Add to Collection
+                    </Button>
+                  )}
                 </div>
               </div>
             </Paper>

@@ -2,6 +2,7 @@ import "./MediaPage.css";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import HistoryIcon from "@mui/icons-material/History";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import {
   Chip,
   IconButton,
@@ -11,7 +12,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -23,10 +24,7 @@ import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
 import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
-import {
-  useDirectStreamMutation,
-  useUnifiedStreamsMutation,
-} from "../../api/hooks/providers";
+import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { useStreamModal } from "../Modals/StreamModalContext";
@@ -73,8 +71,6 @@ function MediaPageMovie(props: any) {
     props.data.source_id,
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
-  const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
-  const directStreamRequestId = useRef(0);
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
   const { data: watchAction, refetch: refetchWatchAction } = useWatchAction(
     "movie",
@@ -157,51 +153,17 @@ function MediaPageMovie(props: any) {
   // direct plays the stream directly, select opens the stream selection modal
   const handleStreamButtonClick = (mode: string) => {
     if (mode === "direct") {
-      setIsStreamButtonLoading(true);
-    } else if (mode === "select") {
-      setIsStreamSelectButtonLoading(true);
-    }
-    if (mode === "direct") {
-      const requestId = directStreamRequestId.current + 1;
-      directStreamRequestId.current = requestId;
-      const searchProvidersToast = toast.loading("Searching streams...");
-
-      searchDirectStream({
+      void openStream({
         mediaType: "movie",
         mediaSource: props.data.media_source,
         sourceId: props.data.source_id,
-        encodedData: watchProgress?.encoded_data,
-        onImmediateStream: (stream: any) => {
-          if (directStreamRequestId.current !== requestId) return;
-          toast.dismiss(searchProvidersToast);
-          void openMovieStream(stream);
-          setIsStreamButtonLoading(false);
-        },
-      })
-        .then((data) => {
-          if (directStreamRequestId.current !== requestId) return;
-          toast.dismiss(searchProvidersToast);
-          setStreams(data);
-          if (data?.streams?.length > 0) {
-            if (!data.startedImmediately) {
-              void openMovieStream(data.selectedStream);
-            }
-          } else {
-            toast.error("No streams found");
-          }
-        })
-        .catch((err) => {
-          if (directStreamRequestId.current !== requestId) return;
-          toast.error("Failed to search streams " + err, {
-            id: searchProvidersToast,
-          });
-        })
-        .finally(() => {
-          if (directStreamRequestId.current !== requestId) return;
-          setIsStreamButtonLoading(false);
-        });
+        watchProgress,
+        originalAudioLang: props.data?.original_language,
+        mediaDetails: props.data,
+      });
       return;
     }
+    if (mode === "select") setIsStreamSelectButtonLoading(true);
     if (!streams) {
       const searchProvidersToast = toast.loading("Searching providers...");
       searchProviders({
@@ -268,12 +230,11 @@ function MediaPageMovie(props: any) {
     setIsVideoModalOpen(true);
     setVideoKey(key);
   };
-  if (props.data.media_title) {
-    var yearString = props.data.release_date
-      ? `(${props.data.release_date.slice(0, 4)})`
-      : "";
-    document.title = props.data.media_title + " " + yearString + " - Hound";
-  }
+  useEffect(() => {
+    if (!props.data.media_title) return;
+    const year = props.data.release_date?.slice(0, 4);
+    document.title = `${props.data.media_title}${year ? ` (${year})` : ""} - Hound`;
+  }, [props.data.media_title, props.data.release_date]);
   return (
     <>
       <div
@@ -310,16 +271,10 @@ function MediaPageMovie(props: any) {
             <div className="media-page-tv-header-info">
               {mediaFiles?.providers[0]?.streams?.length > 0 && (
                 <Chip
-                  label={"In Hound"}
-                  size="medium"
-                  color="primary"
-                  sx={{
-                    backgroundColor: "#015376ff",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    fontFamily: '"Cabin", sans-serif',
-                  }}
+                  icon={<DoneAllIcon />}
+                  label="In Hound"
+                  size="small"
+                  className="in-hound-chip"
                 />
               )}
               <div className="media-page-tv-header-title">
