@@ -395,7 +395,8 @@ export function WebPlayer({
     >
       <MoviPlayer
         ref={playerRef}
-        persist=""
+        persist="volume speed"
+        sw="auto"
         thumb
         objectfit={objectFit}
         src={src}
