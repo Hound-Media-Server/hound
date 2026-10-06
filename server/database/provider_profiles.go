@@ -30,7 +30,7 @@ func GetProviderProfiles() ([]ProviderProfile, error) {
 	if cacheExists {
 		return providers, nil
 	}
-	err := databaseEngine.Table(providerProfilesTable).Find(&providers)
+	err := databaseEngine.Table(providerProfilesTable).Asc("provider_profile_id").Find(&providers)
 	if err != nil {
 		return nil, fmt.Errorf("query all providers: %w", err)
 	}
@@ -137,11 +137,75 @@ func UpdateDefaultProviderProfile(defaultProviderID int, isDefaultStreaming bool
 }
 
 func DeleteProviderProfile(providerID int) error {
-	_, err := databaseEngine.Table(providerProfilesTable).Where("provider_profile_id = ?", providerID).Delete()
+	sess := databaseEngine.NewSession()
+	defer sess.Close()
+	if err := sess.Begin(); err != nil {
+		return err
+	}
+	var deleted ProviderProfile
+	has, err := sess.Table(providerProfilesTable).ID(providerID).Get(&deleted)
 	if err != nil {
+		_ = sess.Rollback()
+		return fmt.Errorf("query provider %d before deletion: %w", providerID, err)
+	}
+	if !has {
+		_ = sess.Rollback()
+		return nil
+	}
+	if _, err := sess.Table(providerProfilesTable).ID(providerID).Delete(&ProviderProfile{}); err != nil {
+		_ = sess.Rollback()
 		return fmt.Errorf("delete provider %d: %w", providerID, err)
+	}
+
+	var remaining []ProviderProfile
+	if err := sess.Table(providerProfilesTable).Asc("provider_profile_id").Find(&remaining); err != nil {
+		_ = sess.Rollback()
+		return fmt.Errorf("query remaining providers after deleting %d: %w", providerID, err)
+	}
+	if len(remaining) > 0 {
+		update := ProviderProfile{}
+		var cols []string
+		if deleted.IsDefaultStreaming {
+			hasDefault := false
+			for _, profile := range remaining {
+				if profile.IsDefaultStreaming {
+					hasDefault = true
+					break
+				}
+			}
+			if !hasDefault {
+				update.IsDefaultStreaming = true
+				cols = append(cols, "is_default_streaming")
+			}
+		}
+		if deleted.IsDefaultDownloading {
+			hasDefault := false
+			for _, profile := range remaining {
+				if profile.IsDefaultDownloading {
+					hasDefault = true
+					break
+				}
+			}
+			if !hasDefault {
+				update.IsDefaultDownloading = true
+				cols = append(cols, "is_default_downloading")
+			}
+		}
+		if len(cols) > 0 {
+			if _, err := sess.Table(providerProfilesTable).ID(remaining[0].ProviderProfileID).
+				Cols(cols...).Update(&update); err != nil {
+				_ = sess.Rollback()
+				return fmt.Errorf("assign default provider profile %d: %w", remaining[0].ProviderProfileID, err)
+			}
+		}
+	}
+	if err := sess.Commit(); err != nil {
+		return fmt.Errorf("commit provider deletion %d: %w", providerID, err)
 	}
 	DeleteCache(fmt.Sprintf("provider_profiles|id|%d", providerID))
 	DeleteCache("provider_profiles|all")
+	if len(remaining) > 0 {
+		DeleteCache(fmt.Sprintf("provider_profiles|id|%d", remaining[0].ProviderProfileID))
+	}
 	return nil
 }
