@@ -51,6 +51,28 @@
   }
 }
 
+@media only screen and (max-width: 600px) {
+  :is(.home-page-main-section, .home-page-search-results, .library-main-container) .horizontal-section {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  :is(.home-page-main-section, .home-page-search-results, .library-main-container) .horizontal-section-header {
+    margin-left: 40px;
+    font-size: 24px;
+  }
+
+  :is(.home-page-main-section, .home-page-search-results, .library-main-container) .react-horizontal-scrolling-menu--arrow-left,
+  :is(.home-page-main-section, .home-page-search-results, .library-main-container) .react-horizontal-scrolling-menu--arrow-right {
+    display: none;
+  }
+
+  :is(.home-page-main-section, .home-page-search-results, .library-main-container) .react-horizontal-scrolling-menu--scroll-container {
+    overflow-x: auto;
+    padding-left: 40px;
+  }
+}
+
 .react-horizontal-scrolling-menu--arrow-left .btn {
   padding-left: 5px;
   padding-right: 5px;
