@@ -3,6 +3,7 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import HistoryIcon from "@mui/icons-material/History";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import {
   Chip,
   IconButton,
@@ -61,7 +62,6 @@ function MediaPageMovie(props: any) {
   const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
-  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
@@ -201,9 +201,7 @@ function MediaPageMovie(props: any) {
           });
         })
         .finally(() => {
-          if (mode === "direct") {
-            setIsStreamButtonLoading(false);
-          } else if (mode === "select") {
+          if (mode === "select") {
             setIsStreamSelectButtonLoading(false);
           }
         });
@@ -215,14 +213,12 @@ function MediaPageMovie(props: any) {
               stream.encoded_data === watchProgress?.encoded_data,
           ) ?? streams.streams[0];
         void openMovieStream(selectedStream);
-        setIsStreamButtonLoading(false);
       } else if (mode === "select") {
         setIsSelectStreamModalOpen(true);
         setIsStreamSelectButtonLoading(false);
       }
     } else {
       toast.error("No Streams found");
-      setIsStreamButtonLoading(false);
       setIsStreamSelectButtonLoading(false);
     }
   };
@@ -311,18 +307,10 @@ function MediaPageMovie(props: any) {
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={
-                    isStreamButtonLoading ? (
-                      <Spinner
-                        animation="grow"
-                        size="sm"
-                        role="status"
-                        className="stream-play-button-spinner"
-                      />
-                    ) : watchProgress ? (
-                      "▶ Resume"
-                    ) : (
-                      "▶ Play Movie"
-                    )
+                    <span className="stream-play-button-label">
+                      <PlayArrowRoundedIcon className="stream-play-button-icon" />
+                      {watchProgress ? "Resume" : "Play Movie"}
+                    </span>
                   }
                   autoClose="outside"
                   className="stream-play-button"

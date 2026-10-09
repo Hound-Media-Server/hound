@@ -237,7 +237,6 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
           sourceID={request.sourceId}
           seasonNumber={request.season}
           mediaTitle={request.watchProgress?.media_title || ""}
-          isStreamButtonLoading={false}
           isStreamSelectButtonLoading={false}
           isStreamModalOpen={request !== null}
           handleStreamButtonClick={(
