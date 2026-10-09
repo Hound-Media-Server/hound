@@ -7,23 +7,22 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import toast from "react-hot-toast";
-import ClearIcon from "@mui/icons-material/Clear";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { useState } from "react";
 import axios from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 import ItemCard from "../Home/ItemCard";
 
 function MediaItem(props: any) {
-  var mediaType = props.item.media_type;
-  var mediaTypeReadable =
-    mediaType.charAt(0).toUpperCase() + mediaType.slice(1);
-  if (props.item.media_type === "tvshow") {
-    mediaType = "tv";
-    mediaTypeReadable = "TV Show";
-  }
+  const queryClient = useQueryClient();
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const handleDeleteClickOpen = () => {
+    setMenuAnchor(null);
     setIsDeleteDialogOpen(true);
   };
   const handleDeleteDialogClose = () => {
@@ -39,9 +38,11 @@ function MediaItem(props: any) {
       };
       axios
         .delete(`/api/v1/collection/${props.collectionID}`, { data: payload })
-        .then((res) => {
+        .then(() => {
           setIsDeleteDialogOpen(false);
-          window.location.reload();
+          queryClient.invalidateQueries({
+            queryKey: ["collections", props.collectionID, "contents"],
+          });
         })
         .catch((err) => {
           console.log(err);
@@ -52,46 +53,28 @@ function MediaItem(props: any) {
   };
   return (
     <>
-      <div className="media-item-container">
-        <div className="media-item-img-container d-flex">
-          <ItemCard item={props.item} itemType={"poster"} />
-        </div>
-        <div className="media-item-content-container">
-          <div className="media-item-title-container">
-            <a
-              href={`/${mediaType}/${props.item.media_source}-${props.item.source_id}`}
-              className="a-no-style"
-            >
-              <span className="media-item-title">{props.item.media_title}</span>
-            </a>
-            {props.item.release_date ? (
-              <>
-                <span className="media-item-separator">|</span>
-                <span className="media-item-date">
-                  {props.item.release_date.slice(0, 4)}
-                </span>
-              </>
-            ) : (
-              ""
-            )}
-          </div>
-          <div className="media-item-secondary">{mediaTypeReadable}</div>
-          <div className="media-item-description">
-            {props.item.overview
-              ? props.item.overview
-              : "No description available."}
-          </div>
-        </div>
-        <div className="media-item-actions-container">
-          {props.showDeleteButton ? (
-            <IconButton onClick={handleDeleteClickOpen}>
-              <ClearIcon />
-            </IconButton>
-          ) : (
-            ""
-          )}
-        </div>
+      <div className="collection-grid-item">
+        <ItemCard item={props.item} itemType={"poster"} />
+        {props.showDeleteButton ? (
+          <IconButton
+            className="collection-grid-item-more"
+            onClick={(event) => setMenuAnchor(event.currentTarget)}
+          >
+            <MoreVertIcon />
+          </IconButton>
+        ) : (
+          ""
+        )}
       </div>
+      <Menu
+        anchorEl={menuAnchor}
+        open={!!menuAnchor}
+        onClose={() => setMenuAnchor(null)}
+      >
+        <MenuItem onClick={handleDeleteClickOpen}>
+          Delete from collection
+        </MenuItem>
+      </Menu>
       <Dialog
         open={isDeleteDialogOpen}
         onClose={handleDeleteDialogClose}

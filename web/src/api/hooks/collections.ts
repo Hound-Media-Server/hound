@@ -24,7 +24,7 @@ export const usePublicCollections = () => {
 
 export const useCollectionContents = (id: number | string | undefined, limit?: number, offset?: number, enabled = true) => {
   return useQuery({
-    queryKey: ["collections", id, "contents"],
+    queryKey: ["collections", id, "contents", limit, offset],
     queryFn: () => fetchCollectionContents(id!, limit, offset),
     enabled: !!id && enabled,
   });
@@ -52,7 +52,7 @@ export const useUpdateCollection = () => {
   return useMutation({
     mutationFn: updateCollection,
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["collections", variables.collectionID, "contents"] });
+      queryClient.invalidateQueries({ queryKey: ["collections", String(variables.collectionID), "contents"] });
     },
   });
 };

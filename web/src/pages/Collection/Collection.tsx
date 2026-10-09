@@ -22,25 +22,41 @@ import CollectionFormDialog, {
   CollectionFormData,
 } from "../Library/CollectionFormDialog";
 import toast from "react-hot-toast";
-import { useUpdateCollection } from "../../api/hooks/collections";
+import {
+  useCollectionContents,
+  useUpdateCollection,
+} from "../../api/hooks/collections";
 import { Lock, LockOpen } from "@mui/icons-material";
+import useWindowDimensions from "../../helpers/useWindowDimensions";
 
 function Collection(props: any) {
-  const [collectionData, setCollectionData] = useState({
-    records: [],
-    collection: {
-      collection_title: "",
-      description: "",
-      is_public: false,
-      owner_username: "",
-      owner_display_name: "",
-    },
-    total_records: 0,
-  });
-  const [isCollectionDataLoaded, setIsCollectionDataLoaded] = useState(false);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 10;
+  const { breakpoint } = useWindowDimensions();
+  let columns;
+  switch (breakpoint) {
+    case "xs":
+      columns = 2;
+      break;
+    case "sm":
+      columns = 3;
+      break;
+    case "md":
+      columns = 4;
+      break;
+    default:
+      columns = 6;
+  }
+  const itemsPerPage = 24;
+  const collectionID = useParams().id;
+  const { data: collectionData, isError: loadError } = useCollectionContents(
+    collectionID,
+    itemsPerPage,
+    itemsPerPage * (page - 1),
+  );
+  const totalPages = Math.max(
+    1,
+    Math.ceil((collectionData?.total_records ?? 0) / itemsPerPage),
+  );
   const navigate = useNavigate();
   const updateCollectionMutation = useUpdateCollection();
 
@@ -74,15 +90,6 @@ function Collection(props: any) {
       },
       {
         onSuccess: () => {
-          setCollectionData((prev) => ({
-            ...prev,
-            collection: {
-              ...prev.collection,
-              collection_title: data.collection_title,
-              description: data.description,
-              is_public: data.is_public,
-            },
-          }));
           toast.success("Collection updated");
           handleEditDialogClose();
         },
@@ -112,15 +119,12 @@ function Collection(props: any) {
   const handleDeleteDialogClose = () => {
     setIsDeleteDialogOpen(false);
   };
-  const collectionID = useParams().id;
-  var showDeleteButton = false;
-  if (
-    isCollectionDataLoaded &&
-    collectionData.collection.owner_username ===
-      localStorage.getItem("username")
-  ) {
-    showDeleteButton = true;
-  }
+  useEffect(() => {
+    setPage(1);
+  }, [collectionID]);
+  const showDeleteButton =
+    collectionData?.collection.owner_username ===
+    localStorage.getItem("username");
   const handleDeleteCollection = () => {
     axios
       .delete(`/api/v1/collection/${collectionID}/delete`)
@@ -135,153 +139,143 @@ function Collection(props: any) {
       });
   };
   useEffect(() => {
-    axios
-      .get(
-        `/api/v1/collection/${collectionID}?limit=${itemsPerPage}&offset=${
-          itemsPerPage * (page - 1)
-        }`,
-      )
-      .then((res) => {
-        setCollectionData(res.data);
-        setIsCollectionDataLoaded(true);
-        setTotalPages(Math.ceil(res.data.total_records / itemsPerPage));
-      })
-      .catch((err) => {
-        if (err.response.status === 500) {
-          alert("500");
-        }
-      });
-  }, [collectionID, page]);
+    if (collectionData && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [collectionData, page, totalPages]);
   useEffect(() => {
-    if (isCollectionDataLoaded) {
+    if (collectionData) {
       document.title = `${collectionData.collection.collection_title} - Hound`;
     }
-  }, [isCollectionDataLoaded, collectionData.collection.collection_title]);
+  }, [collectionData?.collection.collection_title]);
   return (
-    <>
-      {isCollectionDataLoaded ? (
-        <>
-          <div className="collection-main-section">
-            <div className="collection-items-list-container">
-              <div className="collection-top-section">
-                <div className="collection-cover-container">
-                  <CollectionCover
-                    data={collectionData.collection}
-                    key={collectionData.collection.collection_title}
-                    showCaption={false}
-                  />
-                  <div className="collection-cover-main">
-                    <div className="collection-cover-main-title">
-                      {collectionData.collection.collection_title}
-                    </div>
-                    <div className="collection-cover-date">
-                      {`by ${collectionData.collection.owner_display_name ? collectionData.collection.owner_display_name : collectionData.collection.owner_username}`}
-                    </div>
-                    <div className="mt-2">
-                      {collectionData.collection.is_public ? (
-                        <Chip icon={<LockOpen />} label="Public Collection" />
-                      ) : (
-                        <Chip icon={<Lock />} label="Private Collection" />
-                      )}
-                    </div>
-                    <hr />
-                    <div className="collection-cover-main-description">
-                      {collectionData.collection.description}
-                    </div>
-                    <div className="collection-top-section-actions">
-                      {showDeleteButton && (
-                        <>
-                          <IconButton onClick={handleEditClickOpen}>
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton onClick={handleDeleteClickOpen}>
-                            <DeleteIcon />
-                          </IconButton>
-                        </>
-                      )}
-                    </div>
+    <div className="collection-main-section dark-page">
+      <div className="collection-items-container">
+        {collectionData ? (
+          <>
+            <div className="collection-top-section">
+              <div className="collection-cover-container">
+                <CollectionCover
+                  data={collectionData.collection}
+                  key={collectionData.collection.collection_title}
+                  showCaption={false}
+                />
+                <div className="collection-cover-main">
+                  <div className="collection-cover-main-title">
+                    {collectionData.collection.collection_title}
+                  </div>
+                  <div className="collection-cover-date">
+                    {`by ${collectionData.collection.owner_display_name ? collectionData.collection.owner_display_name : collectionData.collection.owner_username}`}
+                    {" · "}
+                    {collectionData.total_records}{" "}
+                    {collectionData.total_records === 1 ? "item" : "items"}
+                  </div>
+                  <div className="mt-2">
+                    {collectionData.collection.is_public ? (
+                      <Chip icon={<LockOpen />} label="Public Collection" />
+                    ) : (
+                      <Chip icon={<Lock />} label="Private Collection" />
+                    )}
+                  </div>
+                  <hr />
+                  <div className="collection-cover-main-description">
+                    {collectionData.collection.description}
+                  </div>
+                  <div className="collection-top-section-actions">
+                    {showDeleteButton && (
+                      <>
+                        <IconButton onClick={handleEditClickOpen}>
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={handleDeleteClickOpen}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-              {collectionData.records ? (
-                collectionData.records.map((item) => (
+            </div>
+            {collectionData.records?.length > 0 ? (
+              <div
+                className="collection-items-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                }}
+              >
+                {collectionData.records.map((item: any) => (
                   <MediaItem
                     item={item}
                     collectionID={collectionID}
-                    key={item["media_title"]}
+                    key={`${item["media_type"]}-${item["media_source"]}-${item["source_id"]}`}
                     showDeleteButton={showDeleteButton}
                   />
-                ))
-              ) : (
-                <span className="collection-empty-message">
-                  This collection is empty.
-                  <br />
-                  <br />
-                  <br />
-                  <br />
-                  <br />
-                  <br />
-                  <br />
-                  <br />
-                  <br />
-                  <br />
-                </span>
-              )}
-            </div>
-          </div>
-          {collectionData.records ? (
-            <div className="d-flex justify-content-center pb-4 pt-2 paginator-section">
-              <div className="paginator-container shadow-lg">
-                <Pagination
-                  id="paginator-component"
-                  defaultPage={1}
-                  page={page}
-                  onChange={handlePageChange}
-                  count={totalPages}
-                  size="large"
-                />
+                ))}
               </div>
-            </div>
-          ) : (
-            ""
-          )}
-          <CollectionFormDialog
-            open={isEditDialogOpen}
-            title="Edit Collection"
-            submitLabel="Save"
-            initialData={{
-              collection_title: collectionData.collection.collection_title,
-              description: collectionData.collection.description,
-              is_public: collectionData.collection.is_public,
-            }}
-            onClose={handleEditDialogClose}
-            onSubmit={handleUpdateCollection}
-          />
+            ) : (
+              <span className="collection-empty-message">
+                This collection is empty.
+              </span>
+            )}
+            {totalPages > 1 ? (
+              <div className="d-flex justify-content-center pb-4 pt-2 paginator-section">
+                <div className="paginator-container shadow-lg">
+                  <Pagination
+                    id="paginator-component"
+                    defaultPage={1}
+                    page={page}
+                    onChange={handlePageChange}
+                    count={totalPages}
+                    size="large"
+                    siblingCount={0}
+                  />
+                </div>
+              </div>
+            ) : (
+              ""
+            )}
+            <CollectionFormDialog
+              open={isEditDialogOpen}
+              title="Edit Collection"
+              submitLabel="Save"
+              initialData={{
+                collection_title: collectionData.collection.collection_title,
+                description: collectionData.collection.description,
+                is_public: collectionData.collection.is_public,
+              }}
+              onClose={handleEditDialogClose}
+              onSubmit={handleUpdateCollection}
+            />
 
-          <Dialog
-            open={isDeleteDialogOpen}
-            onClose={handleDeleteDialogClose}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-dialog-title">
-              {"Delete this Collection?"}
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText id="alert-dialog-description">
-                This action cannot be reversed.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleDeleteDialogClose}>Cancel</Button>
-              <Button onClick={handleDeleteCollection}>Delete</Button>
-            </DialogActions>
-          </Dialog>
-        </>
-      ) : (
-        <LinearProgress className="progress-margin" />
-      )}
-    </>
+            <Dialog
+              open={isDeleteDialogOpen}
+              onClose={handleDeleteDialogClose}
+              aria-labelledby="alert-dialog-title"
+              aria-describedby="alert-dialog-description"
+            >
+              <DialogTitle id="alert-dialog-title">
+                {"Delete this Collection?"}
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                  This action cannot be reversed.
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleDeleteDialogClose}>Cancel</Button>
+                <Button onClick={handleDeleteCollection}>Delete</Button>
+              </DialogActions>
+            </Dialog>
+          </>
+        ) : loadError ? (
+          <div className="collection-empty-message">
+            Unable to load this collection.
+          </div>
+        ) : (
+          <LinearProgress className="progress-margin" />
+        )}
+      </div>
+    </div>
   );
 }
 
