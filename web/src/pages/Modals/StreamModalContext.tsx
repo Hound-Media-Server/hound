@@ -61,8 +61,12 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
   );
   const requestId = useRef(0);
   const nextEpisodePending = useRef(false);
+  const fallbackStreams = useRef<any[]>([]);
+  const fallbackCount = useRef(0);
+  const lastFault = useRef<string | null>(null);
   const closeStream = useCallback(() => {
     requestId.current++;
+    fallbackStreams.current = [];
     prefetchedEpisode.current = null;
     setIsSourceSelectOpen(false);
     setIsEpisodeSelectOpen(false);
@@ -75,6 +79,9 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
   const openStream = useCallback(
     async (next: StreamPlaybackRequest) => {
       const currentRequestId = ++requestId.current;
+      fallbackStreams.current = [];
+      fallbackCount.current = 0;
+      lastFault.current = null;
       setStreamError(null);
       setRequest(next);
       if (next.stream || next.encodedData) {
@@ -85,21 +92,25 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
           ? await next.getWatchProgress()
           : next.watchProgress;
         if (currentRequestId !== requestId.current) return;
-        const { selectedStream: stream, startedImmediately } =
-          await resolveStream({
-            ...next,
-            encodedData: progress?.encoded_data,
-            onImmediateStream: (immediateStream: any) => {
-              if (currentRequestId === requestId.current) {
-                setRequest({
-                  ...next,
-                  watchProgress: progress,
-                  stream: immediateStream,
-                });
-              }
-            },
-          });
+        const {
+          selectedStream: stream,
+          startedImmediately,
+          fallbackStreams: alternatives,
+        } = await resolveStream({
+          ...next,
+          encodedData: progress?.encoded_data,
+          onImmediateStream: (immediateStream: any) => {
+            if (currentRequestId === requestId.current) {
+              setRequest({
+                ...next,
+                watchProgress: progress,
+                stream: immediateStream,
+              });
+            }
+          },
+        });
         if (currentRequestId === requestId.current) {
+          fallbackStreams.current = alternatives;
           if (stream) {
             if (!startedImmediately)
               setRequest({ ...next, watchProgress: progress, stream });
@@ -228,6 +239,26 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
               }
             : undefined
         }
+        onBadStream={
+          fallbackStreams.current.length
+            ? () => {
+                if (lastFault.current === request?.stream?.encoded_data) return;
+                const index = fallbackStreams.current.findIndex(
+                  (candidate) =>
+                    candidate.encoded_data === request?.stream?.encoded_data,
+                );
+                if (index < 0) return;
+                const next = fallbackStreams.current[index + 1];
+                lastFault.current = request?.stream?.encoded_data ?? null;
+                if (!next || fallbackCount.current >= 3) {
+                  setStreamError("No playable streams found.");
+                  return;
+                }
+                fallbackCount.current++;
+                setRequest((current) => current && { ...current, stream: next });
+              }
+            : undefined
+        }
       />
       {request?.mediaType === "tv" && request.season !== undefined && (
         <SeasonModal
@@ -292,6 +323,8 @@ export function StreamModalProvider({ children }: { children: ReactNode }) {
             : undefined
         }
         onStreamSelected={(stream) => {
+          fallbackStreams.current = [];
+          setStreamError(null);
           setIsSourceSelectOpen(false);
           setRequest(
             sourceSelectTarget

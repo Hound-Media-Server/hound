@@ -132,7 +132,7 @@ export const useDirectStreamMutation = () => {
         encodedData,
       );
 
-      if (mediaFilesStreams.length > 0 && (!encodedData || matchingMediaFileStream)) {
+      if (mediaFilesStreams.length > 0) {
         startedImmediately = true;
         onImmediateStream?.(matchingMediaFileStream ?? mediaFilesStreams[0]);
       }
@@ -140,14 +140,16 @@ export const useDirectStreamMutation = () => {
       const providersData = await providersPromise;
       const externalStreams = getProviderStreams(providersData);
       const allStreams = [...mediaFilesStreams, ...externalStreams];
-      const selectedStream =
-        getMatchingStream(allStreams, encodedData) ?? allStreams[0];
+      const selectedStream = mediaFilesStreams.length
+        ? matchingMediaFileStream ?? mediaFilesStreams[0]
+        : getMatchingStream(externalStreams, encodedData) ?? externalStreams[0];
 
       return {
         ...providersData,
         ...mediaFilesData,
         providers: null,
         streams: allStreams,
+        fallbackStreams: mediaFilesStreams.length ? [] : externalStreams,
         selectedStream,
         startedImmediately,
       };

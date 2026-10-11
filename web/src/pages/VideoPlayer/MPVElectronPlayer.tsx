@@ -22,6 +22,7 @@ interface IVideoPlayerProps {
   isStreamsMatch?: boolean;
   originalAudioLang?: string;
   onStartupSettled?: () => void;
+  onDuration?: (duration: number) => boolean;
   onChangeSource?: (currentTime: number) => void;
   onViewEpisodes?: () => void;
   segmentMedia?: SegmentMedia;
@@ -40,6 +41,7 @@ const MPVElectronPlayer = React.memo(
     isStreamsMatch,
     originalAudioLang,
     onStartupSettled,
+    onDuration,
     onChangeSource,
     onViewEpisodes,
     segmentMedia,
@@ -72,6 +74,8 @@ const MPVElectronPlayer = React.memo(
     onVideoProgressRef.current = onVideoProgress;
     const onStartupSettledRef = useRef(onStartupSettled);
     onStartupSettledRef.current = onStartupSettled;
+    const onDurationRef = useRef(onDuration);
+    onDurationRef.current = onDuration;
 
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
@@ -86,7 +90,6 @@ const MPVElectronPlayer = React.memo(
       currentTime,
       !!onNextEpisode,
     );
-
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -196,11 +199,14 @@ const MPVElectronPlayer = React.memo(
     );
 
     const handleSkip = async () => {
-      if (!canSkipSegment(
-        skipSegment,
-        isVideoLoading || !seekDoneRef.current,
-        isOverlayOpen,
-      )) return;
+      if (
+        !canSkipSegment(
+          skipSegment,
+          isVideoLoading || !seekDoneRef.current,
+          isOverlayOpen,
+        )
+      )
+        return;
       try {
         await skipVideoSegment(skipSegment, handleSeek, () =>
           onNextEpisode?.(
@@ -208,7 +214,8 @@ const MPVElectronPlayer = React.memo(
               "desktop",
               "contain",
               get2LetterLangCode(
-                audioTracks.find((t) => Number(t.id) === selectedAudioIdx)?.lang,
+                audioTracks.find((t) => Number(t.id) === selectedAudioIdx)
+                  ?.lang,
               ),
               get2LetterLangCode(
                 subTracks.find((t) => Number(t.id) === selectedSubIdx)?.lang,
@@ -337,14 +344,17 @@ const MPVElectronPlayer = React.memo(
 
       // fallback, if failed, still show video
       let settled = false;
-      const finishLoading = () => {
+      let streamDuration = 0;
+      const finishLoading = (failed = false) => {
         if (destroyed || settled) return;
+        if (!failed && onDurationRef.current?.(streamDuration) === false)
+          return;
         settled = true;
         setIsVideoLoading(false);
         if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
         onStartupSettledRef.current?.();
       };
-      loadingFallbackTimer = setTimeout(finishLoading, 20000);
+      loadingFallbackTimer = setTimeout(() => finishLoading(), 20000);
 
       const scheduleInitialSeek = () => {
         if (
@@ -385,11 +395,9 @@ const MPVElectronPlayer = React.memo(
           await video.play();
         } catch (error) {
           console.error("MPV playback error:", error);
-          finishLoading();
+          finishLoading(true);
         }
       };
-
-      load();
 
       const handleState = (event: Event) => {
         if (destroyed) return;
@@ -397,6 +405,10 @@ const MPVElectronPlayer = React.memo(
         if (!detail) return;
         const current = detail.time;
         const dur = detail.duration;
+        if (typeof dur === "number" && Number.isFinite(dur) && dur > 0) {
+          streamDuration = dur;
+          if (onDurationRef.current?.(dur) === false) return;
+        }
         if (detail.status === "Paused") {
           setPaused(true);
         } else {
@@ -495,6 +507,7 @@ const MPVElectronPlayer = React.memo(
       };
 
       video.addEventListener("mpv-state", handleState);
+      load();
       return () => {
         destroyed = true;
         if (seekTimer) clearTimeout(seekTimer);
