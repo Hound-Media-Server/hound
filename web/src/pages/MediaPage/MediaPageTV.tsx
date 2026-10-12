@@ -3,6 +3,7 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
 import CachedIcon from "@mui/icons-material/Cached";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import {
   Chip,
   IconButton,
@@ -64,7 +65,6 @@ function MediaPageTV(props: any) {
   const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
   const [isSelectStreamModalOpen, setIsSelectStreamModalOpen] = useState(false);
-  const isStreamButtonLoading = false;
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [streams, setStreams] = useState<any>(null);
@@ -320,14 +320,14 @@ function MediaPageTV(props: any) {
     const year = props.data.first_air_date?.slice(0, 4);
     document.title = `${props.data.media_title}${year ? ` (${year})` : ""} - Hound`;
   }, [props.data.media_title, props.data.first_air_date]);
-  var continueWatchingText = "▶ Play S1E1";
+  var continueWatchingText = "Play S1E1";
   if (continueWatchingData) {
     const { watch_action_type, next_episode, watch_progress } =
       continueWatchingData;
     if (watch_action_type === "resume" && watch_progress) {
-      continueWatchingText = `▶ Resume S${watch_progress.season_number}E${watch_progress.episode_number}`;
+      continueWatchingText = `Resume S${watch_progress.season_number}E${watch_progress.episode_number}`;
     } else if (watch_action_type === "next_episode" && next_episode) {
-      continueWatchingText = `▶ Play S${next_episode.season_number}E${next_episode.episode_number}`;
+      continueWatchingText = `Play S${next_episode.season_number}E${next_episode.episode_number}`;
     }
   }
   return (
@@ -399,16 +399,10 @@ function MediaPageTV(props: any) {
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={
-                    isStreamButtonLoading ? (
-                      <Spinner
-                        animation="grow"
-                        size="sm"
-                        role="status"
-                        className="stream-play-button-spinner"
-                      />
-                    ) : (
-                      continueWatchingText
-                    )
+                    <span className="stream-play-button-label">
+                      <PlayArrowRoundedIcon className="stream-play-button-icon" />
+                      {continueWatchingText}
+                    </span>
                   }
                   autoClose="outside"
                   className="stream-play-button"
@@ -559,7 +553,6 @@ function MediaPageTV(props: any) {
         seasonNumber={seasonModal}
         mediaTitle={props.data.media_title}
         handleStreamButtonClick={handleStreamButtonClick}
-        isStreamButtonLoading={isStreamButtonLoading}
         isStreamSelectButtonLoading={isStreamSelectButtonLoading}
         isStreamModalOpen={isStreamModalOpen}
       />

@@ -26,7 +26,9 @@ function HorizontalSection(props: {
   }
   return (
     <>
-      <div className="horizontal-section horizontal-section-menu">
+      <div
+        className={`horizontal-section horizontal-section-menu horizontal-section-${props.itemType}`}
+      >
         <div
           className="horizontal-section-header cursor-pointer"
           onClick={() => {

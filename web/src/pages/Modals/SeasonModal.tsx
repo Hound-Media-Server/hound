@@ -334,7 +334,6 @@ function SeasonModal(props: any) {
                   watchProgress.get(episode["source_id"]),
                   handleWatchEpisode,
                   props.handleStreamButtonClick,
-                  props.isStreamButtonLoading,
                   props.isStreamSelectButtonLoading,
                   handleOpenEpisodeHistoryModal,
                 );
@@ -377,7 +376,6 @@ function EpisodeCard(
   watchProgress: WatchProgressItem | undefined,
   handleWatchEpisode: Function,
   handleStreamButtonClick: Function,
-  isStreamButtonLoading: boolean,
   isStreamSelectButtonLoading: boolean,
   handleOpenEpisodeHistoryModal: Function,
 ) {
@@ -396,7 +394,7 @@ function EpisodeCard(
       <div
         className="episode-card-img-container"
         onClick={() => {
-          if (isStreamButtonLoading || isStreamSelectButtonLoading) {
+          if (isStreamSelectButtonLoading) {
             return;
           }
           handleStreamButtonClick(
@@ -493,20 +491,7 @@ function EpisodeCard(
                 );
               }}
             >
-              {isStreamButtonLoading ? (
-                <div className="d-flex justify-content-center">
-                  <Spinner
-                    animation="border"
-                    size="sm"
-                    role="status"
-                    id="stream-select-button-loading"
-                  >
-                    <span className="visually-hidden">Loading...</span>
-                  </Spinner>
-                </div>
-              ) : (
-                "Play Episode"
-              )}
+              Play Episode
             </Dropdown.Item>
             <Dropdown.Item
               onClick={() => {
