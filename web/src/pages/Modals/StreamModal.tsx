@@ -32,6 +32,7 @@ function StreamModal(props: any) {
     onViewEpisodes,
     onNextEpisode,
     onPrefetchNextEpisode,
+    onBadStream,
     isOverlayOpen,
     streamError,
   } = props;
@@ -39,7 +40,7 @@ function StreamModal(props: any) {
   const [videoURL, setVideoURL] = useState("");
   const [loading, setLoading] = useState(false);
   const [playbackError, setPlaybackError] = useState<string | null>(null);
-  const [playerSettledKey, setPlayerSettledKey] = useState<string | null>(null);
+  const [isStartupSettled, setIsStartupSettled] = useState(false);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
 
   const isStreamsMatch = useMemo(
@@ -74,7 +75,7 @@ function StreamModal(props: any) {
   }, [subtitles]);
   const handleClose = () => {
     setLoading(false);
-    setPlayerSettledKey(null);
+    setIsStartupSettled(false);
     setOpen(false);
   };
 
@@ -93,6 +94,7 @@ function StreamModal(props: any) {
   useEffect(() => {
     setVideoURL("");
     setPlaybackError(null);
+    setIsStartupSettled(false);
     if (!open || !streamDetails?.encoded_data) return;
 
     const streamURL = `${getBaseUrl()}/api/v1/stream/${streamDetails.encoded_data}`;
@@ -133,6 +135,17 @@ function StreamModal(props: any) {
       ],
     }),
     [videoURL, startTime],
+  );
+
+  const handleDuration = useCallback(
+    (duration: number) => {
+      if (!onBadStream) return true;
+      if (!Number.isFinite(duration) || duration <= 0) return false;
+      if (duration >= 60) return true;
+      onBadStream();
+      return false;
+    },
+    [onBadStream],
   );
 
   const handleVideoProgress = useCallback(
@@ -176,10 +189,10 @@ function StreamModal(props: any) {
   const readyToPlay =
     open &&
     !loading &&
+    !streamError &&
     !!streamDetails?.encoded_data &&
     videoURL === `${getBaseUrl()}/api/v1/stream/${streamDetails.encoded_data}`;
-  const overlayVisible =
-    !readyToPlay || playerSettledKey !== streamDetails?.encoded_data;
+  const overlayVisible = !readyToPlay || !isStartupSettled;
   return (
     <Dialog
       onClose={handleClose}
@@ -203,6 +216,7 @@ function StreamModal(props: any) {
               key={streamDetails?.encoded_data}
               options={videoJsOptions}
               onVideoProgress={handleVideoProgress}
+              onDuration={onBadStream ? handleDuration : undefined}
               handleClose={handleClose}
               setInfoModalOpen={setInfoModalOpen}
               externalSubtitles={externalSubtitles}
@@ -214,7 +228,7 @@ function StreamModal(props: any) {
               isOverlayOpen={infoModalOpen || isOverlayOpen}
               onChangeSource={onChangeSource}
               onViewEpisodes={onViewEpisodes}
-              onStartupSettled={() => setPlayerSettledKey(streamDetails.encoded_data)}
+              onStartupSettled={() => setIsStartupSettled(true)}
             />
           ) : (
             <WebPlayer
@@ -222,6 +236,7 @@ function StreamModal(props: any) {
               src={videoURL}
               startTime={startTime}
               onVideoProgress={handleVideoProgress}
+              onDuration={onBadStream ? handleDuration : undefined}
               playerSettings={watchProgress?.player_settings}
               isStreamsMatch={isStreamsMatch}
               originalAudioLang={originalAudioLang}
@@ -233,7 +248,7 @@ function StreamModal(props: any) {
               segmentMedia={streams}
               onNextEpisode={onNextEpisode}
               isOverlayOpen={infoModalOpen || isOverlayOpen}
-              onStartupSettled={() => setPlayerSettledKey(streamDetails.encoded_data)}
+              onStartupSettled={() => setIsStartupSettled(true)}
             />
           ))}
         <PlayerLoadingOverlay

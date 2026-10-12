@@ -116,7 +116,7 @@ export function canSkipSegment(
 }
 
 export function shouldPrefetchNextEpisode(current: number, total: number) {
-  return current > 0 && total > 0 &&
+  return current > 0 && total >= 60 &&
     (total - current < 300 || current / total > 0.8);
 }
 

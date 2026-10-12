@@ -45,6 +45,7 @@ type WebPlayerProps = {
   onNextEpisode?: (settings: PlayerSettings) => Promise<void>;
   isOverlayOpen?: boolean;
   onStartupSettled?: () => void;
+  onDuration?: (duration: number) => boolean;
 };
 
 export function WebPlayer({
@@ -63,6 +64,7 @@ export function WebPlayer({
   onNextEpisode,
   isOverlayOpen,
   onStartupSettled,
+  onDuration,
 }: WebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<MoviElement>(null);
@@ -75,6 +77,8 @@ export function WebPlayer({
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const onStartupSettledRef = useRef(onStartupSettled);
   onStartupSettledRef.current = onStartupSettled;
+  const onDurationRef = useRef(onDuration);
+  onDurationRef.current = onDuration;
   const lastReportTimeRef = useRef(0);
   const skipSegment = useVideoSegments(
     segmentMedia,
@@ -128,17 +132,34 @@ export function WebPlayer({
     if (!element) return;
     setIsVideoLoading(true);
     const finishLoading = () => {
+      if (
+        !element.errorTitle &&
+        onDurationRef.current?.(element.duration) === false
+      )
+        return;
       clearTimeout(loadingTimeout);
       setIsVideoLoading(false);
       onStartupSettledRef.current?.();
     };
     const loadingTimeout = setTimeout(finishLoading, 20000);
+    const handleDuration = () => {
+      const duration = element.duration;
+      if (!Number.isFinite(duration) || duration <= 0) return;
+      setDuration(duration);
+      if (onDurationRef.current?.(duration) === false) return;
+      if (element.playing) finishLoading();
+    };
+    element.addEventListener("loadedmetadata", handleDuration);
+    element.addEventListener("durationchange", handleDuration);
     element.addEventListener("playing", finishLoading);
     element.addEventListener("error", finishLoading);
     element.addEventListener("errordisplay", finishLoading);
+    handleDuration();
     if (element.playing || element.errorTitle) finishLoading();
     return () => {
       clearTimeout(loadingTimeout);
+      element.removeEventListener("loadedmetadata", handleDuration);
+      element.removeEventListener("durationchange", handleDuration);
       element.removeEventListener("playing", finishLoading);
       element.removeEventListener("error", finishLoading);
       element.removeEventListener("errordisplay", finishLoading);
