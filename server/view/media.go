@@ -45,10 +45,14 @@ type CommentObject struct {
 	OwnerUsername    string    `json:"owner_username"`
 	OwnerDisplayName string    `json:"owner_display_name"`
 	RecordID         int64     `json:"record_id"`
-	IsPublic         bool      `json:"is_public"`
+	SourceID         string    `json:"source_id"`
+	MediaSource      string    `json:"media_source"`
+	MediaType        string    `json:"media_type"`
+	SeasonNumber     *int      `json:"season_number,omitempty"`
+	EpisodeNumber    *int      `json:"episode_number,omitempty"`
 	CommentTitle     string    `json:"title"`
 	Comment          string    `json:"comment"` // actual content of comment, review
-	Score            int       `json:"score"`
+	Score            int       `json:"score"`   // only used for reviews, 1-100
 	CreatedAt        time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt        time.Time `xorm:"timestampz updated" json:"updated_at"`
 }

@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -31,6 +31,8 @@ type CommentRequest struct {
 // @Produce json
 // @Param id path string true "Media ID" example(tmdb-1234)
 // @Param type query string true "Comment Type"
+// @Param season_number query int false "Season number; aggregates episode comments when episode_number is omitted"
+// @Param episode_number query int false "Episode number; requires season_number"
 // @Success 200 {object} V1SuccessResponse{data=[]view.CommentObject}
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
@@ -64,31 +66,46 @@ func handleGetComments(c *gin.Context, recordType string) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	var seasonNumber, episodeNumber int
-	if recordType == database.RecordTypeTVShow {
-		var err error
-		seasonNumber, episodeNumber, err = getSeasonEpisode(c.Query("season_number"), c.Query("episode_number"))
-		if err == nil {
-			recordType = database.RecordTypeEpisode
-		}
-	}
+	seasonQuery, episodeQuery := c.Query("season_number"), c.Query("episode_number")
 	commentType := c.Query("type")
 	if commentType == "" {
 		internal.ErrorResponse(c, fmt.Errorf("invalid type param: %w", internal.BadRequestError))
 		return
 	}
-	var record *database.MediaRecord
-	if recordType == database.RecordTypeEpisode {
-		record, err = database.GetEpisodeMediaRecord(sources.MediaSourceTMDB, strconv.Itoa(sourceID), &seasonNumber, &episodeNumber)
+	var recordIDs []int64
+	recordsByID := make(map[int64]database.MediaRecord)
+	if recordType == database.RecordTypeTVShow && seasonQuery != "" {
+		seasonNumber, err := strconv.Atoi(seasonQuery)
 		if err != nil {
-			if errors.Is(err, internal.NotFoundError) {
-				internal.SuccessResponse(c, nil, 200)
-				return
-			}
-			internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
+			internal.ErrorResponse(c, fmt.Errorf("invalid season_number: %w", internal.BadRequestError))
 			return
 		}
+		var episodeNumber *int
+		if episodeQuery != "" {
+			parsedEpisodeNumber, parseErr := strconv.Atoi(episodeQuery)
+			if parseErr != nil {
+				internal.ErrorResponse(c, fmt.Errorf("invalid episode_number: %w", internal.BadRequestError))
+				return
+			}
+			episodeNumber = &parsedEpisodeNumber
+		}
+		episodes, err := database.GetEpisodeMediaRecords(mediaSource, strconv.Itoa(sourceID), &seasonNumber, episodeNumber)
+		if err != nil {
+			internal.ErrorResponse(c, fmt.Errorf("failed to get episode media records: %w", err))
+			return
+		}
+		for _, episode := range episodes {
+			recordIDs = append(recordIDs, episode.RecordID)
+			recordsByID[episode.RecordID] = episode
+		}
+	} else if recordType == database.RecordTypeTVShow && episodeQuery != "" {
+		internal.ErrorResponse(c, fmt.Errorf("season_number is required with episode_number: %w", internal.BadRequestError))
+		return
+	} else if recordType != database.RecordTypeTVShow && (seasonQuery != "" || episodeQuery != "") {
+		internal.ErrorResponse(c, fmt.Errorf("season and episode parameters are only valid for TV shows: %w", internal.BadRequestError))
+		return
 	} else {
+		var record *database.MediaRecord
 		var has bool
 		has, record, err = database.GetMediaRecord(recordType, mediaSource, strconv.Itoa(sourceID))
 		if err != nil {
@@ -99,37 +116,48 @@ func handleGetComments(c *gin.Context, recordType string) {
 			internal.SuccessResponse(c, nil, 200)
 			return
 		}
+		if record == nil {
+			internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", internal.InternalServerError))
+			return
+		}
+		recordIDs = []int64{record.RecordID}
+		recordsByID[record.RecordID] = *record
 	}
-	if record == nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", internal.InternalServerError))
-		return
-	}
-	comments, err := database.GetComments(record.RecordID, &commentType)
+	var commentsView []view.CommentObject
+	comments, err := database.GetCommentsForRecords(recordIDs, &commentType)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("error retrieving comments: %w", internal.InternalServerError))
 		return
 	}
-	var commentsView []view.CommentObject
 	for _, item := range *comments {
 		commenter, _ := database.GetUser(item.UserID)
-		if !item.IsPublic && userID != commenter.UserID {
+		// by default, reviews are being treated as public while notes are private
+		// will change as a user-level preference in the future
+		if item.CommentType != database.CommentTypeReview && userID != commenter.UserID {
 			continue
 		}
-		comment := view.CommentObject{
+		record := recordsByID[item.RecordID]
+		commentsView = append(commentsView, view.CommentObject{
 			CommentID:        item.CommentID,
 			CommentType:      item.CommentType,
 			OwnerUsername:    commenter.Username,
 			OwnerDisplayName: commenter.DisplayName,
 			RecordID:         item.RecordID,
-			IsPublic:         item.IsPublic,
+			SourceID:         record.SourceID,
+			MediaSource:      record.MediaSource,
+			MediaType:        record.RecordType,
+			SeasonNumber:     record.SeasonNumber,
+			EpisodeNumber:    record.EpisodeNumber,
 			CommentTitle:     item.CommentTitle,
 			Comment:          string(item.Comment),
 			Score:            item.Score,
 			CreatedAt:        item.CreatedAt,
 			UpdatedAt:        item.UpdatedAt,
-		}
-		commentsView = append(commentsView, comment)
+		})
 	}
+	sort.SliceStable(commentsView, func(i, j int) bool {
+		return commentsView[i].UpdatedAt.After(commentsView[j].UpdatedAt)
+	})
 	internal.SuccessResponse(c, commentsView, 200)
 }
 
@@ -175,6 +203,14 @@ func handlePostComment(c *gin.Context, recordType string) {
 		internal.ErrorResponse(c, err)
 		return
 	}
+	if recordType == database.RecordTypeTVShow && (body.SeasonNumber == nil) != (body.EpisodeNumber == nil) {
+		internal.ErrorResponse(c, fmt.Errorf("season_number and episode_number must be provided together: %w", internal.BadRequestError))
+		return
+	}
+	if recordType != database.RecordTypeTVShow && (body.SeasonNumber != nil || body.EpisodeNumber != nil) {
+		internal.ErrorResponse(c, fmt.Errorf("season and episode parameters are only valid for TV shows: %w", internal.BadRequestError))
+		return
+	}
 	if body.CommentType == database.CommentTypeReview && (body.Score > 100 || body.Score < 0) {
 		internal.ErrorResponse(c, fmt.Errorf("invalid score %d not (0<=score<=100): %w", body.Score, internal.BadRequestError))
 		return
@@ -192,21 +228,16 @@ func handlePostComment(c *gin.Context, recordType string) {
 		return
 	}
 	// if season and episode is specified, use episode record
-	if recordType == database.RecordTypeTVShow && body.SeasonNumber != nil && body.EpisodeNumber != nil {
+	if recordType == database.RecordTypeTVShow && body.SeasonNumber != nil {
 		record, err = database.GetEpisodeMediaRecord(mediaSource, strconv.Itoa(sourceID), body.SeasonNumber, body.EpisodeNumber)
 		if err != nil {
 			internal.ErrorResponse(c, fmt.Errorf("failed to get episode media record: %w", err))
 			return
 		}
 	}
-	isPublic := false
-	if body.CommentType != database.CommentTypeNote {
-		isPublic = true
-	}
 	comment := database.CommentRecord{
 		UserID:       userID,
 		CommentTitle: body.CommentTitle,
-		IsPublic:     isPublic,
 		CommentType:  body.CommentType,
 		Comment:      body.Comment,
 		Score:        body.Score,

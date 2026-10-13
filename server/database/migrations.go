@@ -155,11 +155,28 @@ var Index20260516_01 = &migrate.Migration{
 	},
 }
 
+var dropCommentIsPublic = &migrate.Migration{
+	ID: "20261013_02_drop_comment_is_public",
+	Migrate: func(tx *xorm.Engine) error {
+		_, err := tx.Exec(`ALTER TABLE comments DROP COLUMN IF EXISTS is_public`)
+		return err
+	},
+	Rollback: func(tx *xorm.Engine) error {
+		_, err := tx.Exec(`ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE`)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(`UPDATE comments SET is_public = (comment_type = 'review')`)
+		return err
+	},
+}
+
 func runMigrations() error {
 	m := migrate.New(databaseEngine, migrate.DefaultOptions, []*migrate.Migration{
 		addForeignKeys,
 		addComplexIndexes,
 		Index20260516_01,
+		dropCommentIsPublic,
 	})
 	if err := m.Migrate(); err != nil {
 		return err
