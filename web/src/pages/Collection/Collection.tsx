@@ -149,7 +149,9 @@ function Collection(props: any) {
     }
   }, [collectionData?.collection.collection_title]);
   return (
-    <div className="collection-main-section dark-page">
+    <div
+      className={`collection-main-section dark-page${!collectionData && !loadError ? " collection-loading" : ""}`}
+    >
       <div className="collection-items-container">
         {collectionData ? (
           <>
@@ -272,7 +274,7 @@ function Collection(props: any) {
             Unable to load this collection.
           </div>
         ) : (
-          <LinearProgress className="progress-margin" />
+          <LinearProgress className="collection-loading-progress" />
         )}
       </div>
     </div>

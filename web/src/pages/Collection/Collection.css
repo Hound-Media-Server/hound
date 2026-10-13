@@ -12,6 +12,19 @@
   color: white;
 }
 
+.collection-main-section.collection-loading {
+  padding: 0;
+}
+
+.collection-loading .collection-items-container {
+  padding-top: 0;
+  max-width: none;
+}
+
+.collection-loading-progress {
+  width: 100%;
+}
+
 .collection-top-section-actions {
   margin-top: 10px;
 }
