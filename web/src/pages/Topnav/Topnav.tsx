@@ -13,7 +13,7 @@ function Topnav() {
   return (
     <Navbar id="top-navbar" sticky="top" variant="dark" expand="sm">
       <Container fluid>
-        <Navbar.Brand id="top-navbar-brand" href="/">
+        <Navbar.Brand id="top-navbar-brand" as={Link} to="/">
           <img
             src={`${import.meta.env.BASE_URL}hound-logo.png`}
             alt="Hound Logo"
@@ -43,6 +43,14 @@ function Topnav() {
             >
               Library
             </NavLink>
+            <NavLink
+              to="/activity"
+              className={({ isActive }) =>
+                `top-navbar-item ${isActive ? "active" : ""}`
+              }
+            >
+              Activity
+            </NavLink>
             {((iptvProviders?.length && iptvProviders.length > 0) ||
               localStorage.getItem("role") === "admin") && (
               <NavLink
@@ -54,14 +62,6 @@ function Topnav() {
                 Live TV
               </NavLink>
             )}
-            <NavLink
-              to="/activity"
-              className={({ isActive }) =>
-                `top-navbar-item ${isActive ? "active" : ""}`
-              }
-            >
-              Activity
-            </NavLink>
           </Nav>
           {localStorage.getItem("role") !== "admin" || isServerInfoLoading ? (
             <></>

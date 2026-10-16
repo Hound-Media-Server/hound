@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, Button, FormGroup, FormControl } from "react-bootstrap";
 import "./Login.css";
 import axios from "axios";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 function Register() {
   const [data, setData] = useState({
@@ -101,13 +101,13 @@ function Register() {
               </div>
             </form>
             <div className="d-flex mx-auto mt-4">
-              <a
-                href="../login"
+              <Link
+                to="/login"
                 className="mx-auto"
                 style={{ textDecoration: "underline" }}
               >
                 Already have an account? Login here!
-              </a>
+              </Link>
             </div>
           </div>
         </Card>

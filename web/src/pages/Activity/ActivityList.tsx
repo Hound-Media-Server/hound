@@ -1,5 +1,6 @@
 import { useState } from "react";
 import dayjs from "dayjs";
+import { Link } from "react-router-dom";
 import { Button, Dialog } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import toast from "react-hot-toast";
@@ -75,9 +76,9 @@ export default function ActivityList({
               </h3>
             )}
             <div className="activity-list-item">
-              <a
+              <Link
                 className="activity-list-image-link"
-                href={
+                to={
                   isEpisode
                     ? `/tv/${item.media_source}-${item.show_source_id}`
                     : `/movie/${item.media_source}-${item.source_id}`
@@ -93,7 +94,7 @@ export default function ActivityList({
                 ) : (
                   <div className="activity-list-image" />
                 )}
-              </a>
+              </Link>
               <div className="activity-list-details">
                 <div className="activity-list-title">{title}</div>
                 {subtitle && (

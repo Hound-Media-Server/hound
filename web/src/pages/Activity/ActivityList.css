@@ -81,5 +81,6 @@
 @media only screen and (max-width: 600px) {
   .activity-list-image {
     width: 140px;
+    aspect-ratio: 4 / 3;
   }
 }

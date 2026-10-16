@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./CollectionCover.css";
 import { DarkMode } from "@mui/icons-material";
 
@@ -20,7 +21,7 @@ function CollectionCover(props: any) {
     },
   };
   return (
-    <a className="a-no-style" href={`/collection/${props.data.collection_id}`}>
+    <Link className="a-no-style" to={`/collection/${props.data.collection_id}`}>
       <figure className="itemcard-item-figure-container">
         <div
           className={"rounded collection-card-cover"}
@@ -43,7 +44,7 @@ function CollectionCover(props: any) {
           ""
         )}
       </figure>
-    </a>
+    </Link>
   );
 }
 
