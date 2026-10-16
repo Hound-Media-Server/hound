@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createMovieWatchHistory, createTVWatchHistory, fetchTVSeasonHistory, fetchWatchActivity, fetchWatchStats } from "../services/watchHistory";
+import { createMovieWatchHistory, createTVWatchHistory, deleteWatchHistory, fetchTVSeasonHistory, fetchWatchActivity, fetchWatchStats } from "../services/watchHistory";
 
 export const useWatchActivity = (
   limit: number,
@@ -84,6 +84,27 @@ export const useAddMovieWatchActivityMutation = () => {
       sourceID: string;
       watchedAt?: string;
     }) => createMovieWatchHistory(mediaSource, sourceID, watchedAt),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watch-activity"] });
+      queryClient.invalidateQueries({ queryKey: ["watch-stats"] });
+    },
+  });
+};
+
+export const useDeleteWatchHistoryMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      mediaType,
+      mediaSource,
+      sourceID,
+      watchEventIDs,
+    }: {
+      mediaType: "tv" | "movie";
+      mediaSource: string;
+      sourceID: string;
+      watchEventIDs: number[];
+    }) => deleteWatchHistory(mediaType, mediaSource, sourceID, watchEventIDs),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["watch-activity"] });
       queryClient.invalidateQueries({ queryKey: ["watch-stats"] });

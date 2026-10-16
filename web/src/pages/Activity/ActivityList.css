@@ -1,0 +1,85 @@
+.activity-list-date {
+  margin: 24px 0 8px;
+  padding-bottom: 6px;
+  color: white;
+  font-size: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.activity-list-item {
+  display: flex;
+  gap: 16px;
+  padding: 10px 0;
+}
+
+.activity-list-image-link {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.activity-list-image {
+  display: block;
+  width: 220px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.activity-list-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-list-title,
+.activity-list-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-list-subtitle,
+.activity-list-empty {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.activity-list-title {
+  font-weight: 500;
+}
+
+.activity-list-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.activity-list-delete.MuiButton-root {
+  color: rgba(255, 255, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.3);
+  text-transform: none;
+}
+
+.activity-list-delete.MuiButton-root:hover {
+  color: rgb(244, 67, 54);
+  border-color: rgba(244, 67, 54, 0.6);
+}
+
+.activity-delete-modal {
+  max-width: 320px;
+  padding: 20px;
+}
+
+.activity-list-muted {
+  color: rgba(var(--hound-secondary), 0.8);
+}
+
+.activity-list-empty {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+@media only screen and (max-width: 600px) {
+  .activity-list-image {
+    width: 140px;
+  }
+}
