@@ -28,6 +28,7 @@ import { isPlatformElectron } from "./utils/platform";
 import { Spinner } from "react-bootstrap";
 import { StreamModalProvider } from "./pages/Modals/StreamModalContext";
 import PageTitle from "./PageTitle";
+import ScrollToTop from "./ScrollToTop";
 const queryClient = new QueryClient();
 
 // axios defaults
@@ -165,6 +166,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <PageTitle />
+            <ScrollToTop />
             <StreamModalProvider>
               {!!isAuthenticated && <Topnav />}
               <Routes>

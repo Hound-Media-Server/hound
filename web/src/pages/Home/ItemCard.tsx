@@ -1,5 +1,5 @@
 import { ImageListItem, Skeleton, Typography } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./ItemCard.css";
 import PlayCircleFilledIcon from "@mui/icons-material/PlayCircleFilled";
 import CommentCard from "../Comments/CommentCard";
@@ -30,7 +30,7 @@ function ItemCard(props: {
     if (!props.item.thumbnail_uri) {
       return (
         <MediaPreview item={props.item}>
-          <a href={mediaPagePath} className="itemcard-img-poster-container">
+          <Link to={mediaPagePath} className="itemcard-img-poster-container">
             <div
               className={
                 "rounded w-100 h-100 itemcard-img-poster item-card-no-thumbnail border border-primary"
@@ -38,13 +38,13 @@ function ItemCard(props: {
             >
               {props.item.media_title + releaseYearText}
             </div>
-          </a>
+          </Link>
         </MediaPreview>
       );
     }
     return (
       <MediaPreview item={props.item}>
-        <a href={mediaPagePath} className="itemcard-img-poster-container">
+        <Link to={mediaPagePath} className="itemcard-img-poster-container">
           {!loaded && (
             <Skeleton
               variant="rounded"
@@ -63,7 +63,7 @@ function ItemCard(props: {
               transition: "opacity 0.5s ease",
             }}
           />
-        </a>
+        </Link>
       </MediaPreview>
     );
   }
@@ -187,8 +187,8 @@ function ItemCard(props: {
           </ImageListItem>
         ) : (
           <ImageListItem key={props.item.media_title}>
-            <a
-              href={mediaPagePath}
+            <Link
+              to={mediaPagePath}
               className="itemcard-img-poster d-flex w-100 h-100 justify-content-center align-items-center text-center text-wrap bg-light rounded border border-dark"
             >
               <h3>
@@ -203,7 +203,7 @@ function ItemCard(props: {
                   <div className="">"Invalid title"</div>
                 )}
               </h3>
-            </a>
+            </Link>
           </ImageListItem>
         )}
       </>
@@ -215,7 +215,7 @@ function ItemCard(props: {
       mediaType === "game" && "itemcard-img-poster-game-cover";
     return (
       <MediaPreview item={props.item}>
-        <a href={mediaPagePath}>
+        <Link to={mediaPagePath}>
           {props.item.thumbnail_uri ? (
             <div className="itemcard-img-poster-container">
               {!loaded && (
@@ -249,7 +249,7 @@ function ItemCard(props: {
               </div>
             </div>
           )}
-        </a>
+        </Link>
       </MediaPreview>
     );
   }

@@ -8,16 +8,12 @@ import (
 )
 
 const (
-	// for comments, notes, reviews
-	commentsTable      = "comments"
-	CommentTypeReview  = "review"
-	CommentTypeNote    = "note"
-	CommentTypeComment = "comment"
+	// for notes and reviews
+	commentsTable     = "comments"
+	CommentTypeReview = "review"
+	CommentTypeNote   = "note"
 )
 
-/*
-"Comments" include watch history, not just comments/reviews
-*/
 type CommentRecord struct {
 	CommentID    int64     `xorm:"pk autoincr 'comment_id'" json:"id"`
 	CommentType  string    `json:"comment_type"`
@@ -25,8 +21,7 @@ type CommentRecord struct {
 	RecordID     int64     `xorm:"index 'record_id'" json:"record_id"`
 	CommentTitle string    `xorm:"'title'" json:"title"`
 	Comment      string    `xorm:"text 'comment'" json:"comment"` // actual content of comment, review
-	IsPublic     bool      `xorm:"'is_public'" json:"is_public"`
-	Score        int       `xorm:"'score'" json:"score"` // for review types
+	Score        int       `xorm:"'score'" json:"score"`          // for review types
 	CreatedAt    time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt    time.Time `xorm:"timestampz updated" json:"updated_at"`
 }
@@ -40,8 +35,7 @@ func instantiateCommentTable() error {
 }
 
 func AddComment(comment *CommentRecord) error {
-	if comment.CommentType != CommentTypeReview && comment.CommentType != CommentTypeComment &&
-		comment.CommentType != CommentTypeNote {
+	if comment.CommentType != CommentTypeReview && comment.CommentType != CommentTypeNote {
 		return fmt.Errorf("invalid comment type %s: %w", comment.CommentType, internal.BadRequestError)
 	}
 	_, err := databaseEngine.Table(commentsTable).Insert(comment)
@@ -54,14 +48,21 @@ func AddCommentsBatch(comments *[]CommentRecord) error {
 }
 
 func GetComments(recordID int64, commentType *string) (*[]CommentRecord, error) {
+	return GetCommentsForRecords([]int64{recordID}, commentType)
+}
+
+func GetCommentsForRecords(recordIDs []int64, commentType *string) (*[]CommentRecord, error) {
 	var comments []CommentRecord
-	sess := databaseEngine.Table(commentsTable).Where("record_id = ?", recordID).OrderBy("updated_at desc")
+	if len(recordIDs) == 0 {
+		return &comments, nil
+	}
+	sess := databaseEngine.Table(commentsTable).In("record_id", recordIDs).OrderBy("updated_at desc")
 	if commentType != nil && *commentType != "" {
 		sess.Where("comment_type = ?", commentType)
 	}
 	err := sess.Find(&comments)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get comments for recordID %d: %w", recordID, err)
+		return nil, fmt.Errorf("failed to get comments for recordIDs %v: %w", recordIDs, err)
 	}
 	return &comments, nil
 }

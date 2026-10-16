@@ -64,6 +64,9 @@ type WatchActivity struct {
 	WatchEventMediaRecord `xorm:"extends"`
 	ShowSourceID          string `xorm:"'show_source_id'" json:"show_source_id,omitempty"`
 	ShowMediaTitle        string `xorm:"text 'show_media_title'" json:"show_media_title,omitempty"`
+	ShowBackdropURI       string `xorm:"text 'show_backdrop_uri'" json:"show_backdrop_uri,omitempty"`
+	ThumbnailURI          string `xorm:"text 'thumbnail_uri'" json:"thumbnail_uri"`
+	BackdropURI           string `xorm:"text 'backdrop_uri'" json:"backdrop_uri"`
 }
 
 func instantiateWatchTables() error {
@@ -106,7 +109,7 @@ func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, li
 		sess = sess.Limit(limit, offset)
 	}
 	sess = sess.OrderBy("we.watched_at DESC, we.watch_event_id DESC")
-	sess = sess.Select("we.*, mr.*, show.source_id as show_source_id, show.media_title as show_media_title")
+	sess = sess.Select("we.*, mr.*, show.source_id as show_source_id, show.media_title as show_media_title, show.backdrop_uri as show_backdrop_uri")
 	err = sess.Find(&records)
 	if err != nil {
 		return nil, 0, fmt.Errorf("query %s, %s, %s for user_id %d: %w",
