@@ -16,6 +16,8 @@ const (
 	tidbURL = "https://api.theintrodb.org/v3/media?tmdb_id=%d&season=%d&episode=%d"
 )
 
+var tidbHTTPClient = &http.Client{Timeout: 10 * time.Second}
+
 // intro is a misnomer, since credits, etc. are also included, but it's easier to remember
 type IntroSegments struct {
 	MediaType       string      `json:"media_type"`
@@ -84,10 +86,7 @@ func (t tidbResponse) toIntroSegments() IntroSegments {
 }
 
 func fetchTIDBResponse(url string) (*tidbResponse, error) {
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	resp, err := httpClient.Get(url)
+	resp, err := tidbHTTPClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch from tidb: %w", err)
 	}

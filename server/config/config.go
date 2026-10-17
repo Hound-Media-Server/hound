@@ -2,6 +2,7 @@ package config
 
 import (
 	"log/slog"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -31,6 +32,8 @@ var (
 	MaxExternalLibraryWorkers     int    = 2
 	TMDBAPIKey                    string = ""
 	MDBListAPIKey                 string = ""
+	HoundPlusHost                 string = ""
+	HoundPlusAPIKey               string = ""
 )
 
 func InitializeConfig() {
@@ -58,6 +61,15 @@ func InitializeConfig() {
 	ExternalLibraryScanInterval = getEnvInt("EXTERNAL_LIBRARY_SCAN_INTERVAL_MINUTES", ExternalLibraryScanInterval)
 	TMDBAPIKey = getEnvString("TMDB_API_KEY", TMDBAPIKey)
 	MDBListAPIKey = getEnvString("MDBLIST_API_KEY", MDBListAPIKey)
+	HoundPlusHost = getEnvString("HOUND_PLUS_SERVER_HOST", HoundPlusHost)
+	HoundPlusAPIKey = getEnvString("HOUND_PLUS_API_KEY", HoundPlusAPIKey)
+	if HoundPlusHost != "" {
+		u, err := url.ParseRequestURI(HoundPlusHost)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			panic("Invalid HOUND_PLUS_SERVER_HOST, must be a valid http(s) url, e.g. https://example.com")
+		}
+	}
+
 	slog.Info("Config Initialized",
 		"AppEnvironment", AppEnvironment,
 		"PostgresHost", PostgresHost,
