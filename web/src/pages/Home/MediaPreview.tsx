@@ -15,10 +15,12 @@ import {
 import {
   useMediaFiles,
   useMediaDetails,
+  useMediaScores,
   useWatchAction,
 } from "../../api/hooks/media";
 import type { WatchableMediaType } from "../../api/services/media";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
+import MediaScores from "../MediaPage/MediaScores";
 import { useStreamModal } from "../Modals/StreamModalContext";
 import "./MediaPreview.css";
 
@@ -81,6 +83,12 @@ function MediaPreview({
     isLoading,
     isError,
   } = useMediaDetails(
+    mediaType,
+    item.media_source,
+    sourceID,
+    open && canPreview,
+  );
+  const { data: scores, isWaiting: isScoresWaiting } = useMediaScores(
     mediaType,
     item.media_source,
     sourceID,
@@ -265,6 +273,11 @@ function MediaPreview({
                     className="media-preview-hound-chip"
                   />
                 )}
+                {!isScoresWaiting && (
+                  <div className="media-preview-scores">
+                    <MediaScores scores={scores} variant="column" />
+                  </div>
+                )}
                 <div className="media-preview-heading">
                   {preview.logo_uri ? (
                     <img
@@ -292,12 +305,23 @@ function MediaPreview({
                         <div className="media-preview-metadata">{metadata}</div>
                       )}
                     </div>
-                    <div className="media-preview-overview">
-                      {preview.overview ||
-                        (isError
-                          ? "Details are currently unavailable."
-                          : "No description available.")}
-                    </div>
+                    {isScoresWaiting ? (
+                      <div className="media-preview-loading media-preview-overview-loading">
+                        <Skeleton variant="text" width="92%" />
+                        <Skeleton variant="text" width="84%" />
+                        <Skeleton variant="text" width="72%" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="media-preview-overview">
+                          {scores?.short_overview ||
+                            preview.overview ||
+                            (isError
+                              ? "Details are currently unavailable."
+                              : "No description available.")}
+                        </div>
+                      </>
+                    )}
                     {creators && (
                       <div className="media-preview-creators">
                         by {creators}

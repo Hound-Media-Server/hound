@@ -16,6 +16,35 @@ export const fetchMediaDetails = async (
   return data;
 };
 
+export interface MediaScores {
+  media_type: string;
+  media_source: string;
+  source_id: string;
+  short_overview?: string;
+  vote_average?: number;
+  vote_count?: number;
+  imdb_id?: string;
+  imdb_score?: number;
+  imdb_votes?: number;
+  rt_score?: number;
+  metacritic_score?: number;
+  rated?: string;
+  awards?: string;
+}
+
+export const fetchMediaScores = async (
+  mediaType: WatchableMediaType,
+  mediaSource: string,
+  sourceID: string,
+  signal?: AbortSignal,
+) => {
+  const { data } = await axios.get<MediaScores>(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/scores`,
+    { signal },
+  );
+  return data;
+};
+
 export const fetchWatchAction = async (
   mediaType: WatchableMediaType,
   mediaSource: string,

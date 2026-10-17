@@ -25,7 +25,12 @@ import SelectStreamModal from "../Modals/StreamSelectModal";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
-import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
+import {
+  useMediaFiles,
+  useMediaScores,
+  useWatchAction,
+} from "../../api/hooks/media";
+import MediaScores from "./MediaScores";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { CloudDoneOutlined } from "@mui/icons-material";
@@ -86,6 +91,11 @@ function MediaPageTV(props: any) {
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
+  const { data: scores, isWaiting: isScoresWaiting } = useMediaScores(
+    "tv",
+    props.data.media_source,
+    props.data.source_id,
+  );
   const { data: continueWatchingData, refetch: refetchWatchAction } =
     useWatchAction("tv", props.data.media_source, props.data.source_id);
 
@@ -207,13 +217,19 @@ function MediaPageTV(props: any) {
         watchProgress: overrideWatchProgress,
         originalAudioLang: props.data?.original_language,
         mediaDetails: props.data,
-        getWatchProgress: overrideWatchProgress !== undefined ? undefined : async () => {
-          if (episodeID === -1) return undefined;
-          const progressRes = await axios.get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`);
-          return progressRes.data?.find(
-            (item: any) => parseInt(item.episode_source_id, 10) === episodeID,
-          );
-        },
+        getWatchProgress:
+          overrideWatchProgress !== undefined
+            ? undefined
+            : async () => {
+                if (episodeID === -1) return undefined;
+                const progressRes = await axios.get(
+                  `/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`,
+                );
+                return progressRes.data?.find(
+                  (item: any) =>
+                    parseInt(item.episode_source_id, 10) === episodeID,
+                );
+              },
       });
       return;
     }
@@ -256,7 +272,9 @@ function MediaPageTV(props: any) {
         });
     };
     if (overrideWatchProgress !== undefined) {
-      requestProviderStream().finally(() => setIsStreamSelectButtonLoading(false));
+      requestProviderStream().finally(() =>
+        setIsStreamSelectButtonLoading(false),
+      );
       return;
     }
     // no override, get playback progress (season modal case)
@@ -389,9 +407,17 @@ function MediaPageTV(props: any) {
                 {genres}
               </div>
               <div className="media-page-tv-header-overview">
-                {props.data.overview
-                  ? props.data.overview
-                  : "No description available."}
+                {isScoresWaiting ? (
+                  <>
+                    <Skeleton variant="text" width="92%" />
+                    <Skeleton variant="text" width="84%" />
+                    <Skeleton variant="text" width="72%" />
+                  </>
+                ) : (
+                  scores?.short_overview ||
+                  props.data.overview ||
+                  "No description available."
+                )}
               </div>
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}
@@ -499,6 +525,7 @@ function MediaPageTV(props: any) {
                   </IconButton>
                 </BootstrapTooltip>
               </div>
+              {!isScoresWaiting && <MediaScores scores={scores} />}.
             </div>
           </div>
         </div>

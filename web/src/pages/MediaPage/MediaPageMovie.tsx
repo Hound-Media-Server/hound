@@ -24,7 +24,12 @@ import HistoryModal from "../Modals/HistoryModal";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
-import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
+import {
+  useMediaFiles,
+  useMediaScores,
+  useWatchAction,
+} from "../../api/hooks/media";
+import MediaScores from "./MediaScores";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
@@ -72,6 +77,11 @@ function MediaPageMovie(props: any) {
   );
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
+  const { data: scores, isWaiting: isScoresWaiting } = useMediaScores(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
   const { data: watchAction, refetch: refetchWatchAction } = useWatchAction(
     "movie",
     props.data.media_source,
@@ -297,13 +307,22 @@ function MediaPageMovie(props: any) {
                 {genres}
               </div>
               <div className="media-page-tv-header-overview">
-                {props.data.overview
-                  ? props.data.overview
-                  : "No description available."}
+                {isScoresWaiting ? (
+                  <>
+                    <Skeleton variant="text" width="92%" />
+                    <Skeleton variant="text" width="84%" />
+                    <Skeleton variant="text" width="72%" />
+                  </>
+                ) : (
+                  scores?.short_overview ||
+                  props.data.overview ||
+                  "No description available."
+                )}
               </div>
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}
               </div>
+              {!isScoresWaiting && <MediaScores scores={scores} />}
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={

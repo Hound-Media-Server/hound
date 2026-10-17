@@ -1,0 +1,40 @@
+.media-scores {
+  display: flex;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.media-scores-row {
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 20px;
+}
+
+.media-scores-column {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.media-scores-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.media-scores-item img {
+  width: auto;
+  height: 20px;
+}
+
+.media-scores-column .media-scores-item {
+  display: contents;
+}
+
+.media-scores-column .media-scores-item img {
+  justify-self: end;
+  height: 18px;
+}

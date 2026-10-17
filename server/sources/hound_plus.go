@@ -35,15 +35,6 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func NewClient(baseURL string) *Client {
-	return &Client{
-		baseURL: baseURL,
-		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
-		},
-	}
-}
-
 var houndPlusClient *Client
 
 func InitializeHoundPlus() {
@@ -51,10 +42,12 @@ func InitializeHoundPlus() {
 		slog.Info("Hound Plus is disabled, HOUND_PLUS_SERVER_HOST is not set")
 		return
 	}
-	houndPlusClient = NewClient(strings.TrimSuffix(config.HoundPlusHost, "/"))
+	houndPlusClient = &Client{
+		baseURL:    strings.TrimSuffix(config.HoundPlusHost, "/"),
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+	}
 }
 
-// mediaType is database.MediaTypeMovie or database.MediaTypeTVShow
 func GetScoresHoundPlus(mediaType string, tmdbID int) (*ScoresResponse, error) {
 	if houndPlusClient == nil {
 		return nil, fmt.Errorf("hound plus server is not configured: %w", internal.NotFoundError)
