@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,19 +16,29 @@ import (
 )
 
 type ScoresResponse struct {
-	MediaType           string   `json:"media_type"`
-	MediaSource         string   `json:"media_source"`
-	SourceID            string   `json:"source_id"`
-	ShortOverview       string   `json:"short_overview,omitempty"`
-	VoteAverage         *float32 `json:"vote_average,omitempty"`
-	VoteCount           *int     `json:"vote_count,omitempty"`
-	IMDBID              string   `json:"imdb_id,omitempty"`
-	IMDBScore           *float32 `json:"imdb_score,omitempty"`
-	IMDBVotes           *int     `json:"imdb_votes,omitempty"`
-	RottenTomatoesScore *int     `json:"rt_score,omitempty"`
-	MetacriticScore     *int     `json:"metacritic_score,omitempty"`
-	Rated               string   `json:"rated,omitempty"` // pg-13, etc.
-	Awards              string   `json:"awards,omitempty"`
+	MediaType                   string   `json:"media_type"`
+	MediaSource                 string   `json:"media_source"`
+	SourceID                    string   `json:"source_id"`
+	ShortOverview               string   `json:"short_overview,omitempty"`
+	VoteAverage                 *float32 `json:"vote_average,omitempty"`
+	VoteCount                   *int     `json:"vote_count,omitempty"`
+	IMDBID                      string   `json:"imdb_id,omitempty"`
+	IMDBScore                   *float32 `json:"imdb_score,omitempty"`
+	IMDBVotes                   *int     `json:"imdb_votes,omitempty"`
+	RottenTomatoesScore         *int     `json:"rt_score,omitempty"`
+	MetacriticScore             *int     `json:"metacritic_score,omitempty"`
+	LetterboxdScore             *float32 `json:"letterboxd_score,omitempty"`
+	RottenTomatoesAudienceScore *int     `json:"rt_audience_score,omitempty"`
+	MetacriticUserScore         *int     `json:"metacritic_user_score,omitempty"`
+	MALScore                    *float32 `json:"mal_score,omitempty"`
+	RottenTomatoesVotes         *int     `json:"rt_votes,omitempty"`
+	RottenTomatoesAudienceVotes *int     `json:"rt_audience_votes,omitempty"`
+	MetacriticVotes             *int     `json:"metacritic_votes,omitempty"`
+	MetacriticUserVotes         *int     `json:"metacritic_user_votes,omitempty"`
+	LetterboxdVotes             *int     `json:"letterboxd_votes,omitempty"`
+	MALVotes                    *int     `json:"mal_votes,omitempty"`
+	Certification               string   `json:"certification,omitempty"` // pg-13, etc.
+	Awards                      string   `json:"awards,omitempty"`
 }
 
 type Client struct {
@@ -62,7 +73,8 @@ func GetScoresHoundPlus(mediaType string, tmdbID int) (*ScoresResponse, error) {
 	if mediaType == database.MediaTypeTVShow {
 		pathSegment = "tv"
 	}
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/%s/tmdb-%d", houndPlusClient.baseURL, pathSegment, tmdbID), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/%s/tmdb-%d",
+		houndPlusClient.baseURL, pathSegment, tmdbID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +89,16 @@ func GetScoresHoundPlus(mediaType string, tmdbID int) (*ScoresResponse, error) {
 	case http.StatusOK:
 		if err := json.NewDecoder(resp.Body).Decode(&scores); err != nil {
 			return nil, err
+		}
+		// reformat from score out of 100 to out of 5
+		if scores.LetterboxdScore != nil {
+			rating := float32(math.Round(float64(*scores.LetterboxdScore)/2) / 10)
+			scores.LetterboxdScore = &rating
+		}
+		// reformat from score out of 100 to out of 10
+		if scores.MALScore != nil {
+			rating := float32(math.Round(float64(*scores.MALScore)) / 10)
+			scores.MALScore = &rating
 		}
 	case http.StatusNotFound:
 	default:

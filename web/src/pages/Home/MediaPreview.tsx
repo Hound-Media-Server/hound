@@ -275,7 +275,7 @@ function MediaPreview({
                 )}
                 {!isScoresWaiting && (
                   <div className="media-preview-scores">
-                    <MediaScores scores={scores} variant="column" />
+                    <MediaScores scores={scores} variant="column" max={3} />
                   </div>
                 )}
                 <div className="media-preview-heading">

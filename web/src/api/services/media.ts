@@ -28,6 +28,16 @@ export interface MediaScores {
   imdb_votes?: number;
   rt_score?: number;
   metacritic_score?: number;
+  letterboxd_score?: number;
+  rt_audience_score?: number;
+  metacritic_user_score?: number;
+  mal_score?: number;
+  rt_votes?: number;
+  rt_audience_votes?: number;
+  metacritic_votes?: number;
+  metacritic_user_votes?: number;
+  letterboxd_votes?: number;
+  mal_votes?: number;
   rated?: string;
   awards?: string;
 }
