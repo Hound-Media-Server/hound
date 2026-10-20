@@ -1,7 +1,12 @@
 .media-scores {
   display: flex;
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: white;
+}
+
+.media-scores-votes {
+  color: gray;
+  font-size: 0.8rem;
 }
 
 .media-scores-row {

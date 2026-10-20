@@ -525,7 +525,7 @@ function MediaPageTV(props: any) {
                   </IconButton>
                 </BootstrapTooltip>
               </div>
-              {!isScoresWaiting && <MediaScores scores={scores} />}
+              {!isScoresWaiting && <MediaScores scores={scores} showVotes />}
             </div>
           </div>
         </div>

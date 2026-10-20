@@ -322,7 +322,7 @@ function MediaPageMovie(props: any) {
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}
               </div>
-              {!isScoresWaiting && <MediaScores scores={scores} />}
+              {!isScoresWaiting && <MediaScores scores={scores} showVotes />}
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={
