@@ -60,7 +60,8 @@ Please help join the closed testing so we can get Hound published in the play st
 You can also install Android mobile and Android TV apps by sideloading the .apk in the Releases page. 
 
 ### iOS and tvOS
-iOS and tvOS are currently under review by Apple and will be available in TestFlight soon.
+iOS is available through TestFlight: https://testflight.apple.com/join/W2HWsaxZ
+tvOS is coming soon.
 
 # Installation
 
