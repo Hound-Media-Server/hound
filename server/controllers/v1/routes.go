@@ -134,6 +134,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/tv/:id/comments", PostCommentTVHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsMovieHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentMovieHandler)
+	privateRoutes.PUT("/comments/:id", UpdateCommentHandler)
 	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
 
 	/*

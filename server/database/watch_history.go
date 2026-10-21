@@ -67,6 +67,8 @@ type WatchActivity struct {
 	ShowBackdropURI       string `xorm:"text 'show_backdrop_uri'" json:"show_backdrop_uri,omitempty"`
 	ThumbnailURI          string `xorm:"text 'thumbnail_uri'" json:"thumbnail_uri"`
 	BackdropURI           string `xorm:"text 'backdrop_uri'" json:"backdrop_uri"`
+	LatestScore           int    `xorm:"'latest_score'" json:"latest_score"`         // score of user's latest rated review, 0 if none
+	LatestReviewID        int64  `xorm:"'latest_review_id'" json:"latest_review_id"` // 0 if none
 }
 
 func instantiateWatchTables() error {
@@ -109,7 +111,10 @@ func GetWatchActivity(userID int64, startTime *time.Time, endTime *time.Time, li
 		sess = sess.Limit(limit, offset)
 	}
 	sess = sess.OrderBy("we.watched_at DESC, we.watch_event_id DESC")
-	sess = sess.Select("we.*, mr.*, show.source_id as show_source_id, show.media_title as show_media_title, show.backdrop_uri as show_backdrop_uri")
+	latestReview := "(SELECT %s FROM " + commentsTable + " c WHERE c.user_id = r.user_id AND c.record_id = we.record_id AND c.comment_type = '" + CommentTypeReview + "' AND c.score > 0 ORDER BY c.updated_at DESC, c.comment_id DESC LIMIT 1)"
+	sess = sess.Select("we.*, mr.*, show.source_id as show_source_id, show.media_title as show_media_title, show.backdrop_uri as show_backdrop_uri, " +
+		"COALESCE(" + fmt.Sprintf(latestReview, "c.score") + ", 0) as latest_score, " +
+		"COALESCE(" + fmt.Sprintf(latestReview, "c.comment_id") + ", 0) as latest_review_id")
 	err = sess.Find(&records)
 	if err != nil {
 		return nil, 0, fmt.Errorf("query %s, %s, %s for user_id %d: %w",

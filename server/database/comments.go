@@ -42,6 +42,26 @@ func AddComment(comment *CommentRecord) error {
 	return err
 }
 
+type CommentUpdate struct {
+	CommentTitle *string   `xorm:"'title'" json:"title"`
+	Comment      *string   `xorm:"text 'comment'" json:"comment"`
+	Score        *int      `xorm:"'score'" json:"score"`
+	UpdatedAt    time.Time `xorm:"timestampz updated" json:"-"`
+}
+
+func UpdateComment(userID int64, commentID int64, update *CommentUpdate) error {
+	affected, err := databaseEngine.Table(commentsTable).
+		Where("user_id = ? AND comment_id = ?", userID, commentID).
+		Update(update)
+	if err != nil {
+		return fmt.Errorf("failed to update commentid %d: %w", commentID, err)
+	}
+	if affected <= 0 {
+		return fmt.Errorf("no comment found with userID %d, commentID %d: %w", userID, commentID, internal.NotFoundError)
+	}
+	return nil
+}
+
 func AddCommentsBatch(comments *[]CommentRecord) error {
 	_, err := databaseEngine.Table(commentsTable).Insert(comments)
 	return err

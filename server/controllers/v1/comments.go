@@ -251,6 +251,45 @@ func handlePostComment(c *gin.Context, recordType string) {
 	internal.SuccessResponse(c, gin.H{"status": "success", "comment_id": comment.CommentID}, 200)
 }
 
+// @Router /api/v1/comments/{id} [put]
+// @Summary Update a Comment
+// @ID update-comment
+// @Tags Comments
+// @Accept json
+// @Produce json
+// @Param id path string true "Comment ID"
+// @Param comment body database.CommentUpdate true "Comment"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 404 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func UpdateCommentHandler(c *gin.Context) {
+	var body database.CommentUpdate
+	if err := c.ShouldBindJSON(&body); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	if body.Score != nil && (*body.Score > 100 || *body.Score < 0) {
+		internal.ErrorResponse(c, fmt.Errorf("invalid score %d not (0<=score<=100): %w", *body.Score, internal.BadRequestError))
+		return
+	}
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	commentID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("invalid comment id: %w", internal.BadRequestError))
+		return
+	}
+	if err = database.UpdateComment(userID, int64(commentID), &body); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	internal.SuccessResponse(c, nil, 200)
+}
+
 // @Router /api/v1/comments/{id} [delete]
 // @Summary Delete a Comment
 // @ID delete-comment
