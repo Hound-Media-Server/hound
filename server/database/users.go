@@ -32,8 +32,20 @@ func instantiateUsersTable() error {
 }
 
 func InsertUser(user User) (*int64, error) {
-	_, err := databaseEngine.Table(usersTable).Insert(&user)
-	if err != nil {
+	session := databaseEngine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return nil, err
+	}
+	if _, err := session.Table(usersTable).Insert(&user); err != nil {
+		_ = session.Rollback()
+		return nil, err
+	}
+	if err := ensureDefaultCollections(session, user.UserID); err != nil {
+		_ = session.Rollback()
+		return nil, err
+	}
+	if err := session.Commit(); err != nil {
 		return nil, err
 	}
 	return &user.UserID, nil

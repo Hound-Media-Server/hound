@@ -33,6 +33,7 @@ type CollectionObject struct {
 	OwnerUsername    string                `json:"owner_username"`
 	OwnerDisplayName string                `json:"owner_display_name"`
 	IsPublic         bool                  `json:"is_public"`
+	Kind             string                `json:"kind"` // empty for user-created, otherwise a default (eg. watchlist)
 	Tags             *[]database.TagObject `json:"tags"`
 	ThumbnailURI     string                `json:"thumbnail_uri,omitempty"` // url for media thumbnails
 	CreatedAt        time.Time             `json:"created_at"`

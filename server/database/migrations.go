@@ -171,12 +171,38 @@ var dropCommentIsPublic = &migrate.Migration{
 	},
 }
 
+var addCollectionKind = &migrate.Migration{
+	ID: "20261022_01_add_collection_kind_watchlist",
+	Migrate: func(tx *xorm.Engine) error {
+		query := `
+			UPDATE collections SET kind = '' WHERE kind IS NULL;
+			ALTER TABLE collections ALTER COLUMN kind SET DEFAULT '', ALTER COLUMN kind SET NOT NULL;
+			CREATE UNIQUE INDEX IF NOT EXISTS uq_collections_owner_kind ON collections (owner_user_id, kind) WHERE kind <> '';
+			INSERT INTO collections (collection_title, description, owner_user_id, is_public, kind, thumbnail_uri, created_at, updated_at)
+			SELECT 'Watchlist', 'Titles you want to watch', user_id, false, 'watchlist', '', now(), now() FROM users
+			ON CONFLICT DO NOTHING;
+		`
+		_, err := tx.Exec(query)
+		return err
+	},
+	Rollback: func(tx *xorm.Engine) error {
+		query := `
+			DROP INDEX IF EXISTS uq_collections_owner_kind;
+			DELETE FROM collections WHERE kind = 'watchlist';
+			ALTER TABLE collections ALTER COLUMN kind DROP NOT NULL;
+		`
+		_, err := tx.Exec(query)
+		return err
+	},
+}
+
 func runMigrations() error {
 	m := migrate.New(databaseEngine, migrate.DefaultOptions, []*migrate.Migration{
 		addForeignKeys,
 		addComplexIndexes,
 		Index20260516_01,
 		dropCommentIsPublic,
+		addCollectionKind,
 	})
 	if err := m.Migrate(); err != nil {
 		return err

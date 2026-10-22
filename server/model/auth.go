@@ -56,17 +56,6 @@ func RegisterNewUser(user *RegistrationUser, isAdmin bool) (*database.User, erro
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to get user from database", internal.InternalServerError)
 	}
-	// create 'My Library' collection for user
-	// userLibrary := database.CollectionRecord{
-	// 	OwnerUserID:     *userID,
-	// 	CollectionTitle: "My Library",
-	// 	Description:     "Your main collection",
-	// 	IsPublic:        false,
-	// }
-	// _, err = database.CreateCollection(userLibrary)
-	// if err != nil {
-	// 	return err
-	// }
 	newUser.HashedPassword = ""
 	return newUser, nil
 }

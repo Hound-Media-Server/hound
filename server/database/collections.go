@@ -8,6 +8,7 @@ import (
 	"github.com/mcay23/hound/internal"
 
 	"github.com/lib/pq"
+	"xorm.io/xorm"
 )
 
 /*
@@ -18,6 +19,24 @@ const (
 	collectionsTable         = "collections"
 	collectionRelationsTable = "collection_relations"
 )
+
+// Collection Kind empty for user-created collections, otherwise a collection type
+const (
+	CollectionKindWatchlist = "watchlist"
+)
+
+var defaultCollections = []CollectionRecord{
+	{Kind: CollectionKindWatchlist, CollectionTitle: "Watchlist", Description: "Titles you want to watch"},
+}
+
+func IsCollectionKind(kind string) bool {
+	for _, c := range defaultCollections {
+		if c.Kind == kind {
+			return true
+		}
+	}
+	return false
+}
 
 // stores watch/read history for media types by user
 type History struct {
@@ -44,6 +63,7 @@ type CollectionRecord struct {
 	Description     string    `xorm:"text 'description'" json:"description"`
 	OwnerUserID     int64     `xorm:"index 'owner_user_id'" json:"owner_user_id"`
 	IsPublic        bool      `xorm:"'is_public'" json:"is_public"`
+	Kind            string    `xorm:"varchar(32) 'kind'" json:"kind"`
 	ThumbnailURI    string    `xorm:"'thumbnail_uri'" json:"thumbnail_uri"` // url for media thumbnails
 	CreatedAt       time.Time `xorm:"timestampz created" json:"created_at"`
 	UpdatedAt       time.Time `xorm:"timestampz updated" json:"updated_at"`
@@ -120,13 +140,9 @@ func GetRecentCollectionRecords(userID int64, limit int) ([]MediaRecordGroup, er
 func InsertCollectionRelation(userID int64, recordID int64, collectionID int64) error {
 	// check if collection exists in collections table
 	// TODO should ideally be covered by foreign key constraint, xorm does not handle sync with fk right now
-	var collectionRecord CollectionRecord
-	has, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&collectionRecord)
+	collectionRecord, err := GetCollection(collectionID)
 	if err != nil {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
-	}
-	if !has {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, internal.NotFoundError)
+		return err
 	}
 	// check if user is authorized to add to collection
 	if collectionRecord.OwnerUserID != userID {
@@ -153,13 +169,9 @@ func InsertCollectionRelation(userID int64, recordID int64, collectionID int64) 
 }
 
 func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) error {
-	var collectionRecord CollectionRecord
-	has, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&collectionRecord)
+	collectionRecord, err := GetCollection(collectionID)
 	if err != nil {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
-	}
-	if !has {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, internal.NotFoundError)
+		return err
 	}
 	// check if user is owner of this collection
 	if collectionRecord.OwnerUserID != userID {
@@ -179,6 +191,91 @@ func DeleteCollectionRelation(userID int64, recordID int64, collectionID int64) 
 	return nil
 }
 
+// create missing default collections (eg. watchlist) for a user
+func EnsureDefaultCollections(userID int64) error {
+	session := databaseEngine.NewSession()
+	defer session.Close()
+	return ensureDefaultCollections(session, userID)
+}
+
+func ensureDefaultCollections(session *xorm.Session, userID int64) error {
+	for _, c := range defaultCollections {
+		_, err := session.Exec(fmt.Sprintf(`
+			INSERT INTO %s (collection_title, description, owner_user_id, is_public, kind, thumbnail_uri, created_at, updated_at)
+			VALUES (?, ?, ?, false, ?, '', now(), now())
+			ON CONFLICT DO NOTHING`, collectionsTable), c.CollectionTitle, c.Description, userID, c.Kind)
+		if err != nil {
+			return fmt.Errorf("insert default %s collection for owner_user_id %d: %w", c.Kind, userID, err)
+		}
+	}
+	return nil
+}
+
+func GetCollection(collectionID int64) (*CollectionRecord, error) {
+	var collection CollectionRecord
+	has, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&collection)
+	if err != nil {
+		return nil, fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
+	}
+	if !has {
+		return nil, fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, internal.NotFoundError)
+	}
+	return &collection, nil
+}
+
+func GetCollectionIDByKind(userID int64, kind string) (int64, error) {
+	if !IsCollectionKind(kind) {
+		return 0, fmt.Errorf("invalid collection kind %s: %w", kind, internal.BadRequestError)
+	}
+	var collection CollectionRecord
+	// retry once after creating missing defaults, for users created before defaults existed
+	for attempt := 0; attempt < 2; attempt++ {
+		has, err := databaseEngine.Table(collectionsTable).Where("owner_user_id = ? AND kind = ?", userID, kind).Get(&collection)
+		if err != nil {
+			return 0, fmt.Errorf("query %s for owner_user_id %d, kind %s: %w", collectionsTable, userID, kind, err)
+		}
+		if has {
+			return collection.CollectionID, nil
+		}
+		if attempt == 0 {
+			if err = EnsureDefaultCollections(userID); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return 0, fmt.Errorf("query %s for owner_user_id %d, kind %s: %w", collectionsTable, userID, kind, internal.NotFoundError)
+}
+
+func CollectionContainsRecord(userID int64, collectionID int64, recordID int64) (bool, error) {
+	has, err := databaseEngine.Table(collectionRelationsTable).
+		Where("user_id = ? AND collection_id = ? AND record_id = ?", userID, collectionID, recordID).Exist()
+	if err != nil {
+		return false, fmt.Errorf("query %s for collection_id %d, record_id %d: %w", collectionRelationsTable, collectionID, recordID, err)
+	}
+	return has, nil
+}
+
+type KindCollectionItem struct {
+	MediaType   string `xorm:"'media_type'"`
+	MediaSource string `xorm:"'media_source'"`
+	SourceID    string `xorm:"'source_id'"`
+}
+
+// GetKindCollectionItems returns every item in the user's default collection of this kind
+func GetKindCollectionItems(userID int64, kind string) ([]KindCollectionItem, error) {
+	var items []KindCollectionItem
+	query := fmt.Sprintf(`
+		SELECT mr.record_type AS media_type, mr.media_source, mr.source_id
+		FROM %s c
+		JOIN %s cr ON cr.collection_id = c.collection_id
+		JOIN %s mr ON mr.record_id = cr.record_id
+		WHERE c.owner_user_id = ? AND c.kind = ?`, collectionsTable, collectionRelationsTable, mediaRecordsTable)
+	if err := databaseEngine.SQL(query, userID, kind).Find(&items); err != nil {
+		return nil, fmt.Errorf("query kind collection items for owner_user_id %d, kind %s: %w", userID, kind, err)
+	}
+	return items, nil
+}
+
 func CreateCollection(record CollectionRecord) (*int64, error) {
 	if record.OwnerUserID <= 0 {
 		return nil, fmt.Errorf("insert %s for owner_user_id %d invalid owner_user_id: %w", collectionsTable, record.OwnerUserID, internal.BadRequestError)
@@ -191,13 +288,9 @@ func CreateCollection(record CollectionRecord) (*int64, error) {
 }
 
 func UpdateCollection(recordID int64, userID int64, record *CollectionRecord) error {
-	var existing CollectionRecord
-	has, err := databaseEngine.Table(collectionsTable).ID(recordID).Get(&existing)
+	existing, err := GetCollection(recordID)
 	if err != nil {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, recordID, err)
-	}
-	if !has {
-		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, recordID, internal.NotFoundError)
+		return err
 	}
 	if existing.OwnerUserID != userID {
 		return fmt.Errorf("update %s for owner_user_id %d, collection_id %d: %w",
@@ -212,10 +305,18 @@ func UpdateCollection(recordID int64, userID int64, record *CollectionRecord) er
 }
 
 func DeleteCollection(userID int64, collectionID int64) error {
+	var existing CollectionRecord
+	has, err := databaseEngine.Table(collectionsTable).ID(collectionID).Get(&existing)
+	if err != nil {
+		return fmt.Errorf("query %s for collection_id %d: %w", collectionsTable, collectionID, err)
+	}
+	if has && existing.OwnerUserID == userID && existing.Kind != "" {
+		return fmt.Errorf("delete %s for collection_id %d, kind %s: %w", collectionsTable, collectionID, existing.Kind, internal.ForbiddenError)
+	}
 	session := databaseEngine.NewSession()
 	defer session.Close()
 	_ = session.Begin()
-	_, err := session.Table(collectionRelationsTable).Delete(&CollectionRelation{
+	_, err = session.Table(collectionRelationsTable).Delete(&CollectionRelation{
 		CollectionID: collectionID,
 	})
 	if err != nil {
