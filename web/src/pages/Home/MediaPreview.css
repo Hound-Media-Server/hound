@@ -92,6 +92,12 @@
   font-size: 16px;
 }
 
+.media-preview-scores {
+  position: absolute;
+  right: 12px;
+  bottom: 25px;
+}
+
 .media-preview-metadata {
   overflow: hidden;
   color: rgba(var(--hound-secondary), 0.85);
@@ -125,6 +131,12 @@
 
 .media-preview-loading {
   margin-top: 12px;
+}
+
+.media-preview-overview-loading {
+  margin-top: 0;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .media-preview-loading .MuiSkeleton-root {

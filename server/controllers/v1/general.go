@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/mcay23/hound/config"
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
@@ -97,8 +98,9 @@ func GetMediaBackdrops(c *gin.Context) {
 }
 
 type ServerInfoResponse struct {
-	ServerID      string `json:"server_id"`
-	LatestVersion string `json:"latest_version"`
+	ServerID         string `json:"server_id"`
+	LatestVersion    string `json:"latest_version"`
+	HoundPlusEnabled bool   `json:"hound_plus_enabled"`
 	internal.BuildInfo
 }
 
@@ -129,9 +131,10 @@ func GetServerInfoHandler(c *gin.Context) {
 		latestVersion = buildInfo.Version
 	}
 	response := ServerInfoResponse{
-		ServerID:      serverID,
-		LatestVersion: latestVersion,
-		BuildInfo:     buildInfo,
+		ServerID:         serverID,
+		LatestVersion:    latestVersion,
+		HoundPlusEnabled: config.HoundPlusHost != "",
+		BuildInfo:        buildInfo,
 	}
 	internal.SuccessResponse(c, response, 200)
 }

@@ -13,8 +13,10 @@ import (
 
 // we are using theIntroDB (https://theintrodb.org/docs) for our intros provider, since they natively support tmdb ids
 const (
-	tidbURL = "https://api.theintrodb.org/v3/media?tmdb_id=%d&season=%d&episode=%d"
+	tidbURL = "https://api.theintrodb.org/v4/media?tmdb_id=%d&season=%d&episode=%d"
 )
+
+var tidbHTTPClient = &http.Client{Timeout: 10 * time.Second}
 
 // intro is a misnomer, since credits, etc. are also included, but it's easier to remember
 type IntroSegments struct {
@@ -31,7 +33,6 @@ type IntroSegments struct {
 
 type tidbResponse struct {
 	MediaType       string      `json:"type"`
-	TmdbID          int         `json:"tmdb_id"`
 	Season          *int        `json:"season,omitempty"`
 	Episode         *int        `json:"episode,omitempty"`
 	IntroSegments   []timestamp `json:"intro"`
@@ -61,11 +62,11 @@ func GetTVShowIntroSegmentsTIDB(mediaSource string, sourceID string, season int,
 	if err != nil {
 		return nil, err
 	}
-	segments := tidbResponse.toIntroSegments()
+	segments := tidbResponse.toIntroSegments(sourceID)
 	return &segments, nil
 }
 
-func (t tidbResponse) toIntroSegments() IntroSegments {
+func (t tidbResponse) toIntroSegments(sourceID string) IntroSegments {
 	mediaType := t.MediaType
 	if t.MediaType == "tv" {
 		mediaType = database.MediaTypeTVShow
@@ -73,7 +74,7 @@ func (t tidbResponse) toIntroSegments() IntroSegments {
 	return IntroSegments{
 		MediaSource:     MediaSourceTMDB,
 		MediaType:       mediaType,
-		SourceID:        strconv.Itoa(t.TmdbID),
+		SourceID:        sourceID,
 		Season:          t.Season,
 		Episode:         t.Episode,
 		IntroSegments:   t.IntroSegments,
@@ -84,10 +85,7 @@ func (t tidbResponse) toIntroSegments() IntroSegments {
 }
 
 func fetchTIDBResponse(url string) (*tidbResponse, error) {
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-	resp, err := httpClient.Get(url)
+	resp, err := tidbHTTPClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch from tidb: %w", err)
 	}
