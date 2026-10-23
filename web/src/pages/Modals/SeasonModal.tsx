@@ -14,7 +14,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import "./SeasonModal.css";
 import convertDateToReadable from "../../helpers/helpers";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import DownloadIcon from "@mui/icons-material/Download";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import CreateHistoryModal from "./CreateHistoryModal";
@@ -285,7 +285,7 @@ function SeasonModal(props: any) {
                           setIsCreateHistoryModalOpen(true);
                         }}
                       >
-                        <VisibilityIcon />
+                        <VisibilityOutlinedIcon />
                       </IconButton>
                     </BootstrapTooltip>
                     {localStorage.getItem("role") === "admin" && (
@@ -555,7 +555,7 @@ function EpisodeCard(
                 );
               }}
             >
-              <VisibilityIcon />
+              <VisibilityOutlinedIcon />
             </IconButton>
           </BootstrapTooltip>
         )}

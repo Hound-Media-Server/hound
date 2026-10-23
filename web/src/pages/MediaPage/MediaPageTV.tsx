@@ -1,4 +1,6 @@
 import "./MediaPage.css";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import BookmarkAddedIcon from "@mui/icons-material/BookmarkAdded";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import HistoryIcon from "@mui/icons-material/History";
 import CachedIcon from "@mui/icons-material/Cached";
@@ -25,6 +27,7 @@ import SelectStreamModal from "../Modals/StreamSelectModal";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
+import { useInWatchlist, useSetWatchlist } from "../../api/hooks/collections";
 import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
@@ -84,6 +87,12 @@ function MediaPageTV(props: any) {
     props.data.media_source,
     props.data.source_id,
   );
+  const { data: inWatchlist } = useInWatchlist(
+    props.data.media_type,
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { mutate: setWatchlist } = useSetWatchlist();
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
   const { data: continueWatchingData, refetch: refetchWatchAction } =
@@ -207,13 +216,19 @@ function MediaPageTV(props: any) {
         watchProgress: overrideWatchProgress,
         originalAudioLang: props.data?.original_language,
         mediaDetails: props.data,
-        getWatchProgress: overrideWatchProgress !== undefined ? undefined : async () => {
-          if (episodeID === -1) return undefined;
-          const progressRes = await axios.get(`/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`);
-          return progressRes.data?.find(
-            (item: any) => parseInt(item.episode_source_id, 10) === episodeID,
-          );
-        },
+        getWatchProgress:
+          overrideWatchProgress !== undefined
+            ? undefined
+            : async () => {
+                if (episodeID === -1) return undefined;
+                const progressRes = await axios.get(
+                  `/api/v1/tv/${mediaSource}-${sourceID}/season/${season}/playback`,
+                );
+                return progressRes.data?.find(
+                  (item: any) =>
+                    parseInt(item.episode_source_id, 10) === episodeID,
+                );
+              },
       });
       return;
     }
@@ -256,7 +271,9 @@ function MediaPageTV(props: any) {
         });
     };
     if (overrideWatchProgress !== undefined) {
-      requestProviderStream().finally(() => setIsStreamSelectButtonLoading(false));
+      requestProviderStream().finally(() =>
+        setIsStreamSelectButtonLoading(false),
+      );
       return;
     }
     // no override, get playback progress (season modal case)
@@ -432,6 +449,33 @@ function MediaPageTV(props: any) {
                     )}
                   </Dropdown.Item>
                 </SplitButton>
+                <BootstrapTooltip
+                  title={
+                    <span className="media-page-tv-header-button-tooltip-title">
+                      {inWatchlist
+                        ? "Remove from Watchlist"
+                        : "Add to Watchlist"}
+                    </span>
+                  }
+                  PopperProps={offsetFix}
+                >
+                  <IconButton
+                    onClick={() =>
+                      setWatchlist({
+                        mediaType: props.data.media_type,
+                        mediaSource: props.data.media_source,
+                        sourceId: props.data.source_id,
+                        add: !inWatchlist,
+                      })
+                    }
+                  >
+                    {inWatchlist ? (
+                      <BookmarkAddedIcon />
+                    ) : (
+                      <BookmarkBorderIcon />
+                    )}
+                  </IconButton>
+                </BootstrapTooltip>
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">

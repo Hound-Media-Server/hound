@@ -63,11 +63,11 @@ const CreateHistoryModal = (props: CreateHistoryModalProps) => {
           watchedAt,
         });
       }
-      toast.success("Added to watch history");
+      toast.success("Added to Watch History");
       handleClose();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to add to watch history");
+      toast.error("Failed to Add to Watch History");
     }
   };
 

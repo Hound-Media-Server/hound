@@ -40,6 +40,7 @@ function MediaItem(props: any) {
         .delete(`/api/v1/collection/${props.collectionID}`, { data: payload })
         .then(() => {
           setIsDeleteDialogOpen(false);
+          toast.success("Removed from Collection");
           queryClient.invalidateQueries({
             queryKey: ["collections", props.collectionID, "contents"],
           });

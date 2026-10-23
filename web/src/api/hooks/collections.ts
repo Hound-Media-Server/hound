@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   fetchAllCollections,
   fetchCollectionContents,
@@ -6,6 +7,8 @@ import {
   createCollection,
   updateCollection,
   fetchPublicCollections,
+  fetchInWatchlist,
+  setWatchlist,
 } from "../services/collections";
 
 export const useCollections = () => {
@@ -34,6 +37,24 @@ export const useRecentCollectionItems = () => {
   return useQuery({
     queryKey: ["collections", "recent"],
     queryFn: fetchRecentCollectionItems,
+  });
+};
+
+export const useInWatchlist = (mediaType: string, mediaSource: string, sourceId: string) => {
+  return useQuery({
+    queryKey: ["collections", "watchlist", mediaType, mediaSource, sourceId],
+    queryFn: () => fetchInWatchlist(mediaType, mediaSource, sourceId),
+  });
+};
+
+export const useSetWatchlist = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setWatchlist,
+    onSuccess: (_, variables) => {
+      toast.success(variables.add ? "Added to Watchlist" : "Removed from Watchlist");
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+    },
   });
 };
 

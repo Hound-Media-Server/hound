@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 	"log/slog"
+	"sort"
 	"strconv"
 
 	"github.com/mcay23/hound/database"
@@ -145,6 +146,9 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", internal.InternalServerError, err))
 		return
 	}
+	sort.SliceStable(records, func(i, j int) bool {
+		return records[i].Kind != "" && records[j].Kind == ""
+	})
 	user, err := database.GetUser(userID)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", err))

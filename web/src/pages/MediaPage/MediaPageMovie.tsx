@@ -1,6 +1,8 @@
 import "./MediaPage.css";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import BookmarkAddedIcon from "@mui/icons-material/BookmarkAdded";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
@@ -24,6 +26,7 @@ import HistoryModal from "../Modals/HistoryModal";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
+import { useInWatchlist, useSetWatchlist } from "../../api/hooks/collections";
 import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { CloudDoneOutlined } from "@mui/icons-material";
@@ -70,6 +73,12 @@ function MediaPageMovie(props: any) {
     props.data.media_source,
     props.data.source_id,
   );
+  const { data: inWatchlist } = useInWatchlist(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { mutate: setWatchlist } = useSetWatchlist();
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
   const { data: watchAction, refetch: refetchWatchAction } = useWatchAction(
@@ -343,6 +352,33 @@ function MediaPageMovie(props: any) {
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
+                      {inWatchlist
+                        ? "Remove from Watchlist"
+                        : "Add to Watchlist"}
+                    </span>
+                  }
+                  PopperProps={offsetFix}
+                >
+                  <IconButton
+                    onClick={() =>
+                      setWatchlist({
+                        mediaType: "movie",
+                        mediaSource: props.data.media_source,
+                        sourceId: props.data.source_id,
+                        add: !inWatchlist,
+                      })
+                    }
+                  >
+                    {inWatchlist ? (
+                      <BookmarkAddedIcon />
+                    ) : (
+                      <BookmarkBorderIcon />
+                    )}
+                  </IconButton>
+                </BootstrapTooltip>
+                <BootstrapTooltip
+                  title={
+                    <span className="media-page-tv-header-button-tooltip-title">
                       Add To Collection
                     </span>
                   }
@@ -369,7 +405,7 @@ function MediaPageMovie(props: any) {
                       setisCreateHistoryModalOpen(true);
                     }}
                   >
-                    <VisibilityIcon />
+                    <VisibilityOutlinedIcon />
                   </IconButton>
                 </BootstrapTooltip>
                 <BootstrapTooltip
