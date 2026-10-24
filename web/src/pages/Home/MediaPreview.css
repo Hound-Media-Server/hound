@@ -79,11 +79,11 @@
 
 .media-preview-hound-chip {
   position: absolute !important;
-  right: 12px;
-  bottom: 25px;
+  right: 78px;
+  top: 12px;
   height: 24px !important;
   color: black !important;
-  background-color: rgba(255, 255, 255, 0.9) !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
   font-family: "Cabin", sans-serif !important;
 }
 
@@ -94,12 +94,8 @@
 
 .media-preview-scores {
   position: absolute;
-  right: 12px;
-  bottom: 25px;
-}
-
-.media-preview-hound-chip ~ .media-preview-scores {
-  bottom: 57px;
+  right: 16px;
+  bottom: 24px;
 }
 
 .media-preview-metadata {
@@ -191,16 +187,16 @@
 .media-preview-bookmark {
   position: absolute;
   top: 0;
-  right: 24px;
+  right: 28px;
   z-index: 2;
-  width: 24px;
-  height: 54px;
+  width: 26px;
+  height: 60px;
   padding: 0;
   border: 0;
   cursor: pointer;
   background: none;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
-  transform: translateY(-20px);
+  transform: translateY(-12px);
   transition: transform 0.15s ease;
 }
 
@@ -209,6 +205,7 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(105deg, #d8d8d8, #fff 45%, #ececec);
+  opacity: 0.65;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
   transition: background 0.15s ease;
 }
@@ -218,5 +215,6 @@
 }
 
 .media-preview-bookmark.active::before {
+  opacity: 1;
   background: linear-gradient(90deg, #f9a825, #fdd835);
 }

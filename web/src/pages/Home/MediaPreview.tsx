@@ -275,7 +275,7 @@ function MediaPreview({
               <button
                 className={`media-preview-bookmark${inWatchlist ? " active" : ""}`}
                 title={
-                  inWatchlist ? "Remove from watchlist" : "Add to watchlist"
+                  inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"
                 }
                 onClick={() =>
                   setWatchlist({
