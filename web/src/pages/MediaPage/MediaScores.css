@@ -12,7 +12,6 @@
 .media-scores-row {
   flex-wrap: wrap;
   gap: 4px 16px;
-  margin-top: 20px;
 }
 
 .media-scores-column {

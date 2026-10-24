@@ -437,6 +437,11 @@ function MediaPageTV(props: any) {
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}
               </div>
+              {!isScoresWaiting && (
+                <div className="mt-3">
+                  <MediaScores scores={scores} showVotes />
+                </div>
+              )}
               {lastWatched && (
                 <div className="media-page-tv-header-last-watched">
                   Last watched {lastWatched}
@@ -521,22 +526,24 @@ function MediaPageTV(props: any) {
                     <PlaylistAddIcon />
                   </IconButton>
                 </BootstrapTooltip>
-                <BootstrapTooltip
-                  title={
-                    <span className="media-page-tv-header-button-tooltip-title">
-                      View Watch History
-                    </span>
-                  }
-                  PopperProps={offsetFix}
-                >
-                  <IconButton
-                    onClick={() => {
-                      setIsHistoryModalOpen(true);
-                    }}
+                {lastWatched && (
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        View Watch History
+                      </span>
+                    }
+                    PopperProps={offsetFix}
                   >
-                    <HistoryIcon id="media-page-tv-header-track-button" />
-                  </IconButton>
-                </BootstrapTooltip>
+                    <IconButton
+                      onClick={() => {
+                        setIsHistoryModalOpen(true);
+                      }}
+                    >
+                      <HistoryIcon id="media-page-tv-header-track-button" />
+                    </IconButton>
+                  </BootstrapTooltip>
+                )}
                 {localStorage.getItem("role") === "admin" && (
                   <BootstrapTooltip
                     title={
@@ -572,7 +579,6 @@ function MediaPageTV(props: any) {
                   </IconButton>
                 </BootstrapTooltip>
               </div>
-              {!isScoresWaiting && <MediaScores scores={scores} showVotes />}
             </div>
           </div>
         </div>

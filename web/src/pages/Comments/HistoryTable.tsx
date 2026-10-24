@@ -12,11 +12,13 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
+import { useDeleteWatchHistoryMutation } from "../../api/hooks/watchHistory";
 
 function HistoryTable(props: any) {
   const arr: any[] = [];
   const [data, setData] = useState([arr]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const deleteMutation = useDeleteWatchHistoryMutation();
   var mediaType =
     props.data.media_type === "tvshow" ? "tv" : props.data.media_type;
   useEffect(() => {
@@ -51,17 +53,12 @@ function HistoryTable(props: any) {
       const idsToDelete = rowsDeleted.data.map((d) => {
         return data[d.dataIndex][4];
       }); // array of all ids to to be deleted
-      const payload = {
-        watch_event_ids: idsToDelete,
-      };
-      axios
-        .post(
-          `/api/v1/${mediaType}/${props.data.media_source}-${props.data.source_id}/history/delete`,
-          payload,
-        )
-        .catch((err) => {
-          console.log(err);
-        });
+      deleteMutation.mutate({
+        mediaType: mediaType as "tv" | "movie",
+        mediaSource: props.data.media_source,
+        sourceID: props.data.source_id,
+        watchEventIDs: idsToDelete,
+      });
     },
   };
   const excludeDisplay: MUIDataTableColumnOptions = {

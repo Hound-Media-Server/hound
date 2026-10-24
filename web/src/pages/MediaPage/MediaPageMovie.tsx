@@ -2,6 +2,7 @@ import "./MediaPage.css";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import BookmarkAddedIcon from "@mui/icons-material/BookmarkAdded";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
@@ -337,7 +338,11 @@ function MediaPageMovie(props: any) {
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}
               </div>
-              {!isScoresWaiting && <MediaScores scores={scores} showVotes />}
+              {!isScoresWaiting && (
+                <div className="mt-3">
+                  <MediaScores scores={scores} showVotes />
+                </div>
+              )}
               {lastWatched && (
                 <div className="media-page-tv-header-last-watched">
                   Last watched {lastWatched}
@@ -425,7 +430,9 @@ function MediaPageMovie(props: any) {
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
-                      Mark as Watched
+                      {lastWatched
+                        ? "Mark as Watched Again"
+                        : "Mark as Watched"}
                     </span>
                   }
                   PopperProps={offsetFix}
@@ -435,25 +442,31 @@ function MediaPageMovie(props: any) {
                       setisCreateHistoryModalOpen(true);
                     }}
                   >
-                    <VisibilityOutlinedIcon />
+                    {lastWatched ? (
+                      <VisibilityIcon />
+                    ) : (
+                      <VisibilityOutlinedIcon />
+                    )}
                   </IconButton>
                 </BootstrapTooltip>
-                <BootstrapTooltip
-                  title={
-                    <span className="media-page-tv-header-button-tooltip-title">
-                      View Watch History
-                    </span>
-                  }
-                  PopperProps={offsetFix}
-                >
-                  <IconButton
-                    onClick={() => {
-                      setIsHistoryModalOpen(true);
-                    }}
+                {lastWatched && (
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        View Watch History
+                      </span>
+                    }
+                    PopperProps={offsetFix}
                   >
-                    <HistoryIcon id="media-page-tv-header-track-button" />
-                  </IconButton>
-                </BootstrapTooltip>
+                    <IconButton
+                      onClick={() => {
+                        setIsHistoryModalOpen(true);
+                      }}
+                    >
+                      <HistoryIcon id="media-page-tv-header-track-button" />
+                    </IconButton>
+                  </BootstrapTooltip>
+                )}
                 {localStorage.getItem("role") === "admin" && (
                   <BootstrapTooltip
                     title={

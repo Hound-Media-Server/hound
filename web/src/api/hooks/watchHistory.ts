@@ -136,6 +136,7 @@ export const useDeleteWatchHistoryMutation = () => {
       queryClient.invalidateQueries({ queryKey: ["watch-activity"] });
       queryClient.invalidateQueries({ queryKey: ["watch-history"] });
       queryClient.invalidateQueries({ queryKey: ["watch-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["tv-season-history"] });
     },
   });
 };
