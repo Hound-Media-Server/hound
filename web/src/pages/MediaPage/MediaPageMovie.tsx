@@ -33,6 +33,7 @@ import {
   useWatchAction,
 } from "../../api/hooks/media";
 import MediaScores from "./MediaScores";
+import { useLastWatched } from "../../api/hooks/watchHistory";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
@@ -92,6 +93,11 @@ function MediaPageMovie(props: any) {
     props.data.source_id,
   );
   const { data: watchAction, refetch: refetchWatchAction } = useWatchAction(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { data: lastWatched } = useLastWatched(
     "movie",
     props.data.media_source,
     props.data.source_id,
@@ -332,6 +338,11 @@ function MediaPageMovie(props: any) {
                 {creators ? "by " + creators : ""}
               </div>
               {!isScoresWaiting && <MediaScores scores={scores} showVotes />}
+              {lastWatched && (
+                <div className="media-page-tv-header-last-watched">
+                  Last watched {lastWatched}
+                </div>
+              )}
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={

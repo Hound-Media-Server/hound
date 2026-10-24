@@ -78,6 +78,17 @@ export const fetchTVSeasonHistory = async (
   return data;
 };
 
+export const fetchWatchHistory = async (
+  mediaType: "tv" | "movie",
+  mediaSource: string,
+  sourceID: string,
+) => {
+  const { data } = await axios.get<any>(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/history`,
+  );
+  return data;
+};
+
 export const createTVWatchHistory = async (
   mediaSource: string,
   sourceID: string,

@@ -40,10 +40,11 @@ export const useRecentCollectionItems = () => {
   });
 };
 
-export const useInWatchlist = (mediaType: string, mediaSource: string, sourceId: string) => {
+export const useInWatchlist = (mediaType: string, mediaSource: string, sourceId: string, enabled = true) => {
   return useQuery({
     queryKey: ["collections", "watchlist", mediaType, mediaSource, sourceId],
     queryFn: () => fetchInWatchlist(mediaType, mediaSource, sourceId),
+    enabled,
   });
 };
 

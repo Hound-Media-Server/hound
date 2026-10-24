@@ -34,6 +34,7 @@ import {
   useWatchAction,
 } from "../../api/hooks/media";
 import MediaScores from "./MediaScores";
+import { useLastWatched } from "../../api/hooks/watchHistory";
 import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { CloudDoneOutlined } from "@mui/icons-material";
@@ -101,6 +102,11 @@ function MediaPageTV(props: any) {
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
   const { data: scores, isWaiting: isScoresWaiting } = useMediaScores(
+    "tv",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { data: lastWatched } = useLastWatched(
     "tv",
     props.data.media_source,
     props.data.source_id,
@@ -431,6 +437,11 @@ function MediaPageTV(props: any) {
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}
               </div>
+              {lastWatched && (
+                <div className="media-page-tv-header-last-watched">
+                  Last watched {lastWatched}
+                </div>
+              )}
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={

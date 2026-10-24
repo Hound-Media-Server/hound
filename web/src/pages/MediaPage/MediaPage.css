@@ -76,6 +76,12 @@ body:has(.media-page) {
     color: rgba(255, 255, 0, 0.8);
 }
 
+.media-page-tv-header-last-watched {
+    font-size: 15px;
+    color: rgba(255, 255, 0, 0.8);
+    margin-top: 10px;
+}
+
 .media-page-tv-header-credits {
     font-size: 15px;
     color: rgba(255, 255, 255, 0.6);

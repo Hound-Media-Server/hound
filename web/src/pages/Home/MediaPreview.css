@@ -79,11 +79,11 @@
 
 .media-preview-hound-chip {
   position: absolute !important;
-  top: 18px;
-  right: 18px;
+  right: 12px;
+  bottom: 25px;
   height: 24px !important;
   color: black !important;
-  background-color: rgba(var(--hound-secondary), 0.85) !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
   font-family: "Cabin", sans-serif !important;
 }
 
@@ -98,6 +98,10 @@
   bottom: 25px;
 }
 
+.media-preview-hound-chip ~ .media-preview-scores {
+  bottom: 57px;
+}
+
 .media-preview-metadata {
   overflow: hidden;
   color: rgba(var(--hound-secondary), 0.85);
@@ -109,7 +113,7 @@
 
 .media-preview-overview {
   display: -webkit-box;
-  max-width: 92%;
+  max-width: 85%;
   overflow: hidden;
   color: rgba(255, 255, 255, 0.91);
   font-size: 14px;
@@ -182,4 +186,37 @@
   .media-preview-popper {
     display: none;
   }
+}
+
+.media-preview-bookmark {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  z-index: 2;
+  width: 24px;
+  height: 54px;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  transform: translateY(-20px);
+  transition: transform 0.15s ease;
+}
+
+.media-preview-bookmark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, #d8d8d8, #fff 45%, #ececec);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  transition: background 0.15s ease;
+}
+
+.media-preview-bookmark:hover {
+  transform: translateY(0);
+}
+
+.media-preview-bookmark.active::before {
+  background: linear-gradient(90deg, #f9a825, #fdd835);
 }
