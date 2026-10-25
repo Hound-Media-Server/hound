@@ -27,6 +27,7 @@ import HistoryModal from "../Modals/HistoryModal";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
+import WatchlistBookmark from "../Home/WatchlistBookmark";
 import { useInWatchlist, useSetWatchlist } from "../../api/hooks/collections";
 import {
   useMediaFiles,
@@ -268,6 +269,11 @@ function MediaPageMovie(props: any) {
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
+              <WatchlistBookmark
+                mediaType={props.data.media_type}
+                mediaSource={props.data.media_source}
+                sourceId={props.data.source_id}
+              />
               {!isPosterLoaded && props.data.thumbnail_uri && (
                 <Skeleton
                   variant="rounded"

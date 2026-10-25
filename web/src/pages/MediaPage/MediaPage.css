@@ -28,7 +28,13 @@ body:has(.media-page) {
 }
 
 .media-page-tv-poster-container {
+    position: relative;
+    clip-path: inset(0 -100vw -100vw -100vw);
     display: inline-flex;
+}
+
+.media-page-tv-poster-container .media-preview-bookmark {
+    right: 18px;
 }
 
 .media-page-tv-poster {

@@ -12,7 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { useInWatchlist, useSetWatchlist } from "../../api/hooks/collections";
 import {
   useMediaFiles,
   useMediaDetails,
@@ -20,6 +19,7 @@ import {
   useWatchAction,
 } from "../../api/hooks/media";
 import type { WatchableMediaType } from "../../api/services/media";
+import WatchlistBookmark from "./WatchlistBookmark";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import MediaScores from "../MediaPage/MediaScores";
 import { useStreamModal } from "../Modals/StreamModalContext";
@@ -110,13 +110,6 @@ function MediaPreview({
     false,
     open && canPreview,
   );
-  const { data: inWatchlist } = useInWatchlist(
-    item.media_type,
-    item.media_source,
-    sourceID,
-    open && canPreview,
-  );
-  const { mutate: setWatchlist } = useSetWatchlist();
   const { openStream } = useStreamModal();
   const currentWatchAction = watchAction ?? initialWatchAction;
   const preview = { ...item, ...details };
@@ -272,19 +265,11 @@ function MediaPreview({
                 />
               )}
               <div className="media-preview-shade" />
-              <button
-                className={`media-preview-bookmark${inWatchlist ? " active" : ""}`}
-                title={
-                  inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"
-                }
-                onClick={() =>
-                  setWatchlist({
-                    mediaType: item.media_type,
-                    mediaSource: item.media_source,
-                    sourceId: sourceID,
-                    add: !inWatchlist,
-                  })
-                }
+              <WatchlistBookmark
+                mediaType={item.media_type}
+                mediaSource={item.media_source}
+                sourceId={sourceID}
+                enabled={open && canPreview}
               />
               <div className="media-preview-content">
                 {isInHound && (
