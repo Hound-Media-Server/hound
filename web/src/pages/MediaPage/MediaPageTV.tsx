@@ -438,7 +438,7 @@ function MediaPageTV(props: any) {
                 {creators ? "by " + creators : ""}
               </div>
               {!isScoresWaiting && (
-                <div className="mt-3">
+                <div className="mt-2">
                   <MediaScores scores={scores} showVotes />
                 </div>
               )}

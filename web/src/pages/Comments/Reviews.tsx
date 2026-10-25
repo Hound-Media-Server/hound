@@ -120,15 +120,14 @@ function Reviews(props: {
         )}
         <ResponsiveMasonry columnsCountBreakPoints={{ 350: 1, 750: 2, 900: 3 }}>
           <Masonry>
-            {isLoading &&
-              [0, 1, 2].map((i) => (
-                <Skeleton
-                  key={i}
-                  variant="rounded"
-                  height={140}
-                  sx={{ m: 1 }}
-                />
-              ))}
+            {(isLoading ? [0, 1, 2] : []).map((i) => (
+              <Skeleton
+                key={i}
+                variant="rounded"
+                height={140}
+                sx={{ m: 1 }}
+              />
+            ))}
             {all_reviews.map((item: any) => (
               <ItemCard
                 item={item}

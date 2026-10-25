@@ -9,6 +9,7 @@ body:has(.media-page) {
 
 .media-page-tv-header {
     padding-bottom: 40px;
+    padding-inline: var(--page-gutter);
     min-height: 400px;
     font-size: large;
 }
@@ -19,7 +20,7 @@ body:has(.media-page) {
 }
 
 .media-page-tv-header-container {
-    margin-top: 50px;
+    margin-top: 40px;
     margin-bottom: 20px;
     margin-left: 100px;
     color: white;
@@ -150,6 +151,7 @@ body:has(.media-page) {
 .media-page-tv-main {
     padding-top: 30px;
     padding-bottom: 70px;
+    padding-inline: var(--page-gutter);
     color: white;
 }
 
