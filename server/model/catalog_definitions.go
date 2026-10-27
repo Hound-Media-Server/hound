@@ -58,6 +58,12 @@ var internalCatalogDefinitions = []CatalogDefinition{
 		Description:   "Media recently added to your collections",
 	},
 	{
+		CatalogTitle:  "Your Watchlist",
+		CatalogSource: database.CatalogSourceInternal,
+		CatalogID:     "hound-watchlist",
+		Description:   "Titles on your watchlist",
+	},
+	{
 		CatalogTitle:  "Movies You Might Like",
 		CatalogSource: database.CatalogSourceInternal,
 		CatalogID:     "hound-recommended-movies",

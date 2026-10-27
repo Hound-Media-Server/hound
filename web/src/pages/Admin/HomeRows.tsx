@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   Alert,
@@ -30,10 +30,7 @@ import {
   useDefaultHomeRows,
   useUpdateDefaultHomeRowsMutation,
 } from "../../api/hooks/home";
-import {
-  useCollections,
-  usePublicCollections,
-} from "../../api/hooks/collections";
+import { usePublicCollections } from "../../api/hooks/collections";
 import "./HomeRows.css";
 
 type Catalog = {
@@ -86,25 +83,8 @@ export default function HomeRows() {
     isLoading: isCatalogsLoading,
     error: catalogsError,
   } = useAvailableCatalogs();
-  const { data: userCollections = [] } = useCollections();
   const { data: publicCollections = [] } = usePublicCollections();
   const updateDefaultHomeRows = useUpdateDefaultHomeRowsMutation();
-
-  // dedupe user + public collections
-  const combinedCollections = useMemo<CollectionItem[]>(() => {
-    const seen = new Set<number>();
-    const result: CollectionItem[] = [];
-    for (const c of [
-      ...(userCollections as CollectionItem[]),
-      ...(publicCollections as CollectionItem[]),
-    ]) {
-      if (!seen.has(c.collection_id)) {
-        seen.add(c.collection_id);
-        result.push(c);
-      }
-    }
-    return result;
-  }, [userCollections, publicCollections]);
 
   return (
     <HomeRowsEditor
@@ -123,7 +103,7 @@ export default function HomeRows() {
       }
       homeRowsData={defaultHomeRows}
       catalogDefinitionsResponse={catalogDefinitionsResponse}
-      collections={combinedCollections}
+      collections={publicCollections as CollectionItem[]}
       isLoading={isHomeRowsLoading || isCatalogsLoading}
       error={homeRowsError ?? catalogsError}
       onSave={(homeRows) =>

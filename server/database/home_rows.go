@@ -94,6 +94,18 @@ func GetDefaultHomeRows() (*UserHomeRows, error) {
 			},
 		},
 		{
+			Title:            "Your Watchlist",
+			CatalogSelection: CatalogSelectionAll,
+			ItemOrder:        ItemOrderDefault,
+			Catalogs: []Catalog{
+				{
+					CatalogTitle:  "Your Watchlist",
+					CatalogSource: CatalogSourceInternal,
+					CatalogID:     "hound-watchlist",
+				},
+			},
+		},
+		{
 			Title:            "Recently Added to Hound",
 			CatalogSelection: CatalogSelectionAll,
 			ItemOrder:        ItemOrderDefault,

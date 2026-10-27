@@ -87,6 +87,12 @@ func GetInternalCatalog(userID int64, catalogID string) ([]view.MediaRecordCatal
 		return getHoundLibraryRecords(MaxItemsPerHomeRow, 0, database.MediaTypeMovie, nil)
 	case "hound-recent-collection":
 		return getHoundRecentRecords(userID, MaxItemsPerHomeRow)
+	case "hound-watchlist":
+		collectionID, err := database.GetCollectionIDByKind(userID, database.CollectionKindWatchlist)
+		if err != nil {
+			return nil, err
+		}
+		return GetCollectionCatalog(userID, strconv.FormatInt(collectionID, 10))
 	case "hound-recommended-movies":
 		return GetUserRecommendations(userID, database.MediaTypeMovie, MaxItemsPerHomeRow)
 	case "hound-recommended-shows":

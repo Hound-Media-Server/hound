@@ -196,6 +196,16 @@ var addCollectionKind = &migrate.Migration{
 	},
 }
 
+var addWatchlistHomeRow = &migrate.Migration{
+	ID: "20261027_01_add_watchlist_default_home_row",
+	Migrate: func(tx *xorm.Engine) error {
+		return DeleteCache("default_home_rows")
+	},
+	Rollback: func(tx *xorm.Engine) error {
+		return DeleteCache("default_home_rows")
+	},
+}
+
 func runMigrations() error {
 	m := migrate.New(databaseEngine, migrate.DefaultOptions, []*migrate.Migration{
 		addForeignKeys,
@@ -203,6 +213,7 @@ func runMigrations() error {
 		Index20260516_01,
 		dropCommentIsPublic,
 		addCollectionKind,
+		addWatchlistHomeRow,
 	})
 	if err := m.Migrate(); err != nil {
 		return err
