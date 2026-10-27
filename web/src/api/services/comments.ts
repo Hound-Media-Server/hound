@@ -2,10 +2,14 @@ import axios from "axios";
 
 export interface Comment {
   comment_id: number;
-  comment_type: "review" | "comment" | "note";
+  comment_type: "review" | "note";
   user_id: string;
   record_id: number;
-  is_public: boolean;
+  source_id: string;
+  media_source: string;
+  media_type: string;
+  season_number?: number;
+  episode_number?: number;
   title: string;
   comment: string;
   score: number;
@@ -17,7 +21,7 @@ export const fetchComments = async (
   mediaType: string,
   mediaSource: string,
   sourceId: string,
-  commentType: "review" | "comment" | "note",
+  commentType: "review" | "note",
   seasonNumber?: number,
   episodeNumber?: number,
 ) => {
@@ -38,7 +42,7 @@ export const createComment = async (
   mediaType: string,
   mediaSource: string,
   sourceId: string,
-  commentType: "review" | "comment" | "note",
+  commentType: "review" | "note",
   comment: string,
   score?: number,
   title?: string,

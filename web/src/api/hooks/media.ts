@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useServerInfo } from "./general";
 import {
   cancelDownload,
   deleteMediaFile,
@@ -6,6 +8,7 @@ import {
   fetchDownloads,
   fetchMediaDetails,
   fetchMediaFiles,
+  fetchMediaScores,
   fetchWatchAction,
   fetchSeasonDetails,
   type MediaType,
@@ -26,6 +29,43 @@ export const useMediaDetails = (
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
+};
+
+const SCORES_MAX_WAIT_MS = 1500;
+
+export const useMediaScores = (
+  mediaType: WatchableMediaType,
+  mediaSource: string,
+  sourceID: string,
+  enabled = true,
+) => {
+  const { data: serverInfo, isPending: isServerInfoPending } = useServerInfo();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    setTimedOut(false);
+    if (!enabled) return;
+    const timer = setTimeout(() => setTimedOut(true), SCORES_MAX_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [enabled, mediaType, mediaSource, sourceID]);
+
+  const query = useQuery({
+    queryKey: ["media-scores", mediaType, mediaSource, sourceID],
+    queryFn: ({ signal }) =>
+      fetchMediaScores(mediaType, mediaSource, sourceID, signal),
+    enabled:
+      enabled &&
+      !!serverInfo?.hound_plus_enabled &&
+      !!mediaSource &&
+      !!sourceID,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: false,
+  });
+
+  const isWaiting =
+    enabled && !timedOut && (isServerInfoPending || query.isLoading);
+  return { ...query, isWaiting };
 };
 
 export const useWatchAction = (

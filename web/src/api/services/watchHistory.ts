@@ -12,10 +12,13 @@ export interface WatchActivity {
   media_title: string;
   show_media_title?: string;
   show_source_id?: string;
+  show_backdrop_uri?: string;
   season_number?: number;
   episode_number?: number;
   release_date: string;
   overview: string;
+  thumbnail_uri?: string;
+  backdrop_uri?: string;
   duration: number;
 }
 
@@ -75,6 +78,17 @@ export const fetchTVSeasonHistory = async (
   return data;
 };
 
+export const fetchWatchHistory = async (
+  mediaType: "tv" | "movie",
+  mediaSource: string,
+  sourceID: string,
+) => {
+  const { data } = await axios.get<any>(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/history`,
+  );
+  return data;
+};
+
 export const createTVWatchHistory = async (
   mediaSource: string,
   sourceID: string,
@@ -112,5 +126,18 @@ export const createMovieWatchHistory = async (
     action_type: "watch",
     watched_at: watchedAt,
   });
+  return data;
+};
+
+export const deleteWatchHistory = async (
+  mediaType: "tv" | "movie",
+  mediaSource: string,
+  sourceID: string,
+  watchEventIDs: number[],
+) => {
+  const { data } = await axios.post(
+    `/api/v1/${mediaType}/${mediaSource}-${sourceID}/history/delete`,
+    { watch_event_ids: watchEventIDs },
+  );
   return data;
 };

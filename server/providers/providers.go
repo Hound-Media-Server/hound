@@ -101,37 +101,37 @@ const (
 
 const providersCacheTTL = time.Hour * 2
 
+func selectProviderProfile(profiles []database.ProviderProfile, requestType string) (database.ProviderProfile, error) {
+	if requestType == "" {
+		return database.ProviderProfile{}, fmt.Errorf("nil provider profile id, no request type defined: %w", internal.BadRequestError)
+	}
+	if len(profiles) == 0 {
+		return database.ProviderProfile{}, fmt.Errorf("no providers profiles found: %w", internal.NotFoundError)
+	}
+	for _, profile := range profiles {
+		if profile.IsDefaultDownloading && requestType == ProviderRequestDownload ||
+			profile.IsDefaultStreaming && requestType == ProviderRequestStream {
+			return profile, nil
+		}
+	}
+	return profiles[0], nil
+}
+
 func QueryProvidersStreams(query ProvidersQueryRequest) (*ProviderStreamsResponseObject, error) {
 	// automatically select provider if none supplied
 	// using the given requestType based on provider defaults
 	if query.ProviderProfileID == nil {
-		if query.RequestType == "" {
-			return nil, fmt.Errorf("nil provider profile id, no request type defined: %w", internal.BadRequestError)
-		}
 		providers, err := database.GetProviderProfiles()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get providers: %w", err)
 		}
-		if len(providers) == 0 {
-			return nil, fmt.Errorf("no providers profiles found: %w", internal.NotFoundError)
+		profile, err := selectProviderProfile(providers, query.RequestType)
+		if err != nil {
+			return nil, err
 		}
-		for _, p := range providers {
-			if p.IsDefaultDownloading && query.RequestType == ProviderRequestDownload {
-				query.ProviderProfileName = &p.Name
-				temp := int(p.ProviderProfileID)
-				query.ProviderProfileID = &temp
-				break
-			} else if p.IsDefaultStreaming && query.RequestType == ProviderRequestStream {
-				query.ProviderProfileName = &p.Name
-				temp := int(p.ProviderProfileID)
-				query.ProviderProfileID = &temp
-				break
-			}
-		}
-		if query.ProviderProfileID == nil {
-			return nil, fmt.Errorf("no provider profile found for request type (should not happen, create issue on github): %s: %w",
-				query.RequestType, internal.NotFoundError)
-		}
+		query.ProviderProfileName = &profile.Name
+		profileID := int(profile.ProviderProfileID)
+		query.ProviderProfileID = &profileID
 	}
 	providersCacheKey := fmt.Sprintf("providers|streams|id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
 	if query.MediaType == database.MediaTypeTVShow {
@@ -205,33 +205,17 @@ func QueryProvidersStreams(query ProvidersQueryRequest) (*ProviderStreamsRespons
 func QueryProvidersSubtitles(query ProvidersQueryRequest) (*ProviderSubtitlesResponseObject, error) {
 	// automatically select provider if none supplied
 	if query.ProviderProfileID == nil {
-		if query.RequestType == "" {
-			return nil, fmt.Errorf("nil provider profile id, no request type defined: %w", internal.BadRequestError)
-		}
 		providers, err := database.GetProviderProfiles()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get providers: %w", err)
 		}
-		if len(providers) == 0 {
-			return nil, fmt.Errorf("no providers profiles found: %w", internal.NotFoundError)
+		profile, err := selectProviderProfile(providers, query.RequestType)
+		if err != nil {
+			return nil, err
 		}
-		for _, p := range providers {
-			if p.IsDefaultDownloading && query.RequestType == ProviderRequestDownload {
-				query.ProviderProfileName = &p.Name
-				temp := int(p.ProviderProfileID)
-				query.ProviderProfileID = &temp
-				break
-			} else if p.IsDefaultStreaming && query.RequestType == ProviderRequestStream {
-				query.ProviderProfileName = &p.Name
-				temp := int(p.ProviderProfileID)
-				query.ProviderProfileID = &temp
-				break
-			}
-		}
-		if query.ProviderProfileID == nil {
-			return nil, fmt.Errorf("no provider profile found for request type (should not happen, create issue on github): %s: %w",
-				query.RequestType, internal.NotFoundError)
-		}
+		query.ProviderProfileName = &profile.Name
+		profileID := int(profile.ProviderProfileID)
+		query.ProviderProfileID = &profileID
 	}
 	providersCacheKey := fmt.Sprintf("providers|subtitles|provider_profile_id:%d|%s|%s-%s", *query.ProviderProfileID, query.MediaType, query.MediaSource, query.SourceID)
 	if query.MediaType == database.MediaTypeTVShow {

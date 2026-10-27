@@ -70,6 +70,7 @@ func SetupRoutes(r *gin.Engine) {
 	*/
 	privateRoutes.GET("/collection/:id", GetCollectionContentsHandler)
 	privateRoutes.POST("/collection/:id", AddToCollectionHandler)
+	privateRoutes.GET("/collection/:id/contains", CollectionContainsHandler)
 	privateRoutes.GET("/collection/recent", GetRecentCollectionContentsHandler)
 	privateRoutes.GET("/collection/hound-library", GetHoundLibraryHandler)
 	privateRoutes.DELETE("/collection/:id/delete", DeleteCollectionHandler) // delete whole collection
@@ -111,6 +112,9 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/tv/:id/season/:seasonNumber", GetTVSeasonHandler)
 	privateRoutes.GET("/tv/:id/episode_groups", GetTVEpisodeGroupsHandler)
 	privateRoutes.GET("/tv/:id/continue_watching", GetTVNextWatchActionHandler)
+	if config.HoundPlusHost != "" {
+		privateRoutes.GET("/tv/:id/scores", GetTVShowScoresHandler)
+	}
 
 	/*
 		Movies Routes
@@ -118,6 +122,9 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
 	privateRoutes.GET("/movie/:id/continue_watching", GetMovieNextWatchActionHandler)
+	if config.HoundPlusHost != "" {
+		privateRoutes.GET("/movie/:id/scores", GetMovieScoresHandler)
+	}
 
 	/*
 		Live TV Routes
@@ -134,6 +141,7 @@ func SetupRoutes(r *gin.Engine) {
 	privateRoutes.POST("/tv/:id/comments", PostCommentTVHandler)
 	privateRoutes.GET("/movie/:id/comments", GetCommentsMovieHandler)
 	privateRoutes.POST("/movie/:id/comments", PostCommentMovieHandler)
+	privateRoutes.PUT("/comments/:id", UpdateCommentHandler)
 	privateRoutes.DELETE("/comments/:id", DeleteCommentHandler) // single deletion
 
 	/*

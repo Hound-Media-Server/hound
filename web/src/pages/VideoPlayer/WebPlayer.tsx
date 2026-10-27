@@ -44,6 +44,8 @@ type WebPlayerProps = {
   segmentMedia?: SegmentMedia;
   onNextEpisode?: (settings: PlayerSettings) => Promise<void>;
   isOverlayOpen?: boolean;
+  onStartupSettled?: () => void;
+  onDuration?: (duration: number) => boolean;
 };
 
 export function WebPlayer({
@@ -61,6 +63,8 @@ export function WebPlayer({
   segmentMedia,
   onNextEpisode,
   isOverlayOpen,
+  onStartupSettled,
+  onDuration,
 }: WebPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<MoviElement>(null);
@@ -70,6 +74,11 @@ export function WebPlayer({
   const [controlsVisible, setControlsVisible] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const onStartupSettledRef = useRef(onStartupSettled);
+  onStartupSettledRef.current = onStartupSettled;
+  const onDurationRef = useRef(onDuration);
+  onDurationRef.current = onDuration;
   const lastReportTimeRef = useRef(0);
   const skipSegment = useVideoSegments(
     segmentMedia,
@@ -117,6 +126,45 @@ export function WebPlayer({
       }
     };
   }, [showControls]);
+
+  useEffect(() => {
+    const element = playerRef.current;
+    if (!element) return;
+    setIsVideoLoading(true);
+    const finishLoading = () => {
+      if (
+        !element.errorTitle &&
+        onDurationRef.current?.(element.duration) === false
+      )
+        return;
+      clearTimeout(loadingTimeout);
+      setIsVideoLoading(false);
+      onStartupSettledRef.current?.();
+    };
+    const loadingTimeout = setTimeout(finishLoading, 20000);
+    const handleDuration = () => {
+      const duration = element.duration;
+      if (!Number.isFinite(duration) || duration <= 0) return;
+      setDuration(duration);
+      if (onDurationRef.current?.(duration) === false) return;
+      if (element.playing) finishLoading();
+    };
+    element.addEventListener("loadedmetadata", handleDuration);
+    element.addEventListener("durationchange", handleDuration);
+    element.addEventListener("playing", finishLoading);
+    element.addEventListener("error", finishLoading);
+    element.addEventListener("errordisplay", finishLoading);
+    handleDuration();
+    if (element.playing || element.errorTitle) finishLoading();
+    return () => {
+      clearTimeout(loadingTimeout);
+      element.removeEventListener("loadedmetadata", handleDuration);
+      element.removeEventListener("durationchange", handleDuration);
+      element.removeEventListener("playing", finishLoading);
+      element.removeEventListener("error", finishLoading);
+      element.removeEventListener("errordisplay", finishLoading);
+    };
+  }, [src]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -368,7 +416,8 @@ export function WebPlayer({
     >
       <MoviPlayer
         ref={playerRef}
-        persist=""
+        persist="volume speed"
+        sw="auto"
         thumb
         objectfit={objectFit}
         src={src}
@@ -400,8 +449,8 @@ export function WebPlayer({
           display: "flex",
           background: "rgba(0, 0, 0, 0.45)",
           borderRadius: 8,
-          opacity: controlsVisible ? 1 : 0,
-          pointerEvents: controlsVisible ? "auto" : "none",
+          opacity: controlsVisible && !isVideoLoading ? 1 : 0,
+          pointerEvents: controlsVisible && !isVideoLoading ? "auto" : "none",
           transition: "opacity 0.25s ease",
         }}
       >
@@ -449,7 +498,11 @@ export function WebPlayer({
           </IconButton>
         )}
       </div>
-      {canSkipSegment(skipSegment, duration <= 0, isOverlayOpen) && (
+      {canSkipSegment(
+        skipSegment,
+        duration <= 0,
+        isOverlayOpen || isVideoLoading,
+      ) && (
         <SkipSegmentButton
           segment={skipSegment}
           onSkip={handleSkip}

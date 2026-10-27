@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -9,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/mcay23/hound/database"
@@ -271,10 +273,19 @@ func IngestFile(mediaRecord *database.MediaRecord, seasonNumber *int, episodeNum
 			// when download completes while file is being watched
 			err = os.Rename(sourcePath, targetPath)
 			if err != nil {
-				// fallback to link when source is still open/locked
-				linkErr := os.Link(sourcePath, targetPath)
-				if linkErr != nil {
-					return nil, fmt.Errorf("failed to move file with rename+link fallback: %w", linkErr)
+				if errors.Is(err, syscall.EXDEV) {
+					if err = copyFile(sourcePath, targetPath); err == nil {
+						err = os.Remove(sourcePath)
+					}
+					if err != nil {
+						return nil, fmt.Errorf("failed to move file across filesystems: %w", err)
+					}
+				} else {
+					// fallback to link when source is still open/locked
+					linkErr := os.Link(sourcePath, targetPath)
+					if linkErr != nil {
+						return nil, fmt.Errorf("failed to move file with rename+link fallback: %w", linkErr)
+					}
 				}
 			}
 		case IngestTransferCopy:
@@ -428,12 +439,26 @@ func copyFile(src string, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
-		return err
+		_ = dstFile.Close()
+		return cleanupFailedCopy(dst, err)
 	}
-	return dstFile.Sync()
+	if err := dstFile.Sync(); err != nil {
+		_ = dstFile.Close()
+		return cleanupFailedCopy(dst, err)
+	}
+	if err := dstFile.Close(); err != nil {
+		return cleanupFailedCopy(dst, err)
+	}
+	return nil
+}
+
+func cleanupFailedCopy(dst string, copyErr error) error {
+	if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("%w (failed to remove incomplete destination %s: %v)", copyErr, dst, err)
+	}
+	return copyErr
 }
 
 // Helper function to copy files from downloads -> media directory

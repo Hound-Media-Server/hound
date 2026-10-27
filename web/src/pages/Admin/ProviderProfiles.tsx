@@ -44,7 +44,14 @@ export default function ProviderProfiles() {
           streaming/downloading.
         </p>
         <p className="iptv-provider-text">
-          For help setting up a provider, visit the docs.
+          For help setting up a provider, visit the{" "}
+          <a
+            href="https://hound-media-server.github.io/hound-site/provider.html"
+            target="_blank"
+          >
+            docs
+          </a>
+          .
         </p>
         {providerProfiles?.length === 0 && (
           <div className="text-muted">

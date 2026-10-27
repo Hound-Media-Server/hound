@@ -53,6 +53,26 @@
   .home-page-search-section {
     height: 200px;
   }
+
+  .home-page-search-section .search-bar-container {
+    width: min(300px, calc(100% - 32px));
+  }
+
+  .home-page-search-message,
+  .home-page-section-divider {
+    margin-left: 40px;
+  }
+
+  .home-page-main-section .itemcard-watch-tile-container,
+  .home-page-main-section .itemcard-watch-tile {
+    width: min(240px, calc(100vw - 96px));
+    height: auto;
+    aspect-ratio: 300 / 169;
+  }
+
+  .home-page-main-section .watch-tile-caption {
+    max-width: min(240px, calc(100vw - 96px));
+  }
 }
 
 @keyframes backgroundScroll {

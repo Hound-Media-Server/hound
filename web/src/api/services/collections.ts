@@ -20,6 +20,27 @@ export const fetchRecentCollectionItems = async () => {
   return data;
 };
 
+export const fetchInWatchlist = async (mediaType: string, mediaSource: string, sourceId: string) => {
+  const { data } = await axios.get("/api/v1/collection/watchlist/contains", {
+    params: { media_type: mediaType, media_source: mediaSource, source_id: sourceId },
+  });
+  return data.contains as boolean;
+};
+
+export const setWatchlist = async (item: {
+  mediaType: string;
+  mediaSource: string;
+  sourceId: string;
+  add: boolean;
+}) => {
+  const body = { media_type: item.mediaType, media_source: item.mediaSource, source_id: item.sourceId };
+  if (item.add) {
+    await axios.post("/api/v1/collection/watchlist", body);
+  } else {
+    await axios.delete("/api/v1/collection/watchlist", { data: body });
+  }
+};
+
 export const createCollection = async (collectionData: {
   collection_title: string;
   description: string;

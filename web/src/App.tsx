@@ -27,6 +27,8 @@ import LiveTV from "./pages/LiveTV/LiveTV";
 import { isPlatformElectron } from "./utils/platform";
 import { Spinner } from "react-bootstrap";
 import { StreamModalProvider } from "./pages/Modals/StreamModalContext";
+import PageTitle from "./PageTitle";
+import { useLocation, useNavigationType } from "react-router-dom";
 const queryClient = new QueryClient();
 
 // axios defaults
@@ -163,54 +165,56 @@ function App() {
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
+            <PageTitle />
+            <ScrollToTop />
             <StreamModalProvider>
               {!!isAuthenticated && <Topnav />}
               <Routes>
-              <Route
-                path="/"
-                element={<ProtectedRoute component={<Home />} />}
-              />
-              <Route path="login" element={<Login />} />
-              {/* <Route path="register" element={<Register />} /> */}
-              <Route path="logout" element={<Logout />} />
-              {localStorage.getItem("role") === "admin" && (
                 <Route
-                  path="admin"
-                  element={<ProtectedRoute component={<Admin />} />}
+                  path="/"
+                  element={<ProtectedRoute component={<Home />} />}
                 />
-              )}
-              <Route
-                path="settings"
-                element={<ProtectedRoute component={<Settings />} />}
-              />
-              <Route
-                path="library"
-                element={<ProtectedRoute component={<Library />} />}
-              />
-              <Route
-                path="live-tv"
-                element={<ProtectedRoute component={<LiveTV />} />}
-              />
-              <Route
-                path="activity"
-                element={<ProtectedRoute component={<Activity />} />}
-              />
-              <Route
-                path="/tv/:id"
-                element={<ProtectedRoute component={<MediaPageLanding />} />}
-              />
-              <Route
-                path="/movie/:id"
-                element={<ProtectedRoute component={<MediaPageLanding />} />}
-              />
-              <Route
-                path="/game/:id"
-                element={<ProtectedRoute component={<MediaPageLanding />} />}
-              />
-              <Route
-                path="/collection/:id"
-                element={<ProtectedRoute component={<Collection />} />}
-              />
+                <Route path="login" element={<Login />} />
+                {/* <Route path="register" element={<Register />} /> */}
+                <Route path="logout" element={<Logout />} />
+                {localStorage.getItem("role") === "admin" && (
+                  <Route
+                    path="admin"
+                    element={<ProtectedRoute component={<Admin />} />}
+                  />
+                )}
+                <Route
+                  path="settings"
+                  element={<ProtectedRoute component={<Settings />} />}
+                />
+                <Route
+                  path="library"
+                  element={<ProtectedRoute component={<Library />} />}
+                />
+                <Route
+                  path="live-tv"
+                  element={<ProtectedRoute component={<LiveTV />} />}
+                />
+                <Route
+                  path="activity"
+                  element={<ProtectedRoute component={<Activity />} />}
+                />
+                <Route
+                  path="/tv/:id"
+                  element={<ProtectedRoute component={<MediaPageLanding />} />}
+                />
+                <Route
+                  path="/movie/:id"
+                  element={<ProtectedRoute component={<MediaPageLanding />} />}
+                />
+                <Route
+                  path="/game/:id"
+                  element={<ProtectedRoute component={<MediaPageLanding />} />}
+                />
+                <Route
+                  path="/collection/:id"
+                  element={<ProtectedRoute component={<Collection />} />}
+                />
               </Routes>
             </StreamModalProvider>
           </BrowserRouter>
@@ -218,6 +222,15 @@ function App() {
       </LocalizationProvider>
     </ThemeProvider>
   );
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const navigationType = useNavigationType();
+  useEffect(() => {
+    if (navigationType !== "POP") window.scrollTo(0, 0);
+  }, [pathname, navigationType]);
+  return null;
 }
 
 export default App;

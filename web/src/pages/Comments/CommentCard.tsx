@@ -46,7 +46,7 @@ function CommentCard(props: any) {
           </div>
           <div className="comment-card-author">
             {"by " +
-              props.item.owner_display_name +
+              (props.item.owner_display_name || props.item.owner_username) +
               "     ⸱     " +
               new Date(props.item.updated_at).toLocaleDateString("en-US")}
           </div>

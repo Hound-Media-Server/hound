@@ -1,6 +1,7 @@
 import { Skeleton } from "@mui/material";
 import "./WatchTile.css";
 import { MouseEvent } from "react";
+import { Link } from "react-router-dom";
 import { useStreamModal } from "../Modals/StreamModalContext";
 
 export default function WatchTile(props: any) {
@@ -50,9 +51,9 @@ export default function WatchTile(props: any) {
   };
   return (
     <figure>
-      <a
+      <Link
         className="itemcard-watch-tile-container"
-        href={href}
+        to={href}
         onClick={handlePlay}
       >
         {!props.loaded && thumbnailURI && (
@@ -104,7 +105,7 @@ export default function WatchTile(props: any) {
             <div className="episode-card-progress-pill-text">{"Next Up"}</div>
           </div>
         )}
-      </a>
+      </Link>
       <figcaption className="watch-tile-caption">
         <div className="itemcard-item-caption-primary">{primaryCaption}</div>
         <div className="itemcard-item-caption-secondary">

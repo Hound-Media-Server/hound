@@ -1,8 +1,12 @@
 import "./MediaPage.css";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import BookmarkAddedIcon from "@mui/icons-material/BookmarkAdded";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import {
   Chip,
   IconButton,
@@ -12,7 +16,7 @@ import {
   tooltipClasses,
   TooltipProps,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
@@ -23,11 +27,16 @@ import HistoryModal from "../Modals/HistoryModal";
 import toast from "react-hot-toast";
 import { Dropdown, Spinner, SplitButton } from "react-bootstrap";
 import SelectStreamModal from "../Modals/StreamSelectModal";
-import { useMediaFiles, useWatchAction } from "../../api/hooks/media";
+import WatchlistBookmark from "../Home/WatchlistBookmark";
+import { useInWatchlist, useSetWatchlist } from "../../api/hooks/collections";
 import {
-  useDirectStreamMutation,
-  useUnifiedStreamsMutation,
-} from "../../api/hooks/providers";
+  useMediaFiles,
+  useMediaScores,
+  useWatchAction,
+} from "../../api/hooks/media";
+import MediaScores from "./MediaScores";
+import { useLastWatched } from "../../api/hooks/watchHistory";
+import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { useStreamModal } from "../Modals/StreamModalContext";
@@ -64,7 +73,6 @@ function MediaPageMovie(props: any) {
   const [isMediaFilesModalOpen, setIsMediaFilesModalOpen] = useState(false);
   const [videoKey, setVideoKey] = useState("");
   const [streams, setStreams] = useState<any>(null);
-  const [isStreamButtonLoading, setIsStreamButtonLoading] = useState(false);
   const [isStreamSelectButtonLoading, setIsStreamSelectButtonLoading] =
     useState(false);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
@@ -73,11 +81,25 @@ function MediaPageMovie(props: any) {
     props.data.media_source,
     props.data.source_id,
   );
+  const { data: inWatchlist } = useInWatchlist(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { mutate: setWatchlist } = useSetWatchlist();
   const { mutateAsync: searchProviders } = useUnifiedStreamsMutation();
-  const { mutateAsync: searchDirectStream } = useDirectStreamMutation();
-  const directStreamRequestId = useRef(0);
   const { isOpen: isStreamModalOpen, openStream } = useStreamModal();
+  const { data: scores, isWaiting: isScoresWaiting } = useMediaScores(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
   const { data: watchAction, refetch: refetchWatchAction } = useWatchAction(
+    "movie",
+    props.data.media_source,
+    props.data.source_id,
+  );
+  const { data: lastWatched } = useLastWatched(
     "movie",
     props.data.media_source,
     props.data.source_id,
@@ -158,51 +180,17 @@ function MediaPageMovie(props: any) {
   // direct plays the stream directly, select opens the stream selection modal
   const handleStreamButtonClick = (mode: string) => {
     if (mode === "direct") {
-      setIsStreamButtonLoading(true);
-    } else if (mode === "select") {
-      setIsStreamSelectButtonLoading(true);
-    }
-    if (mode === "direct") {
-      const requestId = directStreamRequestId.current + 1;
-      directStreamRequestId.current = requestId;
-      const searchProvidersToast = toast.loading("Searching streams...");
-
-      searchDirectStream({
+      void openStream({
         mediaType: "movie",
         mediaSource: props.data.media_source,
         sourceId: props.data.source_id,
-        encodedData: watchProgress?.encoded_data,
-        onImmediateStream: (stream: any) => {
-          if (directStreamRequestId.current !== requestId) return;
-          toast.dismiss(searchProvidersToast);
-          void openMovieStream(stream);
-          setIsStreamButtonLoading(false);
-        },
-      })
-        .then((data) => {
-          if (directStreamRequestId.current !== requestId) return;
-          toast.dismiss(searchProvidersToast);
-          setStreams(data);
-          if (data?.streams?.length > 0) {
-            if (!data.startedImmediately) {
-              void openMovieStream(data.selectedStream);
-            }
-          } else {
-            toast.error("No streams found");
-          }
-        })
-        .catch((err) => {
-          if (directStreamRequestId.current !== requestId) return;
-          toast.error("Failed to search streams " + err, {
-            id: searchProvidersToast,
-          });
-        })
-        .finally(() => {
-          if (directStreamRequestId.current !== requestId) return;
-          setIsStreamButtonLoading(false);
-        });
+        watchProgress,
+        originalAudioLang: props.data?.original_language,
+        mediaDetails: props.data,
+      });
       return;
     }
+    if (mode === "select") setIsStreamSelectButtonLoading(true);
     if (!streams) {
       const searchProvidersToast = toast.loading("Searching providers...");
       searchProviders({
@@ -240,9 +228,7 @@ function MediaPageMovie(props: any) {
           });
         })
         .finally(() => {
-          if (mode === "direct") {
-            setIsStreamButtonLoading(false);
-          } else if (mode === "select") {
+          if (mode === "select") {
             setIsStreamSelectButtonLoading(false);
           }
         });
@@ -254,14 +240,12 @@ function MediaPageMovie(props: any) {
               stream.encoded_data === watchProgress?.encoded_data,
           ) ?? streams.streams[0];
         void openMovieStream(selectedStream);
-        setIsStreamButtonLoading(false);
       } else if (mode === "select") {
         setIsSelectStreamModalOpen(true);
         setIsStreamSelectButtonLoading(false);
       }
     } else {
       toast.error("No Streams found");
-      setIsStreamButtonLoading(false);
       setIsStreamSelectButtonLoading(false);
     }
   };
@@ -269,12 +253,11 @@ function MediaPageMovie(props: any) {
     setIsVideoModalOpen(true);
     setVideoKey(key);
   };
-  if (props.data.media_title) {
-    var yearString = props.data.release_date
-      ? `(${props.data.release_date.slice(0, 4)})`
-      : "";
-    document.title = props.data.media_title + " " + yearString + " - Hound";
-  }
+  useEffect(() => {
+    if (!props.data.media_title) return;
+    const year = props.data.release_date?.slice(0, 4);
+    document.title = `${props.data.media_title}${year ? ` (${year})` : ""} - Hound`;
+  }, [props.data.media_title, props.data.release_date]);
   return (
     <>
       <div
@@ -286,6 +269,11 @@ function MediaPageMovie(props: any) {
         <div className="media-page-tv-header-container">
           <div className="media-page-tv-inline-container">
             <div className="media-page-tv-poster-container">
+              <WatchlistBookmark
+                mediaType={props.data.media_type}
+                mediaSource={props.data.media_source}
+                sourceId={props.data.source_id}
+              />
               {!isPosterLoaded && props.data.thumbnail_uri && (
                 <Skeleton
                   variant="rounded"
@@ -341,28 +329,38 @@ function MediaPageMovie(props: any) {
                 {genres}
               </div>
               <div className="media-page-tv-header-overview">
-                {props.data.overview
-                  ? props.data.overview
-                  : "No description available."}
+                {isScoresWaiting ? (
+                  <>
+                    <Skeleton variant="text" width="92%" />
+                    <Skeleton variant="text" width="84%" />
+                    <Skeleton variant="text" width="72%" />
+                  </>
+                ) : (
+                  scores?.short_overview ||
+                  props.data.overview ||
+                  "No description available."
+                )}
               </div>
               <div className="media-page-tv-header-credits">
                 {creators ? "by " + creators : ""}
               </div>
+              {!isScoresWaiting && (
+                <div className="mt-2">
+                  <MediaScores scores={scores} showVotes />
+                </div>
+              )}
+              {lastWatched && (
+                <div className="media-page-tv-header-last-watched">
+                  Last watched {lastWatched}
+                </div>
+              )}
               <div className="media-page-tv-header-button-container">
                 <SplitButton
                   title={
-                    isStreamButtonLoading ? (
-                      <Spinner
-                        animation="grow"
-                        size="sm"
-                        role="status"
-                        className="stream-play-button-spinner"
-                      />
-                    ) : watchProgress ? (
-                      "▶ Resume"
-                    ) : (
-                      "▶ Play Movie"
-                    )
+                    <span className="stream-play-button-label">
+                      <PlayArrowRoundedIcon className="stream-play-button-icon" />
+                      {watchProgress ? "Resume" : "Play Movie"}
+                    </span>
                   }
                   autoClose="outside"
                   className="stream-play-button"
@@ -395,6 +393,33 @@ function MediaPageMovie(props: any) {
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
+                      {inWatchlist
+                        ? "Remove from Watchlist"
+                        : "Add to Watchlist"}
+                    </span>
+                  }
+                  PopperProps={offsetFix}
+                >
+                  <IconButton
+                    onClick={() =>
+                      setWatchlist({
+                        mediaType: "movie",
+                        mediaSource: props.data.media_source,
+                        sourceId: props.data.source_id,
+                        add: !inWatchlist,
+                      })
+                    }
+                  >
+                    {inWatchlist ? (
+                      <BookmarkAddedIcon />
+                    ) : (
+                      <BookmarkBorderIcon />
+                    )}
+                  </IconButton>
+                </BootstrapTooltip>
+                <BootstrapTooltip
+                  title={
+                    <span className="media-page-tv-header-button-tooltip-title">
                       Add To Collection
                     </span>
                   }
@@ -411,7 +436,9 @@ function MediaPageMovie(props: any) {
                 <BootstrapTooltip
                   title={
                     <span className="media-page-tv-header-button-tooltip-title">
-                      Mark as Watched
+                      {lastWatched
+                        ? "Mark as Watched Again"
+                        : "Mark as Watched"}
                     </span>
                   }
                   PopperProps={offsetFix}
@@ -421,25 +448,31 @@ function MediaPageMovie(props: any) {
                       setisCreateHistoryModalOpen(true);
                     }}
                   >
-                    <VisibilityIcon />
+                    {lastWatched ? (
+                      <VisibilityIcon />
+                    ) : (
+                      <VisibilityOutlinedIcon />
+                    )}
                   </IconButton>
                 </BootstrapTooltip>
-                <BootstrapTooltip
-                  title={
-                    <span className="media-page-tv-header-button-tooltip-title">
-                      View Watch History
-                    </span>
-                  }
-                  PopperProps={offsetFix}
-                >
-                  <IconButton
-                    onClick={() => {
-                      setIsHistoryModalOpen(true);
-                    }}
+                {lastWatched && (
+                  <BootstrapTooltip
+                    title={
+                      <span className="media-page-tv-header-button-tooltip-title">
+                        View Watch History
+                      </span>
+                    }
+                    PopperProps={offsetFix}
                   >
-                    <HistoryIcon id="media-page-tv-header-track-button" />
-                  </IconButton>
-                </BootstrapTooltip>
+                    <IconButton
+                      onClick={() => {
+                        setIsHistoryModalOpen(true);
+                      }}
+                    >
+                      <HistoryIcon id="media-page-tv-header-track-button" />
+                    </IconButton>
+                  </BootstrapTooltip>
+                )}
                 {localStorage.getItem("role") === "admin" && (
                   <BootstrapTooltip
                     title={

@@ -79,17 +79,23 @@
 
 .media-preview-hound-chip {
   position: absolute !important;
-  top: 18px;
-  right: 18px;
+  right: 78px;
+  top: 12px;
   height: 24px !important;
   color: black !important;
-  background-color: rgba(var(--hound-secondary), 0.85) !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
   font-family: "Cabin", sans-serif !important;
 }
 
 .media-preview-hound-chip .MuiChip-icon {
   color: black !important;
   font-size: 16px;
+}
+
+.media-preview-scores {
+  position: absolute;
+  right: 16px;
+  bottom: 24px;
 }
 
 .media-preview-metadata {
@@ -103,7 +109,7 @@
 
 .media-preview-overview {
   display: -webkit-box;
-  max-width: 92%;
+  max-width: 85%;
   overflow: hidden;
   color: rgba(255, 255, 255, 0.91);
   font-size: 14px;
@@ -125,6 +131,12 @@
 
 .media-preview-loading {
   margin-top: 12px;
+}
+
+.media-preview-overview-loading {
+  margin-top: 0;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .media-preview-loading .MuiSkeleton-root {
@@ -170,4 +182,39 @@
   .media-preview-popper {
     display: none;
   }
+}
+
+.media-preview-bookmark {
+  position: absolute;
+  top: 0;
+  right: 28px;
+  z-index: 2;
+  width: 26px;
+  height: 60px;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  transform: translateY(-12px);
+  transition: transform 0.15s ease;
+}
+
+.media-preview-bookmark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, #d8d8d8, #fff 45%, #ececec);
+  opacity: 0.65;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+  transition: background 0.15s ease;
+}
+
+.media-preview-bookmark:hover {
+  transform: translateY(0);
+}
+
+.media-preview-bookmark.active::before {
+  opacity: 1;
+  background: linear-gradient(90deg, #f9a825, #fdd835);
 }

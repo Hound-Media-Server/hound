@@ -3,12 +3,12 @@ package v1
 import (
 	"fmt"
 	"log/slog"
+	"sort"
 	"strconv"
 
 	"github.com/mcay23/hound/database"
 	"github.com/mcay23/hound/internal"
 	"github.com/mcay23/hound/model"
-	"github.com/mcay23/hound/sources"
 	"github.com/mcay23/hound/view"
 
 	"github.com/gin-gonic/gin"
@@ -27,13 +27,25 @@ type CreateCollectionRequest struct {
 	IsPublic        bool   `json:"is_public"`
 }
 
+// resolveCollectionID accepts a collection id or a collection kind (eg. watchlist)
+func resolveCollectionID(param string, userID int64) (int64, error) {
+	if id, err := strconv.ParseInt(param, 10, 64); err == nil {
+		return id, nil
+	}
+	if !database.IsCollectionKind(param) {
+		return 0, fmt.Errorf("failed to convert collection id to int: %w", internal.BadRequestError)
+	}
+	return database.GetCollectionIDByKind(userID, param)
+}
+
 // @Router /v1/collection/{id} [post]
 // @Summary Add Media to Collection
 // @ID collections-add-media
+// @Description id can be a collection id or a collection kind (eg. watchlist)
 // @Tags Collection
 // @Accept json
 // @Produce json
-// @Param id path int true "Collection ID"
+// @Param id path string true "Collection ID or kind"
 // @Param body body AddToCollectionRequest true "Add to Collection Request"
 // @Success 200 {object} V1SuccessResponse{data=object}
 // @Failure 400 {object} V1ErrorResponse
@@ -49,10 +61,9 @@ func AddToCollectionHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to bind body: %w : %w", internal.BadRequestError, err))
 		return
 	}
-	idParam := c.Param("id")
-	collectionID, err := strconv.Atoi(idParam)
+	collectionID, err := resolveCollectionID(c.Param("id"), userID)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to convert collection id to int: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// check valid mediaType and source
@@ -67,21 +78,8 @@ func AddToCollectionHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w", internal.BadRequestError))
 		return
 	}
-	switch body.MediaType {
-	case database.MediaTypeTVShow:
-		err = sources.AddTVShowToCollectionTMDB(userID, body.MediaSource, sourceID, int64(collectionID))
-		if err != nil {
-			internal.ErrorResponse(c, fmt.Errorf("failed to add tv show to collection: %w", err))
-			return
-		}
-	case database.MediaTypeMovie:
-		err = sources.AddMovieToCollectionTMDB(userID, body.MediaSource, sourceID, int64(collectionID))
-		if err != nil {
-			internal.ErrorResponse(c, fmt.Errorf("failed to add movie to collection: %w", err))
-			return
-		}
-	default:
-		internal.ErrorResponse(c, fmt.Errorf("unsupported media type: %s", body.MediaType))
+	if err = model.AddMediaToCollection(userID, body.MediaType, body.MediaSource, sourceID, collectionID); err != nil {
+		internal.ErrorResponse(c, err)
 		return
 	}
 	internal.SuccessResponse(c, nil, 200)
@@ -90,10 +88,11 @@ func AddToCollectionHandler(c *gin.Context) {
 // @Router /v1/collection/{id} [delete]
 // @Summary Delete A Media from Collection
 // @ID colllections-delete-media
+// @Description id can be a collection id or a collection kind (eg. watchlist)
 // @Tags Collection
 // @Accept json
 // @Produce json
-// @Param id path int true "Collection ID"
+// @Param id path string true "Collection ID or kind"
 // @Param body body AddToCollectionRequest true "Delete from Collection Request"
 // @Success 200 {object} V1SuccessResponse{data=object}
 // @Failure 400 {object} V1ErrorResponse
@@ -109,10 +108,9 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to bind body: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	idParam := c.Param("id")
-	collectionID, err := strconv.Atoi(idParam)
+	collectionID, err := resolveCollectionID(c.Param("id"), userID)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to convert param id to int: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	// check valid mediaType and source
@@ -121,18 +119,8 @@ func DeleteFromCollectionHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	has, record, err := database.GetMediaRecord(body.MediaType, body.MediaSource, body.SourceID)
-	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
-		return
-	}
-	if !has {
-		internal.ErrorResponse(c, fmt.Errorf("could not find media record: %w", internal.BadRequestError))
-		return
-	}
-	err = database.DeleteCollectionRelation(userID, record.RecordID, int64(collectionID))
-	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to delete collection record: %w", err))
+	if err = model.RemoveMediaFromCollection(userID, body.MediaType, body.MediaSource, body.SourceID, collectionID); err != nil {
+		internal.ErrorResponse(c, err)
 		return
 	}
 	internal.SuccessResponse(c, nil, 200)
@@ -158,6 +146,9 @@ func GetUserCollectionsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to find collection: %w: %w", internal.InternalServerError, err))
 		return
 	}
+	sort.SliceStable(records, func(i, j int) bool {
+		return records[i].Kind != "" && records[j].Kind == ""
+	})
 	user, err := database.GetUser(userID)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get user: %w", err))
@@ -172,6 +163,7 @@ func GetUserCollectionsHandler(c *gin.Context) {
 			OwnerUsername:    user.Username,
 			OwnerDisplayName: user.DisplayName,
 			IsPublic:         record.IsPublic,
+			Kind:             record.Kind,
 			ThumbnailURI:     record.ThumbnailURI,
 			CreatedAt:        record.CreatedAt,
 			UpdatedAt:        record.UpdatedAt,
@@ -225,6 +217,7 @@ func GetPublicCollectionsHandler(c *gin.Context) {
 			OwnerUsername:    user.Username,
 			OwnerDisplayName: user.DisplayName,
 			IsPublic:         record.IsPublic,
+			Kind:             record.Kind,
 			ThumbnailURI:     record.ThumbnailURI,
 			CreatedAt:        record.CreatedAt,
 			UpdatedAt:        record.UpdatedAt,
@@ -288,9 +281,9 @@ func UpdateCollectionHandler(c *gin.Context) {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	collectionID, err := strconv.Atoi(c.Param("id"))
+	collectionID, err := resolveCollectionID(c.Param("id"), userID)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to convert collection id to int: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
 	body := CreateCollectionRequest{}
@@ -303,7 +296,7 @@ func UpdateCollectionHandler(c *gin.Context) {
 		Description:     body.Description,
 		IsPublic:        body.IsPublic,
 	}
-	err = database.UpdateCollection(int64(collectionID), userID, &record)
+	err = database.UpdateCollection(collectionID, userID, &record)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to update collection: %w", err))
 		return
@@ -333,17 +326,17 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get limit/offset: %w: %w", internal.BadRequestError, err))
 		return
 	}
-	collectionID, err := strconv.Atoi(idParam)
-	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", internal.BadRequestError, err))
-		return
-	}
 	userID, err := getUserIDFromContext(c)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return
 	}
-	records, collection, totalRecords, err := database.GetCollectionRecords(userID, int64(collectionID), limit, offset)
+	collectionID, err := resolveCollectionID(idParam, userID)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	records, collection, totalRecords, err := database.GetCollectionRecords(userID, collectionID, limit, offset)
 	if err != nil {
 		internal.ErrorResponse(c, fmt.Errorf("failed to get collection records: %w", err))
 		return
@@ -368,6 +361,7 @@ func GetCollectionContentsHandler(c *gin.Context) {
 			OwnerUsername:    collectionOwner.Username,
 			OwnerDisplayName: collectionOwner.DisplayName,
 			IsPublic:         collection.IsPublic,
+			Kind:             collection.Kind,
 			ThumbnailURI:     collection.ThumbnailURI,
 			CreatedAt:        collection.CreatedAt,
 			UpdatedAt:        collection.UpdatedAt,
@@ -377,6 +371,61 @@ func GetCollectionContentsHandler(c *gin.Context) {
 		Offset:       offset,
 	}
 	internal.SuccessResponse(c, res, 200)
+}
+
+// @Router /v1/collection/{id}/contains [get]
+// @Summary Check if Media is in Collection
+// @ID collection-contains-media
+// @Description id can be a collection id or a collection kind (eg. watchlist)
+// @Tags Collection
+// @Accept json
+// @Produce json
+// @Param id path string true "Collection ID or kind"
+// @Param media_type query string true "Media Type eg. tvshow or movie"
+// @Param media_source query string true "Media Source eg. tmdb"
+// @Param source_id query string true "Source ID"
+// @Success 200 {object} V1SuccessResponse{data=object}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func CollectionContainsHandler(c *gin.Context) {
+	userID, err := getUserIDFromContext(c)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	mediaType, mediaSource, sourceID := c.Query("media_type"), c.Query("media_source"), c.Query("source_id")
+	if err = validateMediaParams(mediaType, mediaSource); err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	if kind := c.Param("id"); database.IsCollectionKind(kind) {
+		contains, err := model.IsInKindCollection(userID, kind, mediaType, mediaSource, sourceID)
+		if err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+		internal.SuccessResponse(c, gin.H{"contains": contains}, 200)
+		return
+	}
+	collectionID, err := resolveCollectionID(c.Param("id"), userID)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	has, record, err := database.GetMediaRecord(mediaType, mediaSource, sourceID)
+	if err != nil {
+		internal.ErrorResponse(c, fmt.Errorf("failed to get media record: %w", err))
+		return
+	}
+	contains := false
+	if has {
+		contains, err = database.CollectionContainsRecord(userID, collectionID, record.RecordID)
+		if err != nil {
+			internal.ErrorResponse(c, err)
+			return
+		}
+	}
+	internal.SuccessResponse(c, gin.H{"contains": contains}, 200)
 }
 
 // @Router /v1/collection/recent [get]
@@ -420,13 +469,12 @@ func GetRecentCollectionContentsHandler(c *gin.Context) {
 // @Failure 400 {object} V1ErrorResponse
 // @Failure 500 {object} V1ErrorResponse
 func DeleteCollectionHandler(c *gin.Context) {
-	idParam := c.Param("id")
-	collectionID, err := strconv.ParseInt(idParam, 10, 64)
+	userID, err := getUserIDFromContext(c)
 	if err != nil {
-		internal.ErrorResponse(c, fmt.Errorf("failed to convert id to int: %w: %w", internal.BadRequestError, err))
+		internal.ErrorResponse(c, err)
 		return
 	}
-	userID, err := getUserIDFromContext(c)
+	collectionID, err := resolveCollectionID(c.Param("id"), userID)
 	if err != nil {
 		internal.ErrorResponse(c, err)
 		return

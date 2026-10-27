@@ -51,3 +51,50 @@
         width: 90%;
     }
 }
+
+@media only screen and (max-width: 600px) {
+    .library-main-container {
+        padding-top: 20px;
+    }
+
+    .library-collections-section,
+    .library-public-collections-section {
+        padding-left: 32px;
+        padding-right: 32px;
+    }
+
+    .library-collections-header {
+        margin-left: 8px;
+        font-size: 24px;
+    }
+
+    .library-collections-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .library-collections-container .collection-card-cover,
+    .library-collections-container .itemcard-item-figure-container {
+        width: 100%;
+    }
+
+    .library-collections-container .collection-card-cover {
+        height: auto;
+        aspect-ratio: 1;
+    }
+
+    .library-collections-container .collection-card-cover-inner {
+        font-size: 20px;
+        line-height: 22px;
+    }
+
+    .library-main-container .home-page-section-divider {
+        margin-left: 40px;
+    }
+
+    .library-top-section-container > .horizontal-section-header {
+        margin-left: 40px;
+        padding-left: 0 !important;
+        font-size: 24px;
+    }
+}

@@ -2,8 +2,14 @@
     color: white;
 }
 
+html:has(.media-page),
+body:has(.media-page) {
+    background-color: rgba(var(--hound-dark), 1);
+}
+
 .media-page-tv-header {
     padding-bottom: 40px;
+    padding-inline: var(--page-gutter);
     min-height: 400px;
     font-size: large;
 }
@@ -14,7 +20,7 @@
 }
 
 .media-page-tv-header-container {
-    margin-top: 50px;
+    margin-top: 40px;
     margin-bottom: 20px;
     margin-left: 100px;
     color: white;
@@ -22,7 +28,13 @@
 }
 
 .media-page-tv-poster-container {
+    position: relative;
+    clip-path: inset(0 -100vw -100vw -100vw);
     display: inline-flex;
+}
+
+.media-page-tv-poster-container .media-preview-bookmark {
+    right: 18px;
 }
 
 .media-page-tv-poster {
@@ -71,12 +83,18 @@
     color: rgba(255, 255, 0, 0.8);
 }
 
+.media-page-tv-header-last-watched {
+    font-size: 15px;
+    color: rgba(255, 255, 0, 0.8);
+    margin-top: 5px;
+}
+
 .media-page-tv-header-credits {
     font-size: 15px;
     color: rgba(255, 255, 255, 0.6);
     font-family: 'Cabin', sans-serif;
     font-weight: 400;
-    margin-top: 10px;
+    margin-top: 5px;
 }
 
 .media-page-tv-header-overview {
@@ -107,7 +125,7 @@
 }
 
 .media-page-tv-header-button-container {
-    margin-top: 10px;
+    margin-top: 3px;
 }
 
 .media-page-tv-header-button-container .MuiSvgIcon-root {
@@ -139,6 +157,7 @@
 .media-page-tv-main {
     padding-top: 30px;
     padding-bottom: 70px;
+    padding-inline: var(--page-gutter);
     color: white;
 }
 
@@ -179,14 +198,6 @@
     font-family: 'Cabin', sans-serif;
 }
 
-.media-page-storyline {
-    padding-top: 30px;
-    margin-left: 85px;
-    margin-bottom: 15px;
-    width: 70%;
-    font-family: 'Cabin', sans-serif;
-}
-
 .media-page-tv-footer {
     height: 0vh;
 }
@@ -209,12 +220,22 @@
     color: rgba(var(--hound-primary), 1);
 }
 
-.stream-play-button-spinner {
-    margin-left: 15px;
+.stream-play-button-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    vertical-align: middle;
+}
+
+.stream-play-button .stream-play-button-icon {
+    font-size: 22px;
+    padding: 0;
+    color: inherit;
+    background-color: transparent;
 }
 
 .stream-play-button .btn {
-    width: 150px;
+    max-width: 150px;
 }
 
 .stream-play-button .dropdown-toggle {

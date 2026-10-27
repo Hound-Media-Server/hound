@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import ElectronVideoControls from "./ElectronVideoControls";
 import { get2LetterLangCode } from "../../helpers/locale";
-import { IconButton } from "@mui/material";
-import { ArrowBack } from "@mui/icons-material";
 import { SegmentMedia, useVideoSegments } from "../../api/hooks/segments";
 import {
   canSkipSegment,
@@ -17,14 +15,14 @@ interface IVideoPlayerProps {
     total: number,
     playerSettings?: any,
   ) => void;
-  setLoading?: (loading: boolean) => void;
   externalSubtitles?: any[];
   handleClose?: () => void;
   setInfoModalOpen?: (open: boolean) => void;
   playerSettings?: any;
   isStreamsMatch?: boolean;
   originalAudioLang?: string;
-  mediaDetails?: any;
+  onStartupSettled?: () => void;
+  onDuration?: (duration: number) => boolean;
   onChangeSource?: (currentTime: number) => void;
   onViewEpisodes?: () => void;
   segmentMedia?: SegmentMedia;
@@ -42,7 +40,8 @@ const MPVElectronPlayer = React.memo(
     playerSettings,
     isStreamsMatch,
     originalAudioLang,
-    mediaDetails,
+    onStartupSettled,
+    onDuration,
     onChangeSource,
     onViewEpisodes,
     segmentMedia,
@@ -73,12 +72,15 @@ const MPVElectronPlayer = React.memo(
     originalAudioLangRef.current = originalAudioLang;
     const onVideoProgressRef = useRef(onVideoProgress);
     onVideoProgressRef.current = onVideoProgress;
+    const onStartupSettledRef = useRef(onStartupSettled);
+    onStartupSettledRef.current = onStartupSettled;
+    const onDurationRef = useRef(onDuration);
+    onDurationRef.current = onDuration;
 
     const [volume, setVolumeState] = useState(100);
     const [muted, setMuted] = useState(false);
     const [prevVolume, setPrevVolume] = useState(100);
     const [isVideoLoading, setIsVideoLoading] = useState(true);
-    const [isBackdropLoaded, setIsBackdropLoaded] = useState(false);
     const seekDoneRef = useRef(false);
     const tracksInitializedRef = useRef(false);
     const skipSegment = useVideoSegments(
@@ -88,22 +90,6 @@ const MPVElectronPlayer = React.memo(
       currentTime,
       !!onNextEpisode,
     );
-
-    var releaseYear =
-      mediaDetails?.release_date.length > 4
-        ? mediaDetails?.release_date.slice(0, 4)
-        : "";
-
-    useEffect(() => {
-      setIsBackdropLoaded(false);
-      const backdropURI = mediaDetails?.backdrop_uri;
-      if (!backdropURI) return;
-
-      const backdrop = new Image();
-      backdrop.onload = () => setIsBackdropLoaded(true);
-      backdrop.onerror = () => setIsBackdropLoaded(true);
-      backdrop.src = backdropURI;
-    }, [mediaDetails?.backdrop_uri]);
 
     const handlePlayPause = async () => {
       const video = videoRef.current;
@@ -213,11 +199,14 @@ const MPVElectronPlayer = React.memo(
     );
 
     const handleSkip = async () => {
-      if (!canSkipSegment(
-        skipSegment,
-        isVideoLoading || !seekDoneRef.current,
-        isOverlayOpen,
-      )) return;
+      if (
+        !canSkipSegment(
+          skipSegment,
+          isVideoLoading || !seekDoneRef.current,
+          isOverlayOpen,
+        )
+      )
+        return;
       try {
         await skipVideoSegment(skipSegment, handleSeek, () =>
           onNextEpisode?.(
@@ -225,7 +214,8 @@ const MPVElectronPlayer = React.memo(
               "desktop",
               "contain",
               get2LetterLangCode(
-                audioTracks.find((t) => Number(t.id) === selectedAudioIdx)?.lang,
+                audioTracks.find((t) => Number(t.id) === selectedAudioIdx)
+                  ?.lang,
               ),
               get2LetterLangCode(
                 subTracks.find((t) => Number(t.id) === selectedSubIdx)?.lang,
@@ -342,6 +332,7 @@ const MPVElectronPlayer = React.memo(
       if (!source) {
         console.warn("MPV: no source specified");
         setIsVideoLoading(false);
+        onStartupSettledRef.current?.();
         return;
       }
       const startTime = options?.startTime;
@@ -352,11 +343,18 @@ const MPVElectronPlayer = React.memo(
       setIsVideoLoading(true);
 
       // fallback, if failed, still show video
-      const finishLoading = () => {
+      let settled = false;
+      let streamDuration = 0;
+      const finishLoading = (failed = false) => {
+        if (destroyed || settled) return;
+        if (!failed && onDurationRef.current?.(streamDuration) === false)
+          return;
+        settled = true;
         setIsVideoLoading(false);
         if (loadingFallbackTimer) clearTimeout(loadingFallbackTimer);
+        onStartupSettledRef.current?.();
       };
-      loadingFallbackTimer = setTimeout(finishLoading, 20000);
+      loadingFallbackTimer = setTimeout(() => finishLoading(), 20000);
 
       const scheduleInitialSeek = () => {
         if (
@@ -397,11 +395,9 @@ const MPVElectronPlayer = React.memo(
           await video.play();
         } catch (error) {
           console.error("MPV playback error:", error);
-          finishLoading();
+          finishLoading(true);
         }
       };
-
-      load();
 
       const handleState = (event: Event) => {
         if (destroyed) return;
@@ -409,6 +405,10 @@ const MPVElectronPlayer = React.memo(
         if (!detail) return;
         const current = detail.time;
         const dur = detail.duration;
+        if (typeof dur === "number" && Number.isFinite(dur) && dur > 0) {
+          streamDuration = dur;
+          if (onDurationRef.current?.(dur) === false) return;
+        }
         if (detail.status === "Paused") {
           setPaused(true);
         } else {
@@ -507,6 +507,7 @@ const MPVElectronPlayer = React.memo(
       };
 
       video.addEventListener("mpv-state", handleState);
+      load();
       return () => {
         destroyed = true;
         if (seekTimer) clearTimeout(seekTimer);
@@ -578,42 +579,6 @@ const MPVElectronPlayer = React.memo(
           skipBlocked={isVideoLoading || !seekDoneRef.current}
           isOverlayOpen={isOverlayOpen}
         />
-        <div
-          className={`mpv-loading-overlay${isVideoLoading ? "" : " mpv-loading-overlay-hidden"}`}
-        >
-          <IconButton
-            onClick={handleClose}
-            sx={{
-              position: "absolute",
-              top: 16,
-              left: 16,
-              color: "white",
-              zIndex: 10,
-            }}
-          >
-            <ArrowBack />
-          </IconButton>
-          {mediaDetails?.backdrop_uri && (
-            <div
-              className={`mpv-loading-backdrop${isBackdropLoaded ? " mpv-loading-backdrop-visible" : ""}`}
-              style={{ backgroundImage: `url(${mediaDetails?.backdrop_uri})` }}
-            />
-          )}
-          <div className="mpv-loading-shade" />
-          {mediaDetails?.logo_uri && (
-            <img
-              className="mpv-loading-logo"
-              src={mediaDetails?.logo_uri}
-              alt=""
-            />
-          )}
-          {!mediaDetails?.logo_uri && (
-            <div className="mpv-loading-title">
-              {mediaDetails?.media_title}{" "}
-              {releaseYear ? `(${releaseYear})` : ""}
-            </div>
-          )}
-        </div>
       </div>
     );
   },

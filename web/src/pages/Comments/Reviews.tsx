@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogActions,
   FormControl,
+  Skeleton,
   TextField,
 } from "@mui/material";
 import { useState } from "react";
@@ -16,7 +17,7 @@ function Reviews(props: {
   mediaSource: string;
   sourceId: string;
 }) {
-  const { data: comments } = useComments(
+  const { data: comments, isLoading } = useComments(
     "review",
     props.mediaType,
     props.mediaSource,
@@ -114,11 +115,19 @@ function Reviews(props: {
         <div className="reviews-header-container">
           Reviews<span className="horizontal-section-header-separator">|</span>
         </div>
-        {all_reviews.length === 0 && (
+        {!isLoading && all_reviews.length === 0 && (
           <div className="collection-empty-message mb-4">No reviews yet.</div>
         )}
         <ResponsiveMasonry columnsCountBreakPoints={{ 350: 1, 750: 2, 900: 3 }}>
           <Masonry>
+            {(isLoading ? [0, 1, 2] : []).map((i) => (
+              <Skeleton
+                key={i}
+                variant="rounded"
+                height={140}
+                sx={{ m: 1 }}
+              />
+            ))}
             {all_reviews.map((item: any) => (
               <ItemCard
                 item={item}

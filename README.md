@@ -22,6 +22,7 @@ Hound is a fully-featured media server, like Jellyfin or Plex, but with the addi
 # Links
 
 - [Documentation](https://hound-media-server.github.io/hound-site/)
+- [Discord](https://discord.gg/yKneJKJXj) <- Get support
 - [Subreddit](https://www.reddit.com/r/HoundMediaServer/) <- Follow updates
 - [Installation](https://hound-media-server.github.io/hound-site/installation.html)
 - [App Repo (Android, iOS)](https://github.com/Hound-Media-Server/hound-app) <- Download the clients here
@@ -38,7 +39,29 @@ password: password
 
 # Platforms
 
-The desktop clients for Windows, MacOS (arm) are available in the releases section. You can download the Android and Android TV apps from the [App Repo](https://github.com/Hound-Media-Server/hound-app) in the releases page. You'll need to sideload the .APKs. iOS and tvOS share the same codebase, but are not available yet since they have more requirements to publish, for now you can only run them on XCode and load them manually to your devices. Stay tuned.
+The desktop clients for Windows, MacOS (arm) are available in the releases section. 
+
+Android, Android TV, iOS, and tvOS clients are available: [App Repo](https://github.com/Hound-Media-Server/hound-app)
+
+### Android, Android TV
+To install on Android, please join the closed testing:
+
+First, join this group: https://groups.google.com/g/hound-play-store-testing
+
+Then get the app on either of these links:
+
+- Web: https://play.google.com/apps/testing/com.houndmediaserver.hound
+- Your android device: https://play.google.com/store/apps/details?id=com.houndmediaserver.hound
+
+Make sure you join the group with the same account that is logged in your Play Store.
+
+Please help join the closed testing so we can get Hound published in the play store!
+
+You can also install Android mobile and Android TV apps by sideloading the .apk in the Releases page. 
+
+### iOS and tvOS
+iOS is available through TestFlight: https://testflight.apple.com/join/W2HWsaxZ
+tvOS is coming soon.
 
 # Installation
 

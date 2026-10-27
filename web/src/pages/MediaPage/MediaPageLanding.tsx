@@ -32,10 +32,10 @@ function MediaPageLanding() {
   var mediaComponent;
   switch (mediaType) {
     case "tv":
-      mediaComponent = <MediaPageTV data={data} />;
+      mediaComponent = <MediaPageTV key={mediaID} data={data} />;
       break;
     case "movie":
-      mediaComponent = <MediaPageMovie data={data} />;
+      mediaComponent = <MediaPageMovie key={mediaID} data={data} />;
       break;
   }
   return (

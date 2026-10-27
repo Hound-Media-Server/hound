@@ -2,10 +2,63 @@
   height: 640px;
 }
 
+.activity-calendar.activity-calendar-list {
+  height: auto;
+}
+
 .activity-calendar-filters {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+}
+
+.activity-date-selectors {
+  display: flex;
+  gap: 10px;
+}
+
+.activity-view-toggle {
+  justify-self: end;
+}
+
+.activity-view-toggle .MuiToggleButton-root {
+  color: rgba(255, 255, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.3);
+  text-transform: none;
+  font-size: 1rem;
+  height: 40px;
+}
+
+.activity-view-toggle .activity-view-toggle-list {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.activity-view-toggle .MuiToggleButton-root.Mui-selected,
+.activity-view-toggle .MuiToggleButton-root.Mui-selected:hover {
+  color: rgba(var(--hound-secondary), 1);
+  background-color: rgba(var(--hound-primary), 1);
+}
+
+.activity-nav-buttons .MuiButton-root {
+  color: rgba(255, 255, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.3);
+  text-transform: none;
+  font-size: 1rem;
+  height: 40px;
+  min-width: 40px;
+}
+
+.activity-nav-buttons .MuiButton-root:hover {
+  color: rgba(var(--hound-secondary), 1);
+  border-color: rgba(var(--hound-secondary), 0.55);
+}
+
+.activity-nav-buttons .MuiButton-root.Mui-disabled {
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .activity-date-control {
@@ -54,32 +107,8 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
-.activity-calendar .rbc-toolbar {
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.activity-calendar .rbc-toolbar button {
-  color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(var(--hound-primary), 0.55);
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.activity-calendar .rbc-toolbar button:hover,
-.activity-calendar .rbc-toolbar button:focus,
-.activity-calendar .rbc-toolbar button:active,
-.activity-calendar .rbc-toolbar button.rbc-active,
-.activity-calendar .rbc-toolbar button.rbc-active:hover,
-.activity-calendar .rbc-toolbar button.rbc-active:focus {
-  color: rgba(var(--hound-secondary), 1);
-  background-color: rgba(var(--hound-primary), 1);
-  border-color: rgba(var(--hound-secondary), 0.55);
-  box-shadow: none;
-}
-
 .activity-calendar .rbc-month-view,
-.activity-calendar .rbc-time-view,
-.activity-calendar .rbc-agenda-view table.rbc-agenda-table {
+.activity-calendar .rbc-time-view {
   overflow: hidden;
   background-color: rgba(var(--hound-primary), 0.18);
   border-color: rgba(255, 255, 255, 0.18);
@@ -88,9 +117,7 @@
 
 .activity-calendar .rbc-header,
 .activity-calendar .rbc-day-bg,
-.activity-calendar .rbc-month-row,
-.activity-calendar .rbc-agenda-view table.rbc-agenda-table tbody > tr > td,
-.activity-calendar .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+.activity-calendar .rbc-month-row {
   border-color: rgba(255, 255, 255, 0.14);
 }
 
@@ -145,27 +172,21 @@
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-.activity-calendar .rbc-agenda-empty {
-  padding: 40px 20px;
-  color: rgba(255, 255, 255, 0.65);
-  text-align: center;
-}
-
 @media only screen and (max-width: 600px) {
   .activity-calendar {
     height: 580px;
   }
 
-  .activity-calendar .rbc-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .activity-calendar .rbc-toolbar-label {
-    padding: 4px;
-  }
-
   .activity-calendar .rbc-header {
     font-size: 12px;
+  }
+
+  .activity-calendar-filters {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .activity-view-toggle {
+    margin-left: auto;
   }
 }
