@@ -9,6 +9,7 @@ import {
   fetchMediaDetails,
   fetchMediaFiles,
   fetchMediaScores,
+  fetchMovieCollection,
   fetchWatchAction,
   fetchSeasonDetails,
   type MediaType,
@@ -26,6 +27,16 @@ export const useMediaDetails = (
     queryFn: ({ signal }) =>
       fetchMediaDetails(mediaType, mediaSource, sourceID, signal),
     enabled: enabled && !!mediaSource && !!sourceID,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+};
+
+export const useMovieCollection = (collectionID?: string) => {
+  return useQuery({
+    queryKey: ["movie-collection", collectionID],
+    queryFn: ({ signal }) => fetchMovieCollection(collectionID!, signal),
+    enabled: !!collectionID,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });

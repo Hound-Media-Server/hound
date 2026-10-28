@@ -340,6 +340,23 @@ func GetMovieFromIDTMDB(tmdbID int) (*tmdb.MovieDetails, error) {
 	return movie, nil
 }
 
+func GetMovieCollectionTMDB(collectionID int) (*tmdb.CollectionDetails, error) {
+	cacheKey := fmt.Sprintf("tmdb|%s|collection|tmdb-%d", database.MediaTypeMovie, collectionID)
+	var cacheObject tmdb.CollectionDetails
+	cacheExists, _ := database.GetCache(cacheKey, &cacheObject)
+	if cacheExists {
+		return &cacheObject, nil
+	}
+	collection, err := tmdbClient.GetCollectionDetails(collectionID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection %d from tmdb: %w", collectionID, err)
+	}
+	if collection != nil {
+		_, _ = database.SetCache(cacheKey, collection, getCacheTTL)
+	}
+	return collection, nil
+}
+
 func AddMovieToCollectionTMDB(userID int64, source string, sourceID int, collectionID int64) error {
 	if source != MediaSourceTMDB {
 		panic("Only tmdb source is allowed for now")

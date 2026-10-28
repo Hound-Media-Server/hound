@@ -16,6 +16,17 @@ export const fetchMediaDetails = async (
   return data;
 };
 
+export const fetchMovieCollection = async (
+  collectionID: string,
+  signal?: AbortSignal,
+) => {
+  const { data } = await axios.get<any>(
+    `/api/v1/movie/collection/tmdb-${collectionID}`,
+    { signal },
+  );
+  return data;
+};
+
 export interface MediaScores {
   media_type: string;
   media_source: string;

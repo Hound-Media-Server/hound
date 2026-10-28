@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -33,6 +34,50 @@ func SearchMoviesHandler(c *gin.Context) {
 		return
 	}
 	internal.SuccessResponse(c, results, 200)
+}
+
+// @Router /v1/movie/collection/{id} [get]
+// @Summary Get TMDB Movie Collection
+// @ID get-movie-collection
+// @Tags Movie
+// @Accept json
+// @Produce json
+// @Param id path string true "Collection ID" example(tmdb-1234)
+// @Success 200 {object} V1SuccessResponse{data=[]view.MediaRecordCatalog}
+// @Failure 400 {object} V1ErrorResponse
+// @Failure 500 {object} V1ErrorResponse
+func GetMovieCollectionHandler(c *gin.Context) {
+	_, collectionID, err := getSourceIDFromParams(c.Param("id"))
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	collection, err := sources.GetMovieCollectionTMDB(collectionID)
+	if err != nil {
+		internal.ErrorResponse(c, err)
+		return
+	}
+	parts := make([]view.MediaRecordCatalog, 0, len(collection.Parts))
+	for _, item := range collection.Parts {
+		parts = append(parts, view.MediaRecordCatalog{
+			MediaType:        database.MediaTypeMovie,
+			MediaSource:      sources.MediaSourceTMDB,
+			SourceID:         strconv.Itoa(int(item.ID)),
+			MediaTitle:       item.Title,
+			OriginalTitle:    item.OriginalTitle,
+			Overview:         item.Overview,
+			VoteCount:        item.VoteCount,
+			VoteAverage:      item.VoteAverage,
+			Popularity:       item.Popularity,
+			ThumbnailURI:     internal.GetTMDBImageURL(item.PosterPath, tmdb.W300),
+			BackdropURI:      internal.GetTMDBImageURL(item.BackdropPath, tmdb.Original),
+			ReleaseDate:      item.ReleaseDate,
+			Genres:           sources.GetGenresMapFromTMDBIDs(item.GenreIDs, database.MediaTypeMovie),
+			OriginalLanguage: item.OriginalLanguage,
+		})
+	}
+	sort.SliceStable(parts, func(i, j int) bool { return parts[i].ReleaseDate < parts[j].ReleaseDate })
+	internal.SuccessResponse(c, parts, 200)
 }
 
 // @Router /v1/movie/{id} [get]
@@ -77,6 +122,11 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		BackdropURI:      internal.GetTMDBImageURL(movieDetails.BackdropPath, tmdb.Original),
 		LogoURI:          logoURI,
 		OriginCountry:    movieDetails.OriginCountry,
+	}
+	if col := movieDetails.BelongsToCollection; col.ID != 0 {
+		movieObject.ExtraData = map[string]interface{}{
+			"collection": map[string]interface{}{"id": col.ID, "name": col.Name},
+		}
 	}
 	castArray := []view.Credit{}
 	for _, cast := range movieDetails.Credits.MovieCredits.Cast {

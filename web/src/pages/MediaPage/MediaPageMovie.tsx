@@ -32,6 +32,7 @@ import { useInWatchlist, useSetWatchlist } from "../../api/hooks/collections";
 import {
   useMediaFiles,
   useMediaScores,
+  useMovieCollection,
   useWatchAction,
 } from "../../api/hooks/media";
 import MediaScores from "./MediaScores";
@@ -104,6 +105,8 @@ function MediaPageMovie(props: any) {
     props.data.media_source,
     props.data.source_id,
   );
+  const collection = props.data.extra_data?.collection;
+  const { data: collectionParts } = useMovieCollection(collection?.id);
   const watchProgress = watchAction?.watch_progress;
   const openMovieStream = (stream: any) =>
     openStream({
@@ -503,6 +506,14 @@ function MediaPageMovie(props: any) {
           itemType="cast"
           itemOnClick={undefined}
         />
+        {collectionParts?.length > 1 && (
+          <HorizontalSection
+            items={collectionParts}
+            header={collection.name}
+            itemType="poster"
+            itemOnClick={undefined}
+          />
+        )}
         <HorizontalSection
           items={props.data.videos?.results}
           header={"Videos"}
