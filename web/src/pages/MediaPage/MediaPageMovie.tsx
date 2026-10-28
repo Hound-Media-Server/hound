@@ -525,6 +525,17 @@ function MediaPageMovie(props: any) {
           mediaSource={props.data.media_source}
           sourceId={props.data.source_id}
         />
+        <HorizontalSection
+          items={props.data.recommendations?.filter(
+            (item: any) =>
+              !collectionParts?.some(
+                (part: any) => part.source_id === item.source_id,
+              ),
+          )}
+          header={"Similar Movies"}
+          itemType="poster"
+          itemOnClick={undefined}
+        />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal

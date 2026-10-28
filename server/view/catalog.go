@@ -29,6 +29,7 @@ type MediaRecordCatalog struct {
 	EpisodeCount     *int                   `json:"episode_count,omitempty"`
 	Cast             *[]Credit              `json:"cast,omitempty"`
 	Videos           *tmdb.VideoResults     `json:"videos,omitempty"`
+	Recommendations  []MediaRecordCatalog   `json:"recommendations,omitempty"`
 	Creators         *[]Credit              `json:"creators,omitempty"`
 	GuestStars       *[]Credit              `json:"guest_stars,omitempty"`
 	VoteCount        int64                  `json:"vote_count,omitempty"`

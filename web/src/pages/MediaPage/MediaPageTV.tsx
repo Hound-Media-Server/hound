@@ -613,6 +613,12 @@ function MediaPageTV(props: any) {
           mediaSource={props.data.media_source}
           sourceId={props.data.source_id}
         />
+        <HorizontalSection
+          items={props.data.recommendations}
+          header={"Similar Shows"}
+          itemType="poster"
+          itemOnClick={undefined}
+        />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />
       <AddToCollectionModal

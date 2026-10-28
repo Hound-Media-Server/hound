@@ -126,6 +126,9 @@ func GetMovieFromIDHandler(c *gin.Context) {
 	if movieDetails.MovieVideosAppend != nil {
 		movieObject.Videos = movieDetails.Videos
 	}
+	if movieDetails.MovieRecommendationsAppend != nil && movieDetails.Recommendations != nil {
+		movieObject.Recommendations = model.GetRecommendationsCatalog(movieDetails.Recommendations.MovieRecommendationsResults, nil)
+	}
 	if col := movieDetails.BelongsToCollection; col.ID != 0 {
 		movieObject.ExtraData = map[string]interface{}{
 			"collection": map[string]interface{}{"id": col.ID, "name": col.Name},

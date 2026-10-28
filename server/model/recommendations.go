@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"math/rand"
 	"strconv"
 	"time"
@@ -101,14 +102,14 @@ func getUserRecommendationsInternal(userID int64, mediaType string, limit int) (
 			if err != nil {
 				continue
 			}
-			recs := createCatalogObject(results.Recommendations.MovieRecommendationsResults, nil, recsPerSource)
+			recs := createCatalogObject(results.Recommendations.MovieRecommendationsResults, nil, recsPerSource, true)
 			rawRecs = append(rawRecs, recs...)
 		} else if mediaType == database.MediaTypeTVShow {
 			results, err := sources.GetTVShowFromIDTMDB(sourceID)
 			if err != nil {
 				continue
 			}
-			recs := createCatalogObject(nil, results.Recommendations.TVRecommendationsResults, recsPerSource)
+			recs := createCatalogObject(nil, results.Recommendations.TVRecommendationsResults, recsPerSource, true)
 			rawRecs = append(rawRecs, recs...)
 		}
 	}
@@ -139,16 +140,24 @@ func getUserRecommendationsInternal(userID int64, mediaType string, limit int) (
 	return dedupedRecs, nil
 }
 
+// returns all of a title's tmdb recommendations in tmdb's order
+func GetRecommendationsCatalog(movieRecs *tmdb.MovieRecommendationsResults,
+	showRecs *tmdb.TVRecommendationsResults) []view.MediaRecordCatalog {
+	return createCatalogObject(movieRecs, showRecs, math.MaxInt, false)
+}
+
 // limit clamps the number of recommendations per source
 // some things such as duration and logo image are missing
 func createCatalogObject(movieRecs *tmdb.MovieRecommendationsResults,
-	showRecs *tmdb.TVRecommendationsResults, limit int) []view.MediaRecordCatalog {
+	showRecs *tmdb.TVRecommendationsResults, limit int, shuffle bool) []view.MediaRecordCatalog {
 	viewArray := []view.MediaRecordCatalog{}
 	if movieRecs != nil {
 		shuffledResults := movieRecs.Results
-		rand.Shuffle(len(shuffledResults), func(i, j int) {
-			shuffledResults[i], shuffledResults[j] = shuffledResults[j], shuffledResults[i]
-		})
+		if shuffle {
+			rand.Shuffle(len(shuffledResults), func(i, j int) {
+				shuffledResults[i], shuffledResults[j] = shuffledResults[j], shuffledResults[i]
+			})
+		}
 		if len(shuffledResults) > limit {
 			shuffledResults = shuffledResults[:limit]
 		}
@@ -173,9 +182,11 @@ func createCatalogObject(movieRecs *tmdb.MovieRecommendationsResults,
 		}
 	} else if showRecs != nil {
 		shuffledResults := showRecs.Results
-		rand.Shuffle(len(shuffledResults), func(i, j int) {
-			shuffledResults[i], shuffledResults[j] = shuffledResults[j], shuffledResults[i]
-		})
+		if shuffle {
+			rand.Shuffle(len(shuffledResults), func(i, j int) {
+				shuffledResults[i], shuffledResults[j] = shuffledResults[j], shuffledResults[i]
+			})
+		}
 		if len(shuffledResults) > limit {
 			shuffledResults = shuffledResults[:limit]
 		}
