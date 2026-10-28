@@ -106,6 +106,9 @@ func GetTVShowFromIDHandler(c *gin.Context) {
 		}
 	}
 	showObject.Cast = &castArray
+	if showDetails.TVVideosAppend != nil {
+		showObject.Videos = showDetails.Videos
+	}
 	creatorsArray := []view.Credit{}
 	for _, creator := range showDetails.CreatedBy {
 		creatorsArray = append(creatorsArray, view.Credit{

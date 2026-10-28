@@ -259,7 +259,11 @@ function ItemCard(props: {
         className="video-button-trigger"
         key={props.item.key}
         onClick={() => {
-          props.itemOnClick(props.item.key);
+          if (props.item.site === "Vimeo") {
+            window.open(`https://vimeo.com/${props.item.key}`, "_blank");
+          } else {
+            props.itemOnClick(props.item.key);
+          }
         }}
         style={{
           backgroundImage: `url('https://img.youtube.com/vi/${props.item.key}/0.jpg')`,

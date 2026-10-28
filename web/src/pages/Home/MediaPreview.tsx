@@ -1,5 +1,6 @@
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import EastIcon from "@mui/icons-material/East";
+import OndemandVideoIcon from "@mui/icons-material/OndemandVideo";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { Button, Chip, Fade, Paper, Popper, Skeleton } from "@mui/material";
@@ -21,6 +22,7 @@ import {
 import type { WatchableMediaType } from "../../api/services/media";
 import WatchlistBookmark from "./WatchlistBookmark";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
+import VideoModal from "../Modals/VideoModal";
 import MediaScores from "../MediaPage/MediaScores";
 import { useStreamModal } from "../Modals/StreamModalContext";
 import "./MediaPreview.css";
@@ -42,6 +44,14 @@ type MediaPreviewItem = {
   backdrop_uri?: string;
   logo_uri?: string;
   original_language?: string;
+  videos?: {
+    results?: Array<{
+      key: string;
+      site?: string;
+      type?: string;
+      official?: boolean;
+    }>;
+  };
 };
 
 function formatDuration(minutes?: number) {
@@ -71,6 +81,7 @@ function MediaPreview({
   const closeTimer = useRef<ReturnType<typeof setTimeout>>();
   const [open, setOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
+  const [trailerKey, setTrailerKey] = useState("");
   const mediaType: WatchableMediaType =
     item.media_type === "movie" ? "movie" : "tv";
   const sourceID = item.source_id?.toString() ?? "";
@@ -113,6 +124,11 @@ function MediaPreview({
   const { openStream } = useStreamModal();
   const currentWatchAction = watchAction ?? initialWatchAction;
   const preview = { ...item, ...details };
+  const trailers = preview.videos?.results?.filter(
+    (video: any) => video.type === "Trailer",
+  );
+  const trailer =
+    trailers?.find((video: any) => video.official) ?? trailers?.[0];
 
   const clearTimers = () => {
     if (openTimer.current) clearTimeout(openTimer.current);
@@ -143,6 +159,15 @@ function MediaPreview({
 
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget)) scheduleClose();
+  };
+
+  const handleTrailer = () => {
+    setOpen(false);
+    if (trailer.site === "Vimeo") {
+      window.open(`https://vimeo.com/${trailer.key}`, "_blank");
+    } else {
+      setTrailerKey(trailer.key);
+    }
   };
 
   const handlePlay = () => {
@@ -345,7 +370,7 @@ function MediaPreview({
                   >
                     {playLabel}
                   </Button>
-                  {secondaryAction === "open" ? (
+                  {secondaryAction === "open" && (
                     <Button
                       className="media-preview-secondary-button"
                       variant="contained"
@@ -359,25 +384,39 @@ function MediaPreview({
                     >
                       Open {mediaType === "movie" ? "Movie" : "Show"}
                     </Button>
-                  ) : (
+                  )}
+                  {trailer && secondaryAction !== "open" && (
                     <Button
                       className="media-preview-secondary-button"
                       variant="contained"
-                      startIcon={<PlaylistAddIcon />}
-                      onClick={() => {
-                        setOpen(false);
-                        setCollectionOpen(true);
-                      }}
+                      startIcon={<OndemandVideoIcon />}
+                      onClick={handleTrailer}
                     >
-                      Add to Collection
+                      Trailer
                     </Button>
                   )}
+                  <Button
+                    className="media-preview-secondary-button"
+                    variant="contained"
+                    startIcon={<PlaylistAddIcon />}
+                    onClick={() => {
+                      setOpen(false);
+                      setCollectionOpen(true);
+                    }}
+                  >
+                    Save to Collection
+                  </Button>
                 </div>
               </div>
             </Paper>
           </Fade>
         )}
       </Popper>
+      <VideoModal
+        onClose={() => setTrailerKey("")}
+        open={!!trailerKey}
+        videoKey={trailerKey}
+      />
       {collectionOpen && (
         <AddToCollectionModal
           open={collectionOpen}

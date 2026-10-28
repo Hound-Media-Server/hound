@@ -128,3 +128,25 @@ a {
     max-width: 160px;
   }
 }
+
+@media only screen and (max-width: 900px) {
+  .itemcard-img-cast,
+  .itemcard-img-cast-container {
+    width: 120px;
+    height: 180px;
+  }
+  .itemcard-cast-item-caption {
+    width: 120px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .itemcard-img-cast,
+  .itemcard-img-cast-container {
+    width: 100px;
+    height: 150px;
+  }
+  .itemcard-cast-item-caption {
+    width: 100px;
+  }
+}

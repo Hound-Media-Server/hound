@@ -110,3 +110,27 @@
   color: rgba(255, 255, 255, 0.55);
   transition: all 0.5s ease;
 }
+
+@media only screen and (max-width: 1600px) {
+  .video-button-trigger {
+    width: 384px;
+    height: 216px;
+    font-size: 66px;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .video-button-trigger {
+    width: 320px;
+    height: 180px;
+    font-size: 56px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .video-button-trigger {
+    width: 256px;
+    height: 144px;
+    font-size: 46px;
+  }
+}

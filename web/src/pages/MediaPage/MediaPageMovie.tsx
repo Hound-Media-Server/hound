@@ -506,6 +506,12 @@ function MediaPageMovie(props: any) {
           itemType="cast"
           itemOnClick={undefined}
         />
+        <HorizontalSection
+          items={props.data.videos?.results}
+          header={"Videos"}
+          itemType="video"
+          itemOnClick={handleVideoButtonClick}
+        />
         {collectionParts?.length > 1 && (
           <HorizontalSection
             items={collectionParts}
@@ -514,12 +520,6 @@ function MediaPageMovie(props: any) {
             itemOnClick={undefined}
           />
         )}
-        <HorizontalSection
-          items={props.data.videos?.results}
-          header={"Videos"}
-          itemType="video"
-          itemOnClick={handleVideoButtonClick}
-        />
         <Reviews
           mediaType={props.data.media_type}
           mediaSource={props.data.media_source}

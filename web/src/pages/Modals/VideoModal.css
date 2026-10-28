@@ -2,3 +2,13 @@
     padding: 0;
     margin: 0;
 }
+.video-dialog .MuiDialog-paper {
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+}
+
+.video-dialog iframe {
+    display: block;
+    border: 0;
+}

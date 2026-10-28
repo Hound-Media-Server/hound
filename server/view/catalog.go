@@ -2,6 +2,8 @@ package view
 
 import (
 	"github.com/mcay23/hound/database"
+
+	tmdb "github.com/cyruzin/golang-tmdb"
 )
 
 type HomeRowView struct {
@@ -26,6 +28,7 @@ type MediaRecordCatalog struct {
 	SeasonCount      *int                   `json:"season_count,omitempty"`
 	EpisodeCount     *int                   `json:"episode_count,omitempty"`
 	Cast             *[]Credit              `json:"cast,omitempty"`
+	Videos           *tmdb.VideoResults     `json:"videos,omitempty"`
 	Creators         *[]Credit              `json:"creators,omitempty"`
 	GuestStars       *[]Credit              `json:"guest_stars,omitempty"`
 	VoteCount        int64                  `json:"vote_count,omitempty"`

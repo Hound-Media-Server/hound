@@ -123,6 +123,9 @@ func GetMovieFromIDHandler(c *gin.Context) {
 		LogoURI:          logoURI,
 		OriginCountry:    movieDetails.OriginCountry,
 	}
+	if movieDetails.MovieVideosAppend != nil {
+		movieObject.Videos = movieDetails.Videos
+	}
 	if col := movieDetails.BelongsToCollection; col.ID != 0 {
 		movieObject.ExtraData = map[string]interface{}{
 			"collection": map[string]interface{}{"id": col.ID, "name": col.Name},
