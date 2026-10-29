@@ -77,13 +77,13 @@ function ItemCard(props: {
             <div className="itemcard-img-cast-container">
               {!loaded && (
                 <Skeleton
-                  variant="rounded"
-                  className="rounded w-100 h-100"
+                  variant="circular"
+                  className="w-100 h-100"
                   animation="wave"
                 />
               )}
               <img
-                className="rounded itemcard-img-cast"
+                className="rounded-circle itemcard-img-cast"
                 src={props.item.thumbnail_uri}
                 alt={props.item.name}
                 loading="lazy"
@@ -97,7 +97,7 @@ function ItemCard(props: {
           </>
         ) : (
           <div className="itemcard-img-cast-container">
-            <div className="rounded itemcard-img-cast" />
+            <div className="rounded-circle itemcard-img-cast" />
           </div>
         )}
         <figcaption className="itemcard-cast-item-caption">

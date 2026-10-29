@@ -15,6 +15,7 @@
 .itemcard-cast-item-caption {
   font-family: "Cabin", sans-serif;
   max-width: 160px;
+  text-align: center;
 }
 
 .itemcard-item-caption-primary {
@@ -56,19 +57,24 @@
 
 .itemcard-img-cast-container {
   width: 160px;
-  height: 240px;
+  height: 160px;
 }
 
 .itemcard-img-cast {
   width: 160px;
-  height: 240px;
+  height: 160px;
   object-fit: cover;
+  object-position: 50% 30%;
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
   background-color: rgba(149, 187, 223, 1);
   background-image: url("../../../public/avatar-placeholder.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: 50%;
+}
+
+img.itemcard-img-cast {
+  background: none;
 }
 
 .item-card-no-thumbnail {
@@ -106,11 +112,11 @@ a {
 @media only screen and (max-width: 1600px) {
   .itemcard-img-cast {
     width: 140px;
-    height: 210px;
+    height: 140px;
   }
   .itemcard-img-cast-container {
     width: 140px;
-    height: 210px;
+    height: 140px;
   }
   .itemcard-cast-item-caption {
     width: 140px;
@@ -133,7 +139,7 @@ a {
   .itemcard-img-cast,
   .itemcard-img-cast-container {
     width: 120px;
-    height: 180px;
+    height: 120px;
   }
   .itemcard-cast-item-caption {
     width: 120px;
@@ -144,7 +150,7 @@ a {
   .itemcard-img-cast,
   .itemcard-img-cast-container {
     width: 100px;
-    height: 150px;
+    height: 100px;
   }
   .itemcard-cast-item-caption {
     width: 100px;
