@@ -150,3 +150,46 @@ a {
     width: 100px;
   }
 }
+
+.horizontal-section-compact .itemcard-img-poster,
+.horizontal-section-compact .itemcard-img-poster-container {
+  width: 160px;
+  height: 240px;
+}
+
+.horizontal-section-compact .itemcard-item-caption {
+  max-width: 160px;
+}
+
+@media only screen and (max-width: 1600px) {
+  .horizontal-section-compact .itemcard-img-poster,
+  .horizontal-section-compact .itemcard-img-poster-container {
+    width: 140px;
+    height: 210px;
+  }
+  .horizontal-section-compact .itemcard-item-caption {
+    max-width: 140px;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .horizontal-section-compact .itemcard-img-poster,
+  .horizontal-section-compact .itemcard-img-poster-container {
+    width: 120px;
+    height: 180px;
+  }
+  .horizontal-section-compact .itemcard-item-caption {
+    max-width: 120px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .horizontal-section-compact .itemcard-img-poster,
+  .horizontal-section-compact .itemcard-img-poster-container {
+    width: 100px;
+    height: 150px;
+  }
+  .horizontal-section-compact .itemcard-item-caption {
+    max-width: 100px;
+  }
+}

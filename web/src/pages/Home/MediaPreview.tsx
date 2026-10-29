@@ -404,7 +404,7 @@ function MediaPreview({
                       setCollectionOpen(true);
                     }}
                   >
-                    Save to Collection
+                    Save
                   </Button>
                 </div>
               </div>

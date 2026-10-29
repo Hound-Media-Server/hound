@@ -173,6 +173,20 @@ body:has(.media-page) {
   font-size: 18px;
 }
 
+.media-page-tv-main > * + * {
+    margin-top: 30px;
+}
+
+.media-page-tv-main figure,
+.media-page-tv-main .video-button-trigger,
+.media-page-tv-main .reviews-main-container {
+    margin-bottom: 0;
+}
+
+.media-page-tv-main .reviews-header-container {
+    margin-bottom: 15px;
+}
+
 .media-page-tv-main .comment-card-container {
     color: white;
     background-color: rgba(var(--hound-primary), 0.58);

@@ -18,7 +18,6 @@ function VideoModal(props: any) {
         width="960px"
         height="540px"
         src={`https://www.youtube.com/embed/${videoKey}?autoplay=1`}
-        title={"title"}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
       />

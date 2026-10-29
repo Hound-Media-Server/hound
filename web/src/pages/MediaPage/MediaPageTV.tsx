@@ -617,6 +617,7 @@ function MediaPageTV(props: any) {
           items={props.data.recommendations}
           header={"Similar Shows"}
           itemType="poster"
+          compact
           itemOnClick={undefined}
         />
       </div>

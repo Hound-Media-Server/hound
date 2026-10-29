@@ -19,6 +19,7 @@ function HorizontalSection(props: {
     | "comment"
     | "watch_tile";
   itemOnClick: any | undefined;
+  compact?: boolean;
 }) {
   const navigate = useNavigate();
   if (!props.items || props.items.length === 0) {
@@ -27,7 +28,7 @@ function HorizontalSection(props: {
   return (
     <>
       <div
-        className={`horizontal-section horizontal-section-menu horizontal-section-${props.itemType}`}
+        className={`horizontal-section horizontal-section-menu horizontal-section-${props.itemType}${props.compact ? " horizontal-section-compact" : ""}`}
       >
         <div
           className="horizontal-section-header cursor-pointer"

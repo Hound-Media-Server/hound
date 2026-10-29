@@ -512,19 +512,20 @@ function MediaPageMovie(props: any) {
           itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
-        {collectionParts?.length > 1 && (
-          <HorizontalSection
-            items={collectionParts}
-            header={collection.name}
-            itemType="poster"
-            itemOnClick={undefined}
-          />
-        )}
         <Reviews
           mediaType={props.data.media_type}
           mediaSource={props.data.media_source}
           sourceId={props.data.source_id}
         />
+        {collectionParts?.length > 1 && (
+          <HorizontalSection
+            items={collectionParts}
+            header={collection.name}
+            itemType="poster"
+            compact
+            itemOnClick={undefined}
+          />
+        )}
         <HorizontalSection
           items={props.data.recommendations?.filter(
             (item: any) =>
@@ -534,6 +535,7 @@ function MediaPageMovie(props: any) {
           )}
           header={"Similar Movies"}
           itemType="poster"
+          compact
           itemOnClick={undefined}
         />
       </div>
