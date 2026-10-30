@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
-import convertDateToReadable from "../../helpers/helpers";
+import convertDateToReadable, { sortVideos } from "../../helpers/helpers";
 import Reviews from "../Comments/Reviews";
 import CreateHistoryModal from "../Modals/CreateHistoryModal";
 import HistoryModal from "../Modals/HistoryModal";
@@ -507,7 +507,7 @@ function MediaPageMovie(props: any) {
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos?.results}
+          items={sortVideos(props.data.videos?.results)}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}

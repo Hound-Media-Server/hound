@@ -40,6 +40,7 @@ import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { useStreamModal } from "../Modals/StreamModalContext";
+import { sortVideos } from "../../helpers/helpers";
 
 const offsetFix = {
   modifiers: [
@@ -597,7 +598,7 @@ function MediaPageTV(props: any) {
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos?.results}
+          items={sortVideos(props.data.videos?.results)}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}

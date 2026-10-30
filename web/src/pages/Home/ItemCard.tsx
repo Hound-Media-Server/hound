@@ -309,6 +309,9 @@ function ItemCard(props: {
         }}
         title={props.item.id}
       >
+        <div className="video-item-title itemcard-line-clamp">
+          {props.item.name}
+        </div>
         <PlayCircleFilledIcon fontSize="inherit" />
       </div>
     );
