@@ -11,6 +11,7 @@ function HorizontalSection(props: {
   headerHref?: string;
   itemType:
     | "poster"
+    | "backdrop"
     | "cast"
     | "video"
     | "seasons"

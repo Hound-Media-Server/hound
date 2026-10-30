@@ -29,6 +29,12 @@
   color: rgb(170, 170, 170);
 }
 
+.itemcard-line-clamp {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .itemcard-img-poster-container {
   display: inline-block;
   position: relative;
@@ -75,6 +81,20 @@
 
 img.itemcard-img-cast {
   background: none;
+}
+
+.itemcard-backdrop-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px 12px;
+  font-family: "Cabin", sans-serif;
+  font-weight: 500;
+  font-size: 17px;
+  color: white;
+  background: linear-gradient(to top, rgba(0, 0, 0, 1), transparent 75%);
+  pointer-events: none;
 }
 
 .item-card-no-thumbnail {

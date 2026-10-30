@@ -512,11 +512,11 @@ function MediaPageMovie(props: any) {
           itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
-        <Reviews
+        {/* <Reviews
           mediaType={props.data.media_type}
           mediaSource={props.data.media_source}
           sourceId={props.data.source_id}
-        />
+        /> */}
         {collectionParts?.length > 1 && (
           <HorizontalSection
             items={collectionParts}
@@ -534,7 +534,7 @@ function MediaPageMovie(props: any) {
               ),
           )}
           header={"Similar Movies"}
-          itemType="poster"
+          itemType="backdrop"
           compact
           itemOnClick={undefined}
         />

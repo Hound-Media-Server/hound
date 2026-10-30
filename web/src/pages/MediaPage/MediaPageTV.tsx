@@ -608,15 +608,15 @@ function MediaPageTV(props: any) {
           itemType="seasons"
           itemOnClick={handleSeasonButtonClick}
         />
-        <Reviews
+        {/* <Reviews
           mediaType={props.data.media_type}
           mediaSource={props.data.media_source}
           sourceId={props.data.source_id}
-        />
+        /> */}
         <HorizontalSection
           items={props.data.recommendations}
           header={"Similar Shows"}
-          itemType="poster"
+          itemType="backdrop"
           compact
           itemOnClick={undefined}
         />
