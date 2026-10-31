@@ -35,19 +35,6 @@
     /* justify-content: center; */
 }
 
-.library-collections-header {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    color: white;
-    user-select: none;
-    font-size: 35px;
-    font-family: 'Cabin Condensed', sans-serif;
-    color: inherit;
-    width: fit-content;
-}
-
 @media only screen and (max-width:1200px) {
     .library-container {
         width: 90%;

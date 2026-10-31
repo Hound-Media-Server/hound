@@ -17,29 +17,34 @@
     mask: linear-gradient(90deg,rgba(255,255,255,1) 85%, rgba(200, 200, 200, 0) 100%);
 } */
 
-.horizontal-section-header {
+.horizontal-section-header,
+.library-collections-header {
   user-select: none;
   font-size: 34px;
   font-family: "Cabin Condensed", sans-serif;
   color: inherit;
   width: fit-content;
-  margin-left: 40px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
+}
+
+.horizontal-section-header {
+  margin-left: 40px;
 }
 
 .horizontal-section-header::before,
 .library-collections-header::before {
   content: "";
   width: 4px;
-  height: 0.9em;
+  height: 1.9rem;
   margin-right: 10px;
   background-color: #ef4444;
 }
 
 @media only screen and (max-width: 600px) {
-  .horizontal-section-header {
+  .horizontal-section-header,
+  .library-collections-header {
     font-size: 24px;
   }
   .horizontal-section {
@@ -49,7 +54,8 @@
 }
 
 @media only screen and (max-width: 1600px) {
-  .horizontal-section-header {
+  .horizontal-section-header,
+  .library-collections-header {
     font-size: 30px;
   }
 }
@@ -107,7 +113,6 @@
   justify-content: center;
   align-items: center;
   font-size: 82px;
-  /* border: rgba(var(--hound-primary), 1.0) solid 2px; */
 }
 
 .video-item-title {
@@ -115,9 +120,9 @@
   top: 0;
   left: 0;
   right: 0;
-  padding: 14px 16px 40px;
+  padding: 14px 16px 70px;
   font-family: "Cabin", sans-serif;
-  font-weight: 500;
+  font-weight: 400;
   font-size: 20px;
   color: white;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 1), transparent);

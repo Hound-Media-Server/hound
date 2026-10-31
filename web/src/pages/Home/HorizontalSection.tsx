@@ -4,6 +4,7 @@ import "./HorizontalSection.css";
 import { LeftArrow, RightArrow } from "./arrows";
 import ItemCard from "./ItemCard";
 import { useNavigate } from "react-router-dom";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 function HorizontalSection(props: {
   items: any;
@@ -41,6 +42,7 @@ function HorizontalSection(props: {
           role={props.headerHref ? "button" : undefined}
         >
           {props.header}
+          {props.headerHref && <ChevronRightIcon fontSize="inherit" style={{ opacity: 0.7 }} />}
         </div>
         <div className="horizontal-scroll-container">
           <ScrollMenu LeftArrow={LeftArrow} RightArrow={RightArrow}>

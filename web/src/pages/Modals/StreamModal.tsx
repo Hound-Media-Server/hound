@@ -255,6 +255,13 @@ function StreamModal(props: any) {
           visible={overlayVisible}
           mediaDetails={mediaDetails}
           onClose={handleClose}
+          message={
+            streamError || playbackError
+              ? undefined
+              : streamDetails?.encoded_data
+                ? "Loading player..."
+                : "Fetching streams..."
+          }
         >
           {(streamError || playbackError) && (
             <>

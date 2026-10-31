@@ -46,7 +46,7 @@
 .mpv-loading-logo {
   position: absolute;
   right: 3vw;
-  bottom: 5vh;
+  bottom: calc(5vh + 30px);
   z-index: 1;
   display: block;
   max-width: min(36vw, 420px);
@@ -60,7 +60,7 @@
 .mpv-loading-title {
   position: absolute;
   right: 3vw;
-  bottom: 5vh;
+  bottom: calc(5vh + 30px);
   z-index: 1;
   display: block;
   color: white;
@@ -68,6 +68,18 @@
   font-size: min(3vh, 40px);
   filter: drop-shadow(0 2px 8px #000000);
   animation: mpv-loading-pulse 1.4s ease-in-out infinite;
+}
+
+.mpv-loading-message {
+  position: absolute;
+  right: 3vw;
+  bottom: 4vh;
+  z-index: 1;
+  color: gray;
+  font-family: "Cabin", sans-serif;
+  font-size: 16px;
+  text-align: right;
+  filter: drop-shadow(0 2px 8px #000000);
 }
 
 @keyframes mpv-loading-pulse {

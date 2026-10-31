@@ -9,6 +9,7 @@ type Props = {
   visible: boolean;
   mediaDetails?: any;
   onClose?: () => void;
+  message?: string;
   children?: ReactNode;
 };
 
@@ -16,6 +17,7 @@ export function PlayerLoadingOverlay({
   visible,
   mediaDetails,
   onClose,
+  message,
   children,
 }: Props) {
   const backdropUri = mediaDetails?.backdrop_uri as string | undefined;
@@ -79,6 +81,7 @@ export function PlayerLoadingOverlay({
           {releaseYear ? ` (${releaseYear})` : ""}
         </div>
       )}
+      {message && <div className="mpv-loading-message">{message}</div>}
       {children && <div className="stream-loading-message">{children}</div>}
     </div>
   );

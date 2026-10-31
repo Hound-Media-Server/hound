@@ -307,12 +307,11 @@ function ItemCard(props: {
         style={{
           backgroundImage: `url('https://img.youtube.com/vi/${props.item.key}/0.jpg')`,
         }}
-        title={props.item.id}
       >
         <div className="video-item-title itemcard-line-clamp">
           {props.item.name}
         </div>
-        <PlayCircleFilledIcon fontSize="inherit" />
+        <PlayCircleFilledIcon fontSize="inherit" className="opacity-75" />
       </div>
     );
   }
