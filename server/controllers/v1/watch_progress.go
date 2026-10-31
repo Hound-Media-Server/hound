@@ -78,10 +78,14 @@ func handleSetPlaybackProgress(c *gin.Context) {
 		internal.ErrorResponse(c, fmt.Errorf("less than 2 minutes watched, skipping saving progress: %w", internal.BadRequestError))
 		return
 	}
-	// if progress is > 85% of total duration or less than 5 minutes left, mark as watched
-	setWatchCutoff := 0.85 * float64(watchProgress.TotalDurationSeconds)
-	remainingSeconds := float64(watchProgress.TotalDurationSeconds) - float64(watchProgress.CurrentProgressSeconds)
-	if float64(watchProgress.CurrentProgressSeconds) > setWatchCutoff || remainingSeconds < 300 {
+	// mark as watched when less than 10 minutes (movies) or 5 minutes (episodes) are left
+	watchedCutoffSeconds := 300
+	if mediaType == database.MediaTypeMovie {
+		watchedCutoffSeconds = 600
+	}
+	remainingSeconds := watchProgress.TotalDurationSeconds - watchProgress.CurrentProgressSeconds
+	// remaining seconds has to exceed 20% of duration, so short media (eg. 10 mins) isn't marked too quickly
+	if remainingSeconds < watchedCutoffSeconds && remainingSeconds < watchProgress.TotalDurationSeconds/5 {
 		switch mediaType {
 		case database.MediaTypeMovie:
 			watchedAtString := time.Now().Format(time.RFC3339)

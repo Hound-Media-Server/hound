@@ -36,15 +36,6 @@
   margin-left: 90px;
 }
 
-.home-page-section-divider {
-  height: 6px;
-  width: 80px;
-  background-color: red;
-  opacity: 0.7;
-  margin-top: 15px;
-  margin-left: 90px;
-}
-
 .home-page-placeholder {
   height: 1300px;
 }
@@ -58,8 +49,7 @@
     width: min(300px, calc(100% - 32px));
   }
 
-  .home-page-search-message,
-  .home-page-section-divider {
+  .home-page-search-message {
     margin-left: 40px;
   }
 

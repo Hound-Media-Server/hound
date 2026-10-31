@@ -37,7 +37,9 @@
 
 .library-collections-header {
     margin-top: 10px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
     color: white;
     user-select: none;
     font-size: 35px;
@@ -86,10 +88,6 @@
     .library-collections-container .collection-card-cover-inner {
         font-size: 20px;
         line-height: 22px;
-    }
-
-    .library-main-container .home-page-section-divider {
-        margin-left: 40px;
     }
 
     .library-top-section-container > .horizontal-section-header {

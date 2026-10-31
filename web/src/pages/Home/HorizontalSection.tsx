@@ -41,7 +41,6 @@ function HorizontalSection(props: {
           role={props.headerHref ? "button" : undefined}
         >
           {props.header}
-          <span className="horizontal-section-header-separator">|</span>
         </div>
         <div className="horizontal-scroll-container">
           <ScrollMenu LeftArrow={LeftArrow} RightArrow={RightArrow}>
