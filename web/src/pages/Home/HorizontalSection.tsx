@@ -4,6 +4,7 @@ import "./HorizontalSection.css";
 import { LeftArrow, RightArrow } from "./arrows";
 import ItemCard from "./ItemCard";
 import { useNavigate } from "react-router-dom";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 function HorizontalSection(props: {
   items: any;
@@ -11,6 +12,7 @@ function HorizontalSection(props: {
   headerHref?: string;
   itemType:
     | "poster"
+    | "backdrop"
     | "cast"
     | "video"
     | "seasons"
@@ -19,6 +21,7 @@ function HorizontalSection(props: {
     | "comment"
     | "watch_tile";
   itemOnClick: any | undefined;
+  compact?: boolean;
 }) {
   const navigate = useNavigate();
   if (!props.items || props.items.length === 0) {
@@ -27,7 +30,7 @@ function HorizontalSection(props: {
   return (
     <>
       <div
-        className={`horizontal-section horizontal-section-menu horizontal-section-${props.itemType}`}
+        className={`horizontal-section horizontal-section-menu horizontal-section-${props.itemType}${props.compact ? " horizontal-section-compact" : ""}`}
       >
         <div
           className="horizontal-section-header cursor-pointer"
@@ -39,7 +42,7 @@ function HorizontalSection(props: {
           role={props.headerHref ? "button" : undefined}
         >
           {props.header}
-          <span className="horizontal-section-header-separator">|</span>
+          {props.headerHref && <ChevronRightIcon fontSize="inherit" style={{ opacity: 0.7 }} />}
         </div>
         <div className="horizontal-scroll-container">
           <ScrollMenu LeftArrow={LeftArrow} RightArrow={RightArrow}>

@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 import AddToCollectionModal from "../Modals/AddToCollectionModal";
 import HorizontalSection from "../Home/HorizontalSection";
 import VideoModal from "../Modals/VideoModal";
-import convertDateToReadable from "../../helpers/helpers";
+import convertDateToReadable, { sortVideos } from "../../helpers/helpers";
 import Reviews from "../Comments/Reviews";
 import CreateHistoryModal from "../Modals/CreateHistoryModal";
 import HistoryModal from "../Modals/HistoryModal";
@@ -32,6 +32,7 @@ import { useInWatchlist, useSetWatchlist } from "../../api/hooks/collections";
 import {
   useMediaFiles,
   useMediaScores,
+  useMovieCollection,
   useWatchAction,
 } from "../../api/hooks/media";
 import MediaScores from "./MediaScores";
@@ -104,6 +105,8 @@ function MediaPageMovie(props: any) {
     props.data.media_source,
     props.data.source_id,
   );
+  const collection = props.data.extra_data?.collection;
+  const { data: collectionParts } = useMovieCollection(collection?.id);
   const watchProgress = watchAction?.watch_progress;
   const openMovieStream = (stream: any) =>
     openStream({
@@ -504,15 +507,36 @@ function MediaPageMovie(props: any) {
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos?.results}
+          items={sortVideos(props.data.videos?.results)}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}
         />
-        <Reviews
+        {/* <Reviews
           mediaType={props.data.media_type}
           mediaSource={props.data.media_source}
           sourceId={props.data.source_id}
+        /> */}
+        {collectionParts?.length > 1 && (
+          <HorizontalSection
+            items={collectionParts}
+            header={collection.name}
+            itemType="poster"
+            compact
+            itemOnClick={undefined}
+          />
+        )}
+        <HorizontalSection
+          items={props.data.recommendations?.filter(
+            (item: any) =>
+              !collectionParts?.some(
+                (part: any) => part.source_id === item.source_id,
+              ),
+          )}
+          header={"Similar Movies"}
+          itemType="backdrop"
+          compact
+          itemOnClick={undefined}
         />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />

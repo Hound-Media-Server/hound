@@ -311,6 +311,15 @@ export function WebPlayer({
     const element = playerRef.current;
     const player = element?.player;
     const duration = element?.duration;
+    // temporary fix for moviplayer bug, framerate capped after bad performance on hardware
+    // should remove if fixed upstream
+    if (player && !player.isSoftwareDecoding()) {
+      (
+        player as unknown as {
+          videoDecoder?: { setPerformanceSkip(enabled: boolean): void };
+        }
+      ).videoDecoder?.setPerformanceSkip(false);
+    }
     if (Number.isFinite(current)) setCurrentTime(Math.floor(current));
     if (
       typeof duration === "number" &&

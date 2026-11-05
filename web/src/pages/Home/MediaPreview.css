@@ -31,7 +31,12 @@
 
 .media-preview-shade {
   background:
-    linear-gradient(90deg, rgba(var(--hound-dark), 0.95) 0%, rgba(var(--hound-dark), 0.75) 52%, rgba(var(--hound-dark), 0.25) 100%),
+    linear-gradient(
+      90deg,
+      rgba(var(--hound-dark), 0.95) 0%,
+      rgba(var(--hound-dark), 0.75) 52%,
+      rgba(var(--hound-dark), 0.25) 100%
+    ),
     linear-gradient(0deg, rgba(var(--hound-dark), 0.95) 0%, transparent 58%);
 }
 
@@ -55,7 +60,7 @@
 
 .media-preview-logo {
   display: block;
-  max-width: 250px;
+  max-width: 350px;
   max-height: 58px;
   object-fit: contain;
   object-position: left bottom;
@@ -166,7 +171,7 @@
 .media-preview-secondary-button.MuiButton-root {
   background-color: rgba(255, 255, 255, 0.65) !important;
   color: black;
-  margin-left: 10px;
+  margin-left: 5px;
   font-weight: 400;
 }
 

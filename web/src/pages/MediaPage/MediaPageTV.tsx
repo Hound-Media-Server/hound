@@ -40,6 +40,7 @@ import { useUnifiedStreamsMutation } from "../../api/hooks/providers";
 import { MediaFilesModal } from "../Modals/MediaFilesModal";
 import { CloudDoneOutlined } from "@mui/icons-material";
 import { useStreamModal } from "../Modals/StreamModalContext";
+import { sortVideos } from "../../helpers/helpers";
 
 const offsetFix = {
   modifiers: [
@@ -597,7 +598,7 @@ function MediaPageTV(props: any) {
           itemOnClick={undefined}
         />
         <HorizontalSection
-          items={props.data.videos?.results}
+          items={sortVideos(props.data.videos?.results)}
           header={"Videos"}
           itemType="video"
           itemOnClick={handleVideoButtonClick}
@@ -608,10 +609,17 @@ function MediaPageTV(props: any) {
           itemType="seasons"
           itemOnClick={handleSeasonButtonClick}
         />
-        <Reviews
+        {/* <Reviews
           mediaType={props.data.media_type}
           mediaSource={props.data.media_source}
           sourceId={props.data.source_id}
+        /> */}
+        <HorizontalSection
+          items={props.data.recommendations}
+          header={"Similar Shows"}
+          itemType="backdrop"
+          compact
+          itemOnClick={undefined}
         />
       </div>
       <div className="media-page-tv-footer" style={styles.withBackdrop} />

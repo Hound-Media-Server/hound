@@ -14,6 +14,7 @@ function ItemCard(props: {
   itemType:
     | "collectionImageList"
     | "poster"
+    | "backdrop"
     | "cast"
     | "video"
     | "seasons"
@@ -67,6 +68,42 @@ function ItemCard(props: {
       </MediaPreview>
     );
   }
+  function itemTypeBackdrop() {
+    const backdropURI = props.item.backdrop_uri?.replace(
+      "/original/",
+      "/w780/",
+    );
+    return (
+      <MediaPreview item={props.item}>
+        <Link
+          to={`/${mediaType}/${props.item.media_source}-${props.item.source_id}`}
+          className="itemcard-watch-tile-container"
+        >
+          {!loaded && backdropURI && (
+            <Skeleton
+              variant="rounded"
+              className="rounded w-100 h-100"
+              animation="wave"
+            />
+          )}
+          <img
+            className="rounded itemcard-watch-tile hide-alt"
+            src={backdropURI}
+            alt={props.item.media_title}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            style={{
+              opacity: loaded || !backdropURI ? 1 : 0,
+              transition: "opacity 0.5s ease",
+            }}
+          />
+          <div className="rounded itemcard-backdrop-overlay">
+            {props.item.media_title + releaseYearText}
+          </div>
+        </Link>
+      </MediaPreview>
+    );
+  }
   function itemTypeCast() {
     var primaryCaption = props.item.name;
     var secondaryCaption = props.item.character;
@@ -77,13 +114,13 @@ function ItemCard(props: {
             <div className="itemcard-img-cast-container">
               {!loaded && (
                 <Skeleton
-                  variant="rounded"
-                  className="rounded w-100 h-100"
+                  variant="circular"
+                  className="w-100 h-100"
                   animation="wave"
                 />
               )}
               <img
-                className="rounded itemcard-img-cast"
+                className="rounded-circle itemcard-img-cast"
                 src={props.item.thumbnail_uri}
                 alt={props.item.name}
                 loading="lazy"
@@ -97,12 +134,14 @@ function ItemCard(props: {
           </>
         ) : (
           <div className="itemcard-img-cast-container">
-            <div className="rounded itemcard-img-cast" />
+            <div className="rounded-circle itemcard-img-cast" />
           </div>
         )}
         <figcaption className="itemcard-cast-item-caption">
-          <div className="itemcard-item-caption-primary">{primaryCaption}</div>
-          <div className="itemcard-item-caption-secondary">
+          <div className="itemcard-item-caption-primary itemcard-line-clamp">
+            {primaryCaption}
+          </div>
+          <div className="itemcard-item-caption-secondary itemcard-line-clamp">
             {secondaryCaption}
           </div>
         </figcaption>
@@ -259,14 +298,20 @@ function ItemCard(props: {
         className="video-button-trigger"
         key={props.item.key}
         onClick={() => {
-          props.itemOnClick(props.item.key);
+          if (props.item.site === "Vimeo") {
+            window.open(`https://vimeo.com/${props.item.key}`, "_blank");
+          } else {
+            props.itemOnClick(props.item.key);
+          }
         }}
         style={{
           backgroundImage: `url('https://img.youtube.com/vi/${props.item.key}/0.jpg')`,
         }}
-        title={props.item.id}
       >
-        <PlayCircleFilledIcon fontSize="inherit" />
+        <div className="video-item-title itemcard-line-clamp">
+          {props.item.name}
+        </div>
+        <PlayCircleFilledIcon fontSize="inherit" className="opacity-75" />
       </div>
     );
   }
@@ -288,8 +333,7 @@ function ItemCard(props: {
     return <CommentCard item={props.item} />;
   }
   function itemTypeWatchTile() {
-    const watchMetadata =
-      props.item.watch_progress ?? props.item.next_episode;
+    const watchMetadata = props.item.watch_progress ?? props.item.next_episode;
     return (
       <MediaPreview
         item={{ ...props.item, ...watchMetadata }}
@@ -312,6 +356,8 @@ function ItemCard(props: {
   switch (props.itemType) {
     case "poster":
       return itemTypePoster();
+    case "backdrop":
+      return itemTypeBackdrop();
     case "cast":
       return itemTypeCast();
     case "seasons":

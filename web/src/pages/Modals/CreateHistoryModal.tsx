@@ -7,6 +7,7 @@ import {
   useAddMovieWatchActivityMutation,
   useAddTVWatchHistoryMutation,
 } from "../../api/hooks/watchHistory";
+import "../Comments/Reviews.css";
 
 interface CreateHistoryModalProps {
   onClose: () => void;

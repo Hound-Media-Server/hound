@@ -68,3 +68,11 @@ export function formatRelativeTime(isoString: string) {
   if (diff < 604800) return ago(Math.floor(diff / 86400), "day");
   return ago(Math.floor(diff / 604800), "week");
 }
+
+const videoTypeOrder = ["Trailer", "Teaser"];
+export function sortVideos(videos?: any[]) {
+  const rank = (v: any) =>
+    (v.official ? 0 : 10) +
+    (videoTypeOrder.includes(v.type) ? videoTypeOrder.indexOf(v.type) : 5);
+  return videos && [...videos].sort((a, b) => rank(a) - rank(b));
+}

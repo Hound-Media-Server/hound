@@ -120,6 +120,7 @@ func SetupRoutes(r *gin.Engine) {
 		Movies Routes
 	*/
 	privateRoutes.GET("/movie/search", SearchMoviesHandler)
+	privateRoutes.GET("/movie/collection/:id", GetMovieCollectionHandler)
 	privateRoutes.GET("/movie/:id", GetMovieFromIDHandler)
 	privateRoutes.GET("/movie/:id/continue_watching", GetMovieNextWatchActionHandler)
 	if config.HoundPlusHost != "" {

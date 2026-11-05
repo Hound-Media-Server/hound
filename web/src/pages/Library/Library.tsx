@@ -83,10 +83,9 @@ function Library(props: any) {
                 itemType="poster"
                 itemOnClick={undefined}
               />
-              <div className="home-page-section-divider" />
             </div>
           )}
-          <div className="library-top-section-container mt-1">
+          <div className="library-top-section-container pt-3">
             <HorizontalSection
               items={libraryData?.records}
               header="In Your Library"
@@ -100,8 +99,7 @@ function Library(props: any) {
               </div>
             )}
           </div>
-          <div className="home-page-section-divider" />
-          <div className="library-collections-section">
+          <div className="library-collections-section pt-3">
             <div className="library-collections-header">Your Collections</div>
             <div className="library-collections-container">
               <div
@@ -137,8 +135,7 @@ function Library(props: any) {
           </div>
           {publicCollections?.length > 0 && (
             <>
-              <div className="home-page-section-divider" />
-              <div className="library-public-collections-section">
+              <div className="library-public-collections-section pt-3">
                 <div className="library-collections-header">
                   Public Collections
                 </div>

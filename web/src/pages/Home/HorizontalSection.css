@@ -17,26 +17,34 @@
     mask: linear-gradient(90deg,rgba(255,255,255,1) 85%, rgba(200, 200, 200, 0) 100%);
 } */
 
-.horizontal-section-header-separator {
-  padding-left: 10px;
-  padding-right: 10px;
-  color: inherit;
-  opacity: 70%;
-  font-size: 30px;
-}
-
-.horizontal-section-header {
+.horizontal-section-header,
+.library-collections-header {
   user-select: none;
   font-size: 34px;
   font-family: "Cabin Condensed", sans-serif;
   color: inherit;
   width: fit-content;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.horizontal-section-header {
   margin-left: 40px;
-  margin-bottom: 15px;
+}
+
+.horizontal-section-header::before,
+.library-collections-header::before {
+  content: "";
+  width: 4px;
+  height: 1.9rem;
+  margin-right: 10px;
+  background-color: #ef4444;
 }
 
 @media only screen and (max-width: 600px) {
-  .horizontal-section-header {
+  .horizontal-section-header,
+  .library-collections-header {
     font-size: 24px;
   }
   .horizontal-section {
@@ -46,7 +54,8 @@
 }
 
 @media only screen and (max-width: 1600px) {
-  .horizontal-section-header {
+  .horizontal-section-header,
+  .library-collections-header {
     font-size: 30px;
   }
 }
@@ -86,6 +95,7 @@
 }
 
 .video-button-trigger {
+  position: relative;
   width: 480px;
   height: 270px;
   margin-right: 20px;
@@ -103,10 +113,47 @@
   justify-content: center;
   align-items: center;
   font-size: 82px;
-  /* border: rgba(var(--hound-primary), 1.0) solid 2px; */
+}
+
+.video-item-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 16px 70px;
+  font-family: "Cabin", sans-serif;
+  font-weight: 400;
+  font-size: 20px;
+  color: white;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 1), transparent);
+  pointer-events: none;
 }
 
 .video-button-trigger :hover {
   color: rgba(255, 255, 255, 0.55);
   transition: all 0.5s ease;
+}
+
+@media only screen and (max-width: 1600px) {
+  .video-button-trigger {
+    width: 384px;
+    height: 216px;
+    font-size: 66px;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  .video-button-trigger {
+    width: 320px;
+    height: 180px;
+    font-size: 56px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .video-button-trigger {
+    width: 256px;
+    height: 144px;
+    font-size: 46px;
+  }
 }
