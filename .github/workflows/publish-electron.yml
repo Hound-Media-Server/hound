@@ -61,9 +61,9 @@ jobs:
     name: Build Windows portable app (x64)
     runs-on: windows-2022
     env:
-      MPV_RELEASE: "20260923"
-      MPV_ARCHIVE: mpv-dev-x86_64-20260923-git-6fd80b2003.7z
-      MPV_SHA256: 372f29c292d0c8b4ce916225739e5872e35b8e11f3f4590c285baed8ba551100
+      MPV_RELEASE: "20261105"
+      MPV_ARCHIVE: mpv-dev-x86_64-20261105-git-3138fc8eea.7z
+      MPV_SHA256: f463cc69a7a1610937688b837be9f005cf163c26f2e35e50aec8cc7bde2894b4
     steps:
       - name: Check out the repo
         uses: actions/checkout@v5
