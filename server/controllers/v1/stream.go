@@ -145,7 +145,7 @@ func handleP2PStream(c *gin.Context, streamDetails *providers.StreamObjectFull) 
 }
 
 func handleProxyStream(c *gin.Context, streamDetails *providers.StreamObjectFull) {
-	videoURL := "https://github.com/Hound-Media-Server/hound/raw/refs/heads/hound-demo/screenshots/nocando.mp4"
+	videoURL := "https://github.com/Hound-Media-Server/hound/raw/refs/heads/hound-demo/assets/nocando.mp4"
 	if videoURL == "" {
 		c.String(http.StatusBadRequest, "Video URL not provided")
 		return

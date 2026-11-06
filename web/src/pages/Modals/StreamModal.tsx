@@ -216,7 +216,7 @@ function StreamModal(props: any) {
               key={streamDetails?.encoded_data}
               options={videoJsOptions}
               onVideoProgress={handleVideoProgress}
-              onDuration={onBadStream ? handleDuration : undefined}
+              // onDuration={onBadStream ? handleDuration : undefined}
               handleClose={handleClose}
               setInfoModalOpen={setInfoModalOpen}
               externalSubtitles={externalSubtitles}
@@ -236,7 +236,7 @@ function StreamModal(props: any) {
               src={videoURL}
               startTime={startTime}
               onVideoProgress={handleVideoProgress}
-              onDuration={onBadStream ? handleDuration : undefined}
+              // onDuration={onBadStream ? handleDuration : undefined}
               playerSettings={watchProgress?.player_settings}
               isStreamsMatch={isStreamsMatch}
               originalAudioLang={originalAudioLang}
