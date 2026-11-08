@@ -12,7 +12,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import { useDecodeStream, useSubtitles } from "../../api/hooks/providers";
 import MPVElectronPlayer from "../VideoPlayer/MPVElectronPlayer";
-import { isPlatformElectron } from "../../utils/platform";
+import { isPlatformElectron, isTouchDevice } from "../../utils/platform";
 import { get2LetterLangCode } from "../../helpers/locale";
 import { WebPlayer } from "../VideoPlayer/WebPlayer";
 import { shouldPrefetchNextEpisode } from "../../utils/videoSegments";
@@ -81,10 +81,17 @@ function StreamModal(props: any) {
 
   useEffect(() => {
     if (
-      !open &&
-      isPlatformElectron &&
-      document.fullscreenElement === document.documentElement
+      open &&
+      !isPlatformElectron &&
+      isTouchDevice &&
+      document.fullscreenEnabled &&
+      !document.fullscreenElement
     ) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enter fullscreen: ${err.message}`);
+      });
+    }
+    if (!open && document.fullscreenElement === document.documentElement) {
       document.exitFullscreen().catch((err) => {
         console.error(`Error attempting to exit fullscreen: ${err.message}`);
       });
