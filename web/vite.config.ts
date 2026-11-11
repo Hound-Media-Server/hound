@@ -39,6 +39,9 @@ export default defineConfig({
       },
     ],
   },
+  worker: {
+    format: 'es',
+  },
   build: {
     outDir: 'build',
     assetsDir: 'static',

@@ -1,0 +1,87 @@
+diff --git a/node_modules/movi-player/dist/element.js b/node_modules/movi-player/dist/element.js
+index 89161bb..4ea2c10 100644
+--- a/node_modules/movi-player/dist/element.js
++++ b/node_modules/movi-player/dist/element.js
+@@ -52376,6 +52376,7 @@ class CanvasRenderer {
+   _subtitleRerenderRafId = null;
+   subtitleCues = [];
+   subtitleOverlay = null;
++  _hostSubtitleOwned = false;
+   getSubtitleOverlay() {
+     return this.subtitleOverlay;
+   }
+@@ -53244,6 +53245,19 @@ class CanvasRenderer {
+   setSubtitleOverlay(A2) {
+     this.subtitleOverlay = A2, n.debug(OA, "Subtitle overlay " + (A2 ? "set" : "cleared"));
+   }
++  setHostSubtitleOwned(A2) {
++    if (this._hostSubtitleOwned === A2) {
++      A2 && this.layoutHostSubtitleOverlay();
++      return;
++    }
++    this._hostSubtitleOwned = A2, this.activeSubtitleCue = null, this._lastRenderedSubtitleKey = "", this._lastRenderedSubtitlePlain = "", this._lastSubtitleLineCount = 0, this.subtitleOverlay && (this.subtitleOverlay.innerHTML = "", A2 ? this.layoutHostSubtitleOverlay() : this.subtitleOverlay.style.display = "none");
++  }
++  layoutHostSubtitleOverlay() {
++    const A2 = this.subtitleOverlay;
++    if (!A2) return;
++    const t2 = this.canvas instanceof HTMLCanvasElement ? this.canvas : null, n2 = t2?.getBoundingClientRect(), v2 = n2?.width || this.width, s2 = n2?.height || this.height, b2 = (((this.rotation ?? 0) % 360) + 360) % 360, r2 = 90 === b2 || 270 === b2, o2 = r2 ? s2 : v2, a2 = r2 ? v2 : s2;
++    A2.style.position = "absolute", A2.style.right = "auto", A2.style.bottom = "auto", A2.style.width = `${o2}px`, A2.style.height = `${a2}px`, A2.style.left = `${(v2 - o2) / 2}px`, A2.style.top = `${(s2 - a2) / 2}px`, A2.style.margin = "0", A2.style.padding = "0", A2.style.transformOrigin = "center center", A2.style.transform = b2 ? `rotate(${b2}deg)` : "none", A2.style.boxSizing = "border-box", A2.style.display = "block", A2.style.pointerEvents = "none";
++  }
+   setSubtitleFormat(A2) {
+     this.subtitleOverlay && this.subtitleOverlay.classList.toggle("movi-subtitle-format-vtt", "vtt" === A2);
+   }
+@@ -53333,7 +53347,7 @@ class CanvasRenderer {
+     }
+   }
+   clearSubtitles() {
+-    this.subtitleCues = [], this.activeSubtitleCue = null, this._lastRenderedSubtitleKey = "", this._lastRenderedSubtitlePlain = "", this._lastSubtitleLineCount = 0, this._lastImageCueKey = "", this._lastImageDataUrl = "", this.subtitleOverlay && (this.subtitleOverlay.innerHTML = "");
++    this.subtitleCues = [], this.activeSubtitleCue = null, this._lastRenderedSubtitleKey = "", this._lastRenderedSubtitlePlain = "", this._lastSubtitleLineCount = 0, this._lastImageCueKey = "", this._lastImageDataUrl = "", this.subtitleOverlay && !this._hostSubtitleOwned && (this.subtitleOverlay.innerHTML = "");
+   }
+   static computeSubtitleBottomPadding(A2) {
+     return !Number.isFinite(A2) || A2 <= 0 ? 24 : Math.max(Math.min(80, 0.08 * A2), 24);
+@@ -53397,6 +53411,7 @@ class CanvasRenderer {
+   }
+   renderSubtitles() {
+     const A2 = this.rotation % 180 != 0, t2 = A2 ? this.height : this.width, n2 = A2 ? this.width : this.height;
++    if (this._hostSubtitleOwned) return void this.layoutHostSubtitleOverlay();
+     if (!this.activeSubtitleCue) return void (this.subtitleOverlay && ("" !== this._lastRenderedSubtitleKey && (this.subtitleOverlay.textContent = "", this.subtitleOverlay.innerHTML = "", this._lastRenderedSubtitleKey = "", this._lastRenderedSubtitlePlain = "", this._lastSubtitleLineCount = 0), this.subtitleOverlay.style.display = "none"));
+     const v2 = this.activeSubtitleCue;
+     if (v2.image) return this.subtitleOverlay ? void this.renderImageSubtitleInOverlay(v2) : void 0;
+@@ -113647,7 +113662,7 @@ class MoviPlayer extends $ {
+     return !(!this.videoRenderer || !this.videoRenderer.isHDRSupported) && this.videoRenderer.isHDRSupported();
+   }
+   setSubtitleOverlay(A2) {
+-    this.videoRenderer && this.videoRenderer.setSubtitleOverlay(A2);
++    this.videoRenderer && (this.videoRenderer.setSubtitleOverlay(A2), this._customSubtitleRenderer && (this.videoRenderer.setHostSubtitleOwned(true), this._mountCustomSubtitleRenderer()));
+   }
+   getSubtitleReserve() {
+     return this.videoRenderer?.subtitleReservePx() ?? 0;
+@@ -114153,12 +114168,8 @@ class MoviPlayer extends $ {
+     return this.videoRenderer ? this.videoRenderer.getSubtitleDelay() : 0;
+   }
+   setSubtitleRenderer(A2) {
+-    if (this._customSubtitleRenderer !== A2 && (this._customSubtitleRenderer = A2, this._stopSubtitleRenderLoop(), this.videoRenderer?.setSubtitleCues([]), A2)) {
+-      const t2 = this.videoRenderer?.getSubtitleOverlay?.() ?? null;
+-      if (t2 && A2.mount) try {
+-        A2.mount(t2);
+-      } catch {
+-      }
++    if (this._customSubtitleRenderer !== A2 && (this._customSubtitleRenderer = A2, this._stopSubtitleRenderLoop(), this.videoRenderer?.setSubtitleCues([]), this.videoRenderer?.setHostSubtitleOwned(!!A2), A2)) {
++      this._mountCustomSubtitleRenderer();
+       try {
+         A2.setDelay(this._subtitleDelaySec);
+       } catch {
+@@ -114166,6 +114177,13 @@ class MoviPlayer extends $ {
+       this._configureCustomSubtitleRenderer(), this._startSubtitleRenderLoop();
+     }
+   }
++  _mountCustomSubtitleRenderer() {
++    const A2 = this._customSubtitleRenderer, t2 = this.videoRenderer?.getSubtitleOverlay?.() ?? null;
++    if (A2 && t2 && A2.mount) try {
++      A2.mount(t2);
++    } catch {
++    }
++  }
+   async _configureCustomSubtitleRenderer() {
+     const A2 = this._customSubtitleRenderer, t2 = this.trackManager.getActiveSubtitleTrack();
+     if (!A2 || !t2 || !this.demuxer) return;

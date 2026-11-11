@@ -16,6 +16,7 @@ import {
 } from "../../utils/videoSegments";
 import { SkipSegmentButton } from "./SkipSegmentButton";
 import { isTouchDevice } from "../../utils/platform";
+import { AssSubtitleRenderer } from "./AssSubtitleRenderer";
 
 type PlayerSettings = {
   player?: string;
@@ -212,6 +213,30 @@ export function WebPlayer({
       );
       document.removeEventListener("fullscreenchange", syncFullscreen);
       player.setHostFullscreen(false);
+    };
+  }, []);
+
+  // use jass for ass sub rendering
+  useEffect(() => {
+    const element = playerRef.current;
+    if (!element) return;
+    const renderer = new AssSubtitleRenderer();
+    const syncSubtitleRenderer = () => {
+      const codec =
+        element.player?.trackManager.getActiveSubtitleTrack()?.codec;
+      element.setSubtitleRenderer(
+        codec === "ass" || codec === "ssa" ? renderer : null,
+      );
+    };
+    const events = ["subtitletrackchange", "trackschange", "loadedmetadata"];
+    events.forEach((name) =>
+      element.addEventListener(name, syncSubtitleRenderer),
+    );
+    return () => {
+      events.forEach((name) =>
+        element.removeEventListener(name, syncSubtitleRenderer),
+      );
+      renderer.destroy();
     };
   }, []);
 
@@ -441,7 +466,9 @@ export function WebPlayer({
         objectfit={objectFit}
         src={src}
         controls
-        controlslist={isFullscreen && isTouchDevice ? "nofullscreen" : undefined}
+        controlslist={
+          isFullscreen && isTouchDevice ? "nofullscreen" : undefined
+        }
         fastseek
         autoplay
         poster={mediaDetails?.backdrop_uri}
