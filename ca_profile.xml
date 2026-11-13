@@ -1,0 +1,7 @@
+<CommunityApplications>
+  <Profile>Hound is a self-hosted media server. This repository provides the Hound server template for Unraid. For setup help or bugs, open an issue on GitHub.</Profile>
+  <Icon>https://raw.githubusercontent.com/Hound-Media-Server/hound/main/web/public/android-chrome-192x192.png</Icon>
+  <WebPage>https://github.com/Hound-Media-Server/hound</WebPage>
+  <Reddit>https://www.reddit.com/r/HoundMediaServer/</Reddit>
+  <Discord>https://discord.gg/yKneJKJXj</Discord>
+</CommunityApplications>

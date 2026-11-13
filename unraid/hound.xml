@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>hound</Name>
+  <Repository>houndmediaserver/hound:latest</Repository>
+  <Registry>https://hub.docker.com/r/houndmediaserver/hound</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/Hound-Media-Server/hound/issues</Support>
+  <Project>https://github.com/Hound-Media-Server/hound</Project>
+  <Overview>Hound is a self-hosted media server.
+
+SETUP: Hound requires a PostgreSQL database (v18 recommended).
+1. Install a Postgres container from Community Applications.
+2. Create a database (hound_db) and a user (hound) with a password.
+3. Enter the Unraid server IP and Postgres port below as POSTGRES_HOST / POSTGRES_PORT, along with the same database name, user and password. (A container name like hound-postgres works only if you put both containers on the same custom Docker network.)
+4. Set HOUND_SECRET to a long random string.</Overview>
+  <Category>MediaServer:Video MediaServer:Other</Category>
+  <WebUI>http://[IP]:[PORT:2323]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Hound-Media-Server/hound/main/unraid/hound.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Hound-Media-Server/hound/main/web/public/android-chrome-192x192.png</Icon>
+  <ExtraParams></ExtraParams>
+  <Config Name="WebUI Port" Target="2323" Default="2323" Mode="tcp" Description="Web UI and API port" Type="Port" Display="always" Required="true" Mask="false">2323</Config>
+  <Config Name="Hound Data" Target="/app/Hound Data" Default="/mnt/user/appdata/hound" Mode="rw" Description="Hound data directory" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/hound</Config>
+  <Config Name="Movies Library (optional)" Target="/app/External Library/Movies" Default="" Mode="ro" Description="Optional external movie library. Read the docs before enabling." Type="Path" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="TV Shows Library (optional)" Target="/app/External Library/TV Shows" Default="" Mode="ro" Description="Optional external TV library. Read the docs before enabling." Type="Path" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="HOUND_SECRET" Target="HOUND_SECRET" Default="" Mode="" Description="Required. Long random secret used for auth. Change from any example value." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="POSTGRES_HOST" Target="POSTGRES_HOST" Default="" Mode="" Description="Unraid server IP, or the Postgres container name if both share a custom Docker network." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="POSTGRES_PORT" Target="POSTGRES_PORT" Default="5432" Mode="" Description="Postgres port" Type="Variable" Display="advanced" Required="false" Mask="false">5432</Config>
+  <Config Name="POSTGRES_DB" Target="POSTGRES_DB" Default="hound_db" Mode="" Description="Postgres database name" Type="Variable" Display="always" Required="true" Mask="false">hound_db</Config>
+  <Config Name="POSTGRES_USER" Target="POSTGRES_USER" Default="hound" Mode="" Description="Postgres user" Type="Variable" Display="always" Required="true" Mask="false">hound</Config>
+  <Config Name="POSTGRES_PASSWORD" Target="POSTGRES_PASSWORD" Default="" Mode="" Description="Postgres password (must match the Postgres container)" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="MDBLIST_API_KEY" Target="MDBLIST_API_KEY" Default="" Mode="" Description="Optional. Enables MDBList catalogs." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+</Container>
