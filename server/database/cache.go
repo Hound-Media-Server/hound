@@ -26,18 +26,16 @@ func InitializeCache() {
 		_ = internal.LogErrorWithMessage(err, "Error initializing cache")
 		panic(err)
 	}
-	// 10 minute GC cleanup
+	// GC on startup and every 10 minutes
 	go func() {
 		ticker := time.NewTicker(time.Duration(600) * time.Second)
 		defer ticker.Stop()
 
-		for range ticker.C {
-			for {
-				err := db.RunValueLogGC(0.5)
-				if err != nil {
-					break
-				}
+		for {
+			_ = db.Flatten(1)
+			for db.RunValueLogGC(0.3) == nil {
 			}
+			<-ticker.C
 		}
 	}()
 	slog.Info("Cache Initialized")
