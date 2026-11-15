@@ -34,12 +34,13 @@ type NextEpisode struct {
 }
 
 type WatchAction struct {
-	MediaType       string         `json:"media_type"`
-	MediaSource     string         `json:"media_source"`
-	SourceID        string         `json:"source_id"`
-	WatchActionType string         `json:"watch_action_type"`        // next_episode or resume
-	NextEpisode     *NextEpisode   `json:"next_episode,omitempty"`   // only for next episode watch action type
-	WatchProgress   *WatchProgress `json:"watch_progress,omitempty"` // only for resume watch action type
+	MediaType        string         `json:"media_type"`
+	MediaSource      string         `json:"media_source"`
+	SourceID         string         `json:"source_id"`
+	WatchActionType  string         `json:"watch_action_type"`        // next_episode or resume
+	NextEpisode      *NextEpisode   `json:"next_episode,omitempty"`   // only for next episode watch action type
+	WatchProgress    *WatchProgress `json:"watch_progress,omitempty"` // only for resume watch action type
+	OriginalLanguage string         `json:"original_language"`
 }
 
 // info about the movie/episode
@@ -158,11 +159,12 @@ func getNextWatchActionMovie(userID int64, mediaSource string, sourceID string) 
 		return nil, nil
 	}
 	watchAction := WatchAction{
-		MediaType:       database.MediaTypeMovie,
-		MediaSource:     mediaSource,
-		SourceID:        sourceID,
-		WatchActionType: WatchActionTypeResume,
-		WatchProgress:   watchProgress[0],
+		MediaType:        database.MediaTypeMovie,
+		MediaSource:      mediaSource,
+		SourceID:         sourceID,
+		WatchActionType:  WatchActionTypeResume,
+		WatchProgress:    watchProgress[0],
+		OriginalLanguage: getOriginalLanguage(database.RecordTypeMovie, mediaSource, sourceID),
 	}
 	return &watchAction, nil
 }
@@ -207,9 +209,10 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 		return nil, nil
 	}
 	watchAction := WatchAction{
-		MediaType:   database.MediaTypeTVShow,
-		MediaSource: mediaSource,
-		SourceID:    showID,
+		MediaType:        database.MediaTypeTVShow,
+		MediaSource:      mediaSource,
+		SourceID:         showID,
+		OriginalLanguage: getOriginalLanguage(database.RecordTypeTVShow, mediaSource, showID),
 	}
 	// at least one of these will exist at this point
 	// if lastcompletewatch exists, we know the show has been upserted
@@ -276,4 +279,12 @@ func getNextWatchActionTVShow(userID int64, mediaSource string, showID string) (
 		watchAction.WatchActionType = WatchActionTypeResume
 	}
 	return &watchAction, nil
+}
+
+func getOriginalLanguage(recordType string, mediaSource string, sourceID string) string {
+	found, record, err := database.GetMediaRecord(recordType, mediaSource, sourceID)
+	if err != nil || !found {
+		return ""
+	}
+	return record.OriginalLanguage
 }
