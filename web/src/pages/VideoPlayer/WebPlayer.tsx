@@ -15,6 +15,8 @@ import {
   skipVideoSegment,
 } from "../../utils/videoSegments";
 import { SkipSegmentButton } from "./SkipSegmentButton";
+import { isTouchDevice } from "../../utils/platform";
+import { AssSubtitleRenderer } from "./AssSubtitleRenderer";
 
 type PlayerSettings = {
   player?: string;
@@ -75,6 +77,7 @@ export function WebPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const onStartupSettledRef = useRef(onStartupSettled);
   onStartupSettledRef.current = onStartupSettled;
   const onDurationRef = useRef(onDuration);
@@ -143,6 +146,14 @@ export function WebPlayer({
     };
     const loadingTimeout = setTimeout(finishLoading, 20000);
     const handleDuration = () => {
+      // fullscreen was entered before the player mounted, so lock orientation to the video here
+      if (document.fullscreenElement) {
+        (
+          element as unknown as {
+            applyFullscreenOrientation(active: boolean): void;
+          }
+        ).applyFullscreenOrientation(true);
+      }
       const duration = element.duration;
       if (!Number.isFinite(duration) || duration <= 0) return;
       setDuration(duration);
@@ -172,15 +183,18 @@ export function WebPlayer({
     if (!container || !player) return;
 
     const syncFullscreen = () => {
-      player.setHostFullscreen(document.fullscreenElement === container);
+      const active = !!document.fullscreenElement;
+      setIsFullscreen(active);
+      player.setHostFullscreen(active);
     };
+    // fullscreen is locked on touch devices, so only entering is allowed there
     const handleFullscreenRequest = (event: Event) => {
-      if (!document.fullscreenEnabled || !container.requestFullscreen) return;
+      if (!document.fullscreenEnabled) return;
       event.preventDefault();
-      const request =
-        document.fullscreenElement === container
-          ? document.exitFullscreen()
-          : container.requestFullscreen();
+      if (document.fullscreenElement && isTouchDevice) return;
+      const request = document.fullscreenElement
+        ? document.exitFullscreen()
+        : document.documentElement.requestFullscreen();
       void request.catch((error) => {
         console.error("Failed to toggle player fullscreen:", error);
       });
@@ -198,10 +212,31 @@ export function WebPlayer({
         handleFullscreenRequest,
       );
       document.removeEventListener("fullscreenchange", syncFullscreen);
-      if (document.fullscreenElement === container) {
-        void document.exitFullscreen();
-      }
       player.setHostFullscreen(false);
+    };
+  }, []);
+
+  // use jass for ass sub rendering
+  useEffect(() => {
+    const element = playerRef.current;
+    if (!element) return;
+    const renderer = new AssSubtitleRenderer();
+    const syncSubtitleRenderer = () => {
+      const codec =
+        element.player?.trackManager.getActiveSubtitleTrack()?.codec;
+      element.setSubtitleRenderer(
+        codec === "ass" || codec === "ssa" ? renderer : null,
+      );
+    };
+    const events = ["subtitletrackchange", "trackschange", "loadedmetadata"];
+    events.forEach((name) =>
+      element.addEventListener(name, syncSubtitleRenderer),
+    );
+    return () => {
+      events.forEach((name) =>
+        element.removeEventListener(name, syncSubtitleRenderer),
+      );
+      renderer.destroy();
     };
   }, []);
 
@@ -431,6 +466,9 @@ export function WebPlayer({
         objectfit={objectFit}
         src={src}
         controls
+        controlslist={
+          isFullscreen && isTouchDevice ? "nofullscreen" : undefined
+        }
         fastseek
         autoplay
         poster={mediaDetails?.backdrop_uri}

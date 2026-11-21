@@ -60,7 +60,7 @@
   }
 }
 
-@media only screen and (max-width: 600px) {
+@media only screen and (max-width: 600px), (hover: none) and (pointer: coarse) {
   :is(.home-page-main-section, .home-page-search-results, .library-main-container) .horizontal-section,
   .horizontal-section-cast,
   .horizontal-section-seasons {
@@ -70,7 +70,6 @@
 
   :is(.home-page-main-section, .home-page-search-results, .library-main-container, .horizontal-section-cast, .horizontal-section-seasons) .horizontal-section-header {
     margin-left: 40px;
-    font-size: 24px;
   }
 
   :is(.home-page-main-section, .home-page-search-results, .library-main-container, .horizontal-section-cast, .horizontal-section-seasons) .react-horizontal-scrolling-menu--arrow-left,
@@ -81,6 +80,16 @@
   :is(.home-page-main-section, .home-page-search-results, .library-main-container, .horizontal-section-cast, .horizontal-section-seasons) .react-horizontal-scrolling-menu--scroll-container {
     overflow-x: auto;
     padding-left: 40px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  :is(.home-page-main-section, .home-page-search-results, .library-main-container, .horizontal-section-cast, .horizontal-section-seasons) .horizontal-section-header {
+    margin-left: 20px;
+  }
+
+  :is(.home-page-main-section, .home-page-search-results, .library-main-container, .horizontal-section-cast, .horizontal-section-seasons) .react-horizontal-scrolling-menu--scroll-container {
+    padding-left: 20px;
   }
 }
 

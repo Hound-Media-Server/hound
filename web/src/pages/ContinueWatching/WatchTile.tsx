@@ -47,6 +47,7 @@ export default function WatchTile(props: any) {
       episode: episode?.episode_number,
       encodedData: progress?.encoded_data,
       watchProgress: progress,
+      originalAudioLang: props.item?.original_language,
     });
   };
   return (
